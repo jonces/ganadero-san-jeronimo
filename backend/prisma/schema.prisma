@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TRABAJADOR
+}
+
+enum Sexo {
+  MACHO
+  HEMBRA
+}
+
+enum TipoEvento {
+  VACUNACION
+  TRATAMIENTO
+  PESAJE
+  PARTO
+  OBSERVACION
+  MOVIMIENTO
+}
+
+model Finca {
+  id        String   @id @default(uuid())
+  nombre    String
+  ubicacion String?
+  createdAt DateTime @default(now())
+
+  usuarios Usuario[]
+  animales Animal[]
+}
+
+model Usuario {
+  id           String   @id @default(uuid())
+  nombre       String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(TRABAJADOR)
+  fincaId      String
+  finca        Finca    @relation(fields: [fincaId], references: [id])
+  createdAt    DateTime @default(now())
+
+  eventos Evento[]
+}
+
+model Animal {
+  id          String   @id @default(uuid())
+  identificador String @unique // arete/chapeta
+  nombre      String?
+  raza        String?
+  sexo        Sexo
+  fechaNacimiento DateTime?
+  pesoActual  Float?
+  estado      String   @default("ACTIVO") // ACTIVO, VENDIDO, MUERTO
+  fincaId     String
+  finca       Finca    @relation(fields: [fincaId], references: [id])
+  createdAt   DateTime @default(now())
+
+  eventos     Evento[]
+  media       Media[]
+}
+
+model Evento {
+  id          String     @id @default(uuid())
+  tipo        TipoEvento
+  descripcion String?
+  peso        Float?
+  fecha       DateTime   @default(now())
+  animalId    String
+  animal      Animal     @relation(fields: [animalId], references: [id])
+  usuarioId   String
+  usuario     Usuario    @relation(fields: [usuarioId], references: [id])
+
+  media       Media[]
+}
+
+model Media {
+  id        String   @id @default(uuid())
+  url       String
+  tipo      String   // "FOTO" | "VIDEO"
+  animalId  String?
+  animal    Animal?  @relation(fields: [animalId], references: [id])
+  eventoId  String?
+  evento    Evento?  @relation(fields: [eventoId], references: [id])
+  createdAt DateTime @default(now())
+}
