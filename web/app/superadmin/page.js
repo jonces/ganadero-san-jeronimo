@@ -50,12 +50,17 @@ export default function SuperAdminPage() {
   );
 
   return (
-    <div className="min-h-screen" style={{ background: "#0d1117", fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen" style={{
+      fontFamily: "'Inter', sans-serif",
+      backgroundImage: "url('https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1920&q=85')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundAttachment: "fixed",
+    }}>
 
       {/* Hero Banner */}
       <div className="relative overflow-hidden" style={{ height: 220 }}>
-        <img src={HERO_BG} alt="finca" className="w-full h-full object-cover" style={{ filter: "brightness(0.45)" }} />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(20,90,40,0.7) 0%, rgba(10,30,60,0.7) 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(15,60,30,0.75) 0%, rgba(10,40,80,0.65) 100%)", backdropFilter: "blur(1px)" }} />
         <div className="absolute inset-0 flex items-center justify-between px-8">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shadow-2xl"
@@ -79,7 +84,7 @@ export default function SuperAdminPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         {error && (
-          <div className="mb-6 rounded-2xl p-4 flex items-center gap-3" style={{ background: "rgba(220,38,38,0.15)", border: "1px solid rgba(220,38,38,0.3)" }}>
+          <div className="mb-6 rounded-2xl p-4 flex items-center gap-3" style={{ background: "rgba(220,38,38,0.25)", border: "1px solid rgba(220,38,38,0.5)", backdropFilter: "blur(10px)" }}>
             <span className="text-2xl">⚠️</span>
             <p className="text-red-400 text-sm">{error}</p>
           </div>
@@ -95,8 +100,8 @@ export default function SuperAdminPage() {
               { label: "Usuarios totales", value: stats.totalUsuarios, icon: "👥", grad: "linear-gradient(135deg,#4a235a,#8e44ad)" },
               { label: "Ventas totales", value: `C$ ${(stats.totalVentasNIO || 0).toLocaleString("es", { maximumFractionDigits: 0 })}`, icon: "💰", grad: "linear-gradient(135deg,#7d6608,#f39c12)" },
             ].map((s) => (
-              <div key={s.label} className="rounded-2xl p-5 shadow-xl hover:scale-105 transition-transform cursor-default"
-                style={{ background: s.grad, border: "1px solid rgba(255,255,255,0.1)" }}>
+              <div key={s.label} className="rounded-2xl p-5 shadow-2xl hover:scale-105 transition-transform cursor-default"
+                style={{ background: s.grad, border: "1px solid rgba(255,255,255,0.25)", backdropFilter: "blur(12px)" }}>
                 <span className="text-3xl">{s.icon}</span>
                 <p className="text-white font-black text-3xl mt-3">{s.value}</p>
                 <p className="text-white/70 text-xs mt-1 font-medium">{s.label}</p>
@@ -115,7 +120,7 @@ export default function SuperAdminPage() {
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
             <input
               className="pl-9 pr-4 py-2.5 rounded-xl text-sm text-white w-64 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
-              style={{ background: "#1e2330", border: "1px solid #2d3748" }}
+              style={{ background: "rgba(10,20,15,0.6)", border: "1px solid rgba(255,255,255,0.15)", backdropFilter: "blur(12px)" }}
               placeholder="Buscar finca o email..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
@@ -128,7 +133,7 @@ export default function SuperAdminPage() {
           {fincasFiltradas.map((finca, idx) => (
             <div key={finca.id}
               className="rounded-2xl overflow-hidden shadow-2xl cursor-pointer hover:scale-[1.02] transition-all"
-              style={{ border: finca.activa ? "1px solid rgba(45,158,63,0.4)" : "1px solid rgba(220,38,38,0.3)", background: "#161b27" }}
+              style={{ border: finca.activa ? "1px solid rgba(45,158,63,0.5)" : "1px solid rgba(220,38,38,0.4)", background: "rgba(10,20,15,0.55)", backdropFilter: "blur(16px)" }}
               onClick={() => router.push(`/superadmin/finca/${finca.id}`)}>
 
               {/* Imagen de finca */}
@@ -193,7 +198,7 @@ export default function SuperAdminPage() {
         </div>
 
         {fincasFiltradas.length === 0 && (
-          <div className="text-center py-20 rounded-2xl" style={{ background: "#161b27", border: "1px solid #1e2330" }}>
+          <div className="text-center py-20 rounded-2xl" style={{ background: "rgba(10,20,15,0.55)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(16px)" }}>
             <p className="text-6xl mb-4">🏕️</p>
             <p className="text-gray-400 text-lg font-semibold">No se encontraron fincas</p>
             <p className="text-gray-600 text-sm mt-1">Intenta con otro término de búsqueda</p>
