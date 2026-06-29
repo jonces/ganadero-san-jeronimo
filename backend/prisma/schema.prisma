@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
   TRABAJADOR
 }
@@ -26,14 +27,46 @@ enum TipoEvento {
   MOVIMIENTO
 }
 
-model Finca {
-  id        String   @id @default(uuid())
-  nombre    String
-  ubicacion String?
-  createdAt DateTime @default(now())
+enum TipoDocumento {
+  FIERRO_ANUAL
+  PERMISO_ALCALDIA
+  CARTA_VENTA
+  OTRO
+}
 
-  usuarios Usuario[]
-  animales Animal[]
+enum TipoVenta {
+  EN_PIE
+  POR_PESO
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TRANSFERENCIA
+  CHEQUE
+  CREDITO
+}
+
+enum EstadoPago {
+  PAGADO
+  PENDIENTE
+  PARCIAL
+}
+
+model Finca {
+  id           String   @id @default(uuid())
+  nombre       String
+  ubicacion    String?
+  tipoCambio   Float    @default(36.5)
+  activa       Boolean  @default(true)
+  plan         String   @default("GRATUITO")
+  createdAt    DateTime @default(now())
+
+  usuarios    Usuario[]
+  animales    Animal[]
+  documentos  Documento[]
+  ventas      Venta[]
+  incidentes  Incidente[]
+  gastos      Gasto[]
 }
 
 model Usuario {
@@ -46,24 +79,31 @@ model Usuario {
   finca        Finca    @relation(fields: [fincaId], references: [id])
   createdAt    DateTime @default(now())
 
-  eventos Evento[]
+  eventos    Evento[]
+  ventas     Venta[]
+  incidentes Incidente[]
+  gastos     Gasto[]
 }
 
 model Animal {
-  id          String   @id @default(uuid())
-  identificador String @unique // arete/chapeta
-  nombre      String?
-  raza        String?
-  sexo        Sexo
+  id              String    @id @default(uuid())
+  identificador   String    @unique
+  nombre          String?
+  raza            String?
+  fierro          String?
+  sexo            Sexo
   fechaNacimiento DateTime?
-  pesoActual  Float?
-  estado      String   @default("ACTIVO") // ACTIVO, VENDIDO, MUERTO
-  fincaId     String
-  finca       Finca    @relation(fields: [fincaId], references: [id])
-  createdAt   DateTime @default(now())
+  pesoActual      Float?
+  observacion     String?
+  estado          String    @default("ACTIVO")
+  fincaId         String
+  finca           Finca     @relation(fields: [fincaId], references: [id])
+  createdAt       DateTime  @default(now())
 
-  eventos     Evento[]
-  media       Media[]
+  eventos    Evento[]
+  media      Media[]
+  ventas     Venta[]
+  incidentes Incidente[]
 }
 
 model Evento {
@@ -77,16 +117,97 @@ model Evento {
   usuarioId   String
   usuario     Usuario    @relation(fields: [usuarioId], references: [id])
 
-  media       Media[]
+  media Media[]
 }
 
 model Media {
   id        String   @id @default(uuid())
   url       String
-  tipo      String   // "FOTO" | "VIDEO"
+  tipo      String
   animalId  String?
   animal    Animal?  @relation(fields: [animalId], references: [id])
   eventoId  String?
   evento    Evento?  @relation(fields: [eventoId], references: [id])
+  ventaId      String?
+  venta        Venta?     @relation(fields: [ventaId], references: [id])
+  incidenteId  String?
+  incidente    Incidente? @relation(fields: [incidenteId], references: [id])
   createdAt DateTime @default(now())
+}
+
+model Incidente {
+  id          String   @id @default(uuid())
+  tipo        String   // ACCIDENTE, ENFERMEDAD, MUERTE, OTRO
+  gravedad    String   @default("LEVE") // LEVE, MODERADA, GRAVE, CRITICA
+  estado      String   @default("ACTIVO") // ACTIVO, RESUELTO
+  descripcion String
+  tratamiento String?
+  animalId    String?
+  animal      Animal?  @relation(fields: [animalId], references: [id])
+  fincaId     String
+  finca       Finca    @relation(fields: [fincaId], references: [id])
+  usuarioId   String
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id])
+  fecha       DateTime @default(now())
+  createdAt   DateTime @default(now())
+  media       Media[]
+}
+
+model Gasto {
+  id           String   @id @default(uuid())
+  descripcion  String
+  categoria    String   // ALIMENTACION, MEDICAMENTO, MANTENIMIENTO, SALARIO, COMBUSTIBLE, OTRO
+  monto        Float
+  moneda       String   @default("NIO")
+  periodicidad String   // DIARIO, SEMANAL, QUINCENAL, MENSUAL, UNICO
+  fecha        DateTime @default(now())
+  notas        String?
+  fincaId      String
+  finca        Finca    @relation(fields: [fincaId], references: [id])
+  usuarioId    String
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model Documento {
+  id        String        @id @default(uuid())
+  nombre    String
+  tipo      TipoDocumento
+  url       String
+  notas     String?
+  fincaId   String
+  finca     Finca         @relation(fields: [fincaId], references: [id])
+  createdAt DateTime      @default(now())
+}
+
+model Venta {
+  id            String     @id @default(uuid())
+  tipoVenta     TipoVenta
+  moneda        String     @default("NIO")
+  tipoCambio    Float      @default(36.5)
+  precioNIO     Float
+  precioUSD     Float
+  pesoKg        Float?
+  unidadPeso    String     @default("LB")
+  precioKg      Float?
+  metodoPago    MetodoPago @default(EFECTIVO)
+  estadoPago    EstadoPago @default(PAGADO)
+  numeroFactura String?
+  comision      Float?
+  descuento     Float?
+  impuestos     Float?
+  comprador     String?
+  telefonoComprador String?
+  direccionComprador String?
+  notas         String?
+  fecha         DateTime   @default(now())
+  animalId      String
+  animal        Animal     @relation(fields: [animalId], references: [id])
+  fincaId       String
+  finca         Finca      @relation(fields: [fincaId], references: [id])
+  usuarioId     String
+  usuario       Usuario    @relation(fields: [usuarioId], references: [id])
+  createdAt     DateTime   @default(now())
+
+  media         Media[]
 }

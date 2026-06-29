@@ -1,0 +1,6 @@
+-- AlterEnum
+ALTER TYPE "Role" ADD VALUE 'SUPER_ADMIN';
+
+-- AlterTable
+ALTER TABLE "Finca" ADD COLUMN     "activa" BOOLEAN NOT NULL DEFAULT true,
+ADD COLUMN     "plan" TEXT NOT NULL DEFAULT 'GRATUITO';

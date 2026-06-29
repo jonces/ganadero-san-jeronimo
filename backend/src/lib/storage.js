@@ -1,31 +1,15 @@
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const path = require("path");
+const fs = require("fs");
 const { randomUUID } = require("crypto");
 
-const s3 = new S3Client({
-  region: process.env.S3_REGION,
-  endpoint: process.env.S3_ENDPOINT || undefined,
-  credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY_ID,
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
-  },
-});
+const UPLOADS_DIR = path.join(__dirname, "../../uploads");
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 async function uploadMedia(file) {
-  const key = `${randomUUID()}-${file.originalname}`;
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET,
-      Key: key,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    })
-  );
-
-  const base = process.env.S3_ENDPOINT
-    ? `${process.env.S3_ENDPOINT}/${process.env.S3_BUCKET}`
-    : `https://${process.env.S3_BUCKET}.s3.${process.env.S3_REGION}.amazonaws.com`;
-
-  return `${base}/${key}`;
+  const ext = path.extname(file.originalname);
+  const filename = `${randomUUID()}${ext}`;
+  fs.writeFileSync(path.join(UPLOADS_DIR, filename), file.buffer);
+  return `http://localhost:4000/uploads/${filename}`;
 }
 
 module.exports = { uploadMedia };

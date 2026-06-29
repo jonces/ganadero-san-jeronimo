@@ -22,7 +22,7 @@ export default function AnimalesPage() {
 
   useEffect(() => {
     load();
-    const interval = setInterval(load, 15000); // refresco en "tiempo real"
+    const interval = setInterval(load, 15000);
     return () => clearInterval(interval);
   }, []);
 
@@ -39,67 +39,103 @@ export default function AnimalesPage() {
   }
 
   return (
-    <main className="max-w-5xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-green-700">Mi ganado</h1>
-        <div className="flex gap-2">
-          <button onClick={() => setShowForm((s) => !s)} className="bg-green-700 text-white rounded-lg px-4 py-2">
-            {showForm ? "Cancelar" : "+ Animal"}
-          </button>
-          <button
-            onClick={() => {
-              logout();
-              router.push("/");
-            }}
-            className="border rounded-lg px-4 py-2"
-          >
-            Salir
-          </button>
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <header className="flex items-center justify-between px-4 py-3 text-white" style={{ background: "#2d9e3f" }}>
+        <button onClick={() => router.push("/dashboard")} className="text-white text-xl">←</button>
+        <span className="font-bold text-lg tracking-wide">🐄 Inventario Animal</span>
+        <button
+          onClick={() => { logout(); router.push("/"); }}
+          className="text-white text-sm border border-white rounded-lg px-3 py-1"
+        >
+          Salir
+        </button>
+      </header>
+
+      <div className="max-w-4xl mx-auto p-4">
+        {error && <p className="text-red-600 mb-4 bg-red-50 rounded-lg p-3">{error}</p>}
+
+        {/* Botón agregar */}
+        <button
+          onClick={() => setShowForm((s) => !s)}
+          className="w-full text-white rounded-xl py-3 font-bold text-lg mb-4 flex items-center justify-center gap-2"
+          style={{ background: "#2d9e3f" }}
+        >
+          {showForm ? "✕ Cancelar" : "+ Registrar Animal"}
+        </button>
+
+        {/* Formulario */}
+        {showForm && (
+          <form onSubmit={handleCreate} className="bg-white rounded-2xl shadow-md p-5 mb-5 space-y-3">
+            <h2 className="font-bold text-gray-700 text-lg">Nuevo Animal</h2>
+            <input className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-500 focus:outline-none"
+              placeholder="Arete / Identificador *" value={form.identificador}
+              onChange={(e) => setForm({ ...form, identificador: e.target.value })} required />
+            <input className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-500 focus:outline-none"
+              placeholder="Nombre" value={form.nombre}
+              onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
+            <input className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-500 focus:outline-none"
+              placeholder="Raza" value={form.raza}
+              onChange={(e) => setForm({ ...form, raza: e.target.value })} />
+            <select className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-500 focus:outline-none"
+              value={form.sexo} onChange={(e) => setForm({ ...form, sexo: e.target.value })}>
+              <option value="HEMBRA">🐄 Hembra</option>
+              <option value="MACHO">🐂 Macho</option>
+            </select>
+            <button className="w-full text-white rounded-xl p-3 font-bold" style={{ background: "#2d9e3f" }}>
+              Guardar Animal
+            </button>
+          </form>
+        )}
+
+        {/* Contador */}
+        <p className="text-gray-500 text-sm mb-3 font-medium">{animales.length} animal{animales.length !== 1 ? "es" : ""} registrado{animales.length !== 1 ? "s" : ""}</p>
+
+        {/* Grid de animales */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {animales.map((a) => {
+            const foto = a.media?.find((m) => m.tipo === "FOTO") || a.media?.[0];
+            return (
+              <a key={a.id} href={`/animales/${a.id}`}
+                className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow">
+                {foto ? (
+                  foto.tipo === "FOTO"
+                    ? <img src={foto.url} alt={a.identificador} className="w-full h-48 object-cover" />
+                    : <video src={foto.url} className="w-full h-48 object-cover" muted />
+                ) : (
+                  <div className="w-full h-48 flex items-center justify-center text-6xl" style={{ background: "#e8f5e9" }}>
+                    🐄
+                  </div>
+                )}
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <h2 className="font-bold text-gray-800 text-lg">{a.nombre || a.identificador}</h2>
+                    <span className="text-xs font-bold px-2 py-1 rounded-full text-white"
+                      style={{ background: a.sexo === "HEMBRA" ? "#e53e3e" : "#3182ce" }}>
+                      {a.sexo === "HEMBRA" ? "♀" : "♂"}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500">{a.raza || "Raza no registrada"}</p>
+                  {a.pesoActual && (
+                    <p className="text-sm font-medium mt-1" style={{ color: "#2d9e3f" }}>⚖️ {a.pesoActual} kg</p>
+                  )}
+                  {a.identificador !== a.nombre && a.nombre && (
+                    <p className="text-xs text-gray-400 mt-1">Arete: {a.identificador}</p>
+                  )}
+                </div>
+              </a>
+            );
+          })}
         </div>
+
+        {animales.length === 0 && !error && (
+          <div className="text-center py-16">
+            <div className="text-7xl mb-4">🐄</div>
+            <p className="text-gray-500 text-lg">Aún no hay animales registrados</p>
+            <p className="text-gray-400 text-sm mt-1">Presiona "+ Registrar Animal" para comenzar</p>
+          </div>
+        )}
       </div>
-
-      {error && <p className="text-red-600 mb-4">{error}</p>}
-
-      {showForm && (
-        <form onSubmit={handleCreate} className="bg-white rounded-xl shadow p-4 mb-6 grid grid-cols-2 gap-3">
-          <input className="border rounded-lg p-2" placeholder="Identificador (arete)" value={form.identificador}
-            onChange={(e) => setForm({ ...form, identificador: e.target.value })} required />
-          <input className="border rounded-lg p-2" placeholder="Nombre" value={form.nombre}
-            onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
-          <input className="border rounded-lg p-2" placeholder="Raza" value={form.raza}
-            onChange={(e) => setForm({ ...form, raza: e.target.value })} />
-          <select className="border rounded-lg p-2" value={form.sexo} onChange={(e) => setForm({ ...form, sexo: e.target.value })}>
-            <option value="HEMBRA">Hembra</option>
-            <option value="MACHO">Macho</option>
-          </select>
-          <button className="col-span-2 bg-green-700 text-white rounded-lg p-2">Guardar</button>
-        </form>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {animales.map((a) => (
-          <a
-            key={a.id}
-            href={`/animales/${a.id}`}
-            className="bg-white rounded-xl shadow p-4 hover:shadow-md transition"
-          >
-            {a.media?.[0] && (
-              a.media[0].tipo === "FOTO" ? (
-                <img src={a.media[0].url} alt={a.identificador} className="w-full h-40 object-cover rounded-lg mb-3" />
-              ) : (
-                <video src={a.media[0].url} className="w-full h-40 object-cover rounded-lg mb-3" muted />
-              )
-            )}
-            <h2 className="font-semibold text-lg">{a.nombre || a.identificador}</h2>
-            <p className="text-sm text-gray-500">{a.raza || "Sin raza registrada"} · {a.sexo}</p>
-            {a.pesoActual && <p className="text-sm text-gray-500">Peso: {a.pesoActual} kg</p>}
-          </a>
-        ))}
-      </div>
-
-      {animales.length === 0 && !error && (
-        <p className="text-gray-500 mt-10 text-center">Aún no hay animales registrados.</p>
-      )}
-    </main>
+    </div>
   );
 }
