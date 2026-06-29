@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Finca Ganadera",
+  title: "Ganadero San Jerónimo",
   description: "Gestión de ganado en tiempo real",
 };
 
