@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import AppLayout from "@/components/AppLayout";
 
 const CATEGORIAS = [
   { value: "ALIMENTACION", label: "🌾 Alimentación", color: "#2d9e3f" },
@@ -77,15 +78,8 @@ export default function GastosPage() {
   })).filter((c) => c.count > 0);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="flex items-center justify-between px-4 py-3 text-white" style={{ background: "#805ad5" }}>
-        <button onClick={() => router.push("/dashboard")} className="text-white text-xl font-bold">←</button>
-        <span className="font-bold text-lg">💸 Control de Gastos</span>
-        <div />
-      </header>
-
-      {/* Total */}
-      <div className="px-4 pt-4 max-w-2xl mx-auto">
+    <AppLayout title="💸 Control de Gastos" subtitle="Registro de gastos de la finca">
+      <div className="max-w-2xl mx-auto">
         <div className="rounded-2xl text-white text-center py-6 shadow-lg mb-4"
           style={{ background: "linear-gradient(135deg,#553c9a,#805ad5)" }}>
           <p className="text-xs font-bold opacity-75 uppercase tracking-widest">Total de gastos</p>
@@ -241,6 +235,6 @@ export default function GastosPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppLayout>
   );
 }

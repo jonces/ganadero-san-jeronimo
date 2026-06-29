@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import AppLayout from "@/components/AppLayout";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
 
@@ -76,15 +77,8 @@ export default function IncidentesPage() {
   const resueltos = incidentes.filter((i) => i.estado === "RESUELTO");
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="flex items-center justify-between px-4 py-3 text-white" style={{ background: "#c53030" }}>
-        <button onClick={() => router.push("/dashboard")} className="text-white text-xl font-bold">←</button>
-        <span className="font-bold text-lg">🚨 Incidentes</span>
-        <div />
-      </header>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 p-4 max-w-2xl mx-auto">
+    <AppLayout title="🚨 Incidentes" subtitle="Accidentes, enfermedades y muertes">
+      <div className="max-w-2xl mx-auto">
         <div className="rounded-2xl text-white text-center py-4 shadow-md" style={{ background: "#c53030" }}>
           <p className="text-3xl font-black">{activos.length}</p>
           <p className="text-xs font-semibold opacity-90">Activos / Sin resolver</p>
@@ -231,6 +225,6 @@ export default function IncidentesPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppLayout>
   );
 }

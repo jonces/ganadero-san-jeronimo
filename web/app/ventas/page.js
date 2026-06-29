@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import AppLayout from "@/components/AppLayout";
 
 const METODOS_PAGO = [
   { value: "EFECTIVO", label: "💵 Efectivo", color: "#2d9e3f" },
@@ -90,39 +91,27 @@ export default function VentasPage() {
   const labelEstado = { PAGADO: "✅ Pagado", PENDIENTE: "⏳ Pendiente", PARCIAL: "🔶 Parcial" };
 
   return (
-    <div className="min-h-screen" style={{ background: "#f5f5f0" }}>
-      {/* Header */}
-      <div className="relative overflow-hidden" style={{ background: "linear-gradient(135deg,#7b4f12,#d69e2e)", paddingBottom: 32 }}>
-        <div className="relative flex items-center justify-between px-5 pt-5">
-          <button onClick={() => router.push("/dashboard")} className="text-white text-xl font-bold">←</button>
-          <div className="text-center">
-            <p className="text-yellow-200 text-xs tracking-widest uppercase font-semibold">Módulo</p>
-            <p className="text-white font-black text-xl">💰 Ventas</p>
-          </div>
-          <div style={{ width: 32 }} />
+    <AppLayout title="💰 Ventas" subtitle="Control de ventas de ganado">
+      {/* Stats strip */}
+      {stats && (
+        <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
+          {[
+            { label: "Ventas del mes", val: stats.ventas.cantidadMes, unit: "animales", grad: "linear-gradient(135deg,#7b4f12,#d69e2e)" },
+            { label: "Total NIO", val: `C$ ${(stats.ventas.totalMesNIO).toLocaleString("es", { maximumFractionDigits: 0 })}`, grad: "linear-gradient(135deg,#1a6b2a,#2d9e3f)" },
+            { label: "Total USD", val: `$ ${(stats.ventas.totalMesUSD).toLocaleString("es", { maximumFractionDigits: 0 })}`, grad: "linear-gradient(135deg,#1a4a8a,#3182ce)" },
+            { label: "Histórico", val: `C$ ${(stats.ventas.totalHistoricoNIO).toLocaleString("es", { maximumFractionDigits: 0 })}`, grad: "linear-gradient(135deg,#44337a,#805ad5)" },
+          ].map((s) => (
+            <div key={s.label} className="rounded-2xl px-4 py-3 text-white shrink-0 shadow-xl"
+              style={{ background: s.grad, border: "1px solid rgba(255,255,255,0.2)", minWidth: 130 }}>
+              <p className="font-black text-lg leading-none">{s.val}</p>
+              <p className="text-xs opacity-75 mt-1">{s.label}</p>
+              {s.unit && <p className="text-xs opacity-60">{s.unit}</p>}
+            </div>
+          ))}
         </div>
+      )}
 
-        {/* Stats strip */}
-        {stats && (
-          <div className="flex gap-3 px-5 mt-5 overflow-x-auto pb-2">
-            {[
-              { label: "Ventas del mes", val: stats.ventas.cantidadMes, unit: "animales" },
-              { label: "Total NIO", val: `C$ ${(stats.ventas.totalMesNIO).toLocaleString("es", { maximumFractionDigits: 0 })}` },
-              { label: "Total USD", val: `$ ${(stats.ventas.totalMesUSD).toLocaleString("es", { maximumFractionDigits: 0 })}` },
-              { label: "Histórico", val: `C$ ${(stats.ventas.totalHistoricoNIO).toLocaleString("es", { maximumFractionDigits: 0 })}` },
-            ].map((s) => (
-              <div key={s.label} className="rounded-2xl px-4 py-3 text-white shrink-0 shadow-md"
-                style={{ background: "rgba(0,0,0,0.25)", minWidth: 120 }}>
-                <p className="font-black text-lg leading-none">{s.val}</p>
-                <p className="text-xs opacity-75 mt-1">{s.label}</p>
-                {s.unit && <p className="text-xs opacity-60">{s.unit}</p>}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="max-w-3xl mx-auto px-4 -mt-4 pb-10">
+      <div className="max-w-3xl mx-auto pb-10">
         {error && <p className="text-red-600 mb-4 bg-red-50 rounded-xl p-3 text-sm">{error}</p>}
 
         {/* Tipo de cambio */}
@@ -494,6 +483,6 @@ export default function VentasPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppLayout>
   );
 }
