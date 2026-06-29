@@ -3,6 +3,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, logout } from "@/lib/api";
 
+const HERO_BG = "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1600&q=80";
+const FINCA_IMGS = [
+  "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400&q=80",
+  "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=400&q=80",
+  "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=400&q=80",
+  "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=400&q=80",
+  "https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=400&q=80",
+  "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400&q=80",
+];
+
 export default function SuperAdminPage() {
   const router = useRouter();
   const [stats, setStats] = useState(null);
@@ -26,7 +36,8 @@ export default function SuperAdminPage() {
 
   useEffect(() => { load(); }, []);
 
-  async function toggleFinca(id) {
+  async function toggleFinca(id, e) {
+    e.stopPropagation();
     try {
       await api(`/superadmin/fincas/${id}/toggle`, { method: "PATCH" });
       load();
@@ -39,107 +50,139 @@ export default function SuperAdminPage() {
   );
 
   return (
-    <div className="min-h-screen" style={{ background: "#0f1117" }}>
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">🐄</span>
-          <div>
-            <p className="text-gray-400 text-xs font-semibold uppercase tracking-widest">Panel de Control</p>
-            <p className="text-white font-black text-xl">Ganadero San Jerónimo</p>
+    <div className="min-h-screen" style={{ background: "#0d1117", fontFamily: "'Inter', sans-serif" }}>
+
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden" style={{ height: 220 }}>
+        <img src={HERO_BG} alt="finca" className="w-full h-full object-cover" style={{ filter: "brightness(0.45)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(20,90,40,0.7) 0%, rgba(10,30,60,0.7) 100%)" }} />
+        <div className="absolute inset-0 flex items-center justify-between px-8">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-4xl shadow-2xl"
+              style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.2)" }}>
+              🐄
+            </div>
+            <div>
+              <p className="text-green-300 text-xs font-bold uppercase tracking-widest mb-1">Panel de Control</p>
+              <h1 className="text-white font-black text-3xl drop-shadow-lg">Ganadero San Jerónimo</h1>
+              <p className="text-gray-300 text-sm mt-1">Sistema de gestión de fincas ganaderas</p>
+            </div>
           </div>
+          <button
+            onClick={() => { logout(); router.push("/"); }}
+            className="flex items-center gap-2 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-all hover:scale-105"
+            style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.25)" }}>
+            🚪 Cerrar sesión
+          </button>
         </div>
-        <button onClick={() => { logout(); router.push("/"); }}
-          className="text-gray-400 text-sm border border-gray-700 rounded-xl px-4 py-2 hover:border-gray-500 transition-colors">
-          Cerrar sesión
-        </button>
-      </header>
+      </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {error && <p className="text-red-400 mb-4 bg-red-900/30 rounded-xl p-3 text-sm">{error}</p>}
+        {error && (
+          <div className="mb-6 rounded-2xl p-4 flex items-center gap-3" style={{ background: "rgba(220,38,38,0.15)", border: "1px solid rgba(220,38,38,0.3)" }}>
+            <span className="text-2xl">⚠️</span>
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+        )}
 
-        {/* Stats globales */}
+        {/* Stats */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
             {[
-              { label: "Fincas registradas", value: stats.totalFincas, icon: "🏡", color: "#2d9e3f" },
-              { label: "Fincas activas", value: stats.fincasActivas, icon: "✅", color: "#38a169" },
-              { label: "Animales totales", value: stats.totalAnimales, icon: "🐄", color: "#3182ce" },
-              { label: "Usuarios totales", value: stats.totalUsuarios, icon: "👥", color: "#805ad5" },
-              { label: "Ventas totales", value: `C$ ${(stats.totalVentasNIO || 0).toLocaleString("es", { maximumFractionDigits: 0 })}`, icon: "💰", color: "#d69e2e" },
+              { label: "Fincas registradas", value: stats.totalFincas, icon: "🏡", grad: "linear-gradient(135deg,#1a5c2a,#2d9e3f)" },
+              { label: "Fincas activas", value: stats.fincasActivas, icon: "✅", grad: "linear-gradient(135deg,#145a32,#27ae60)" },
+              { label: "Animales totales", value: stats.totalAnimales, icon: "🐄", grad: "linear-gradient(135deg,#1a3a6c,#2980b9)" },
+              { label: "Usuarios totales", value: stats.totalUsuarios, icon: "👥", grad: "linear-gradient(135deg,#4a235a,#8e44ad)" },
+              { label: "Ventas totales", value: `C$ ${(stats.totalVentasNIO || 0).toLocaleString("es", { maximumFractionDigits: 0 })}`, icon: "💰", grad: "linear-gradient(135deg,#7d6608,#f39c12)" },
             ].map((s) => (
-              <div key={s.label} className="rounded-2xl p-4 border border-gray-800"
-                style={{ background: "#1a1d27" }}>
-                <span className="text-2xl">{s.icon}</span>
-                <p className="text-white font-black text-2xl mt-2">{s.value}</p>
-                <p className="text-gray-400 text-xs mt-1">{s.label}</p>
+              <div key={s.label} className="rounded-2xl p-5 shadow-xl hover:scale-105 transition-transform cursor-default"
+                style={{ background: s.grad, border: "1px solid rgba(255,255,255,0.1)" }}>
+                <span className="text-3xl">{s.icon}</span>
+                <p className="text-white font-black text-3xl mt-3">{s.value}</p>
+                <p className="text-white/70 text-xs mt-1 font-medium">{s.label}</p>
               </div>
             ))}
           </div>
         )}
 
-        {/* Buscador */}
-        <div className="flex items-center gap-3 mb-6">
-          <h2 className="text-white font-black text-xl flex-1">🏡 Fincas registradas</h2>
-          <input
-            className="border border-gray-700 rounded-xl px-4 py-2 text-sm text-white bg-gray-800 focus:outline-none focus:border-green-500 w-64"
-            placeholder="🔍 Buscar finca o email..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-          />
+        {/* Encabezado lista */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
+          <div className="flex-1">
+            <h2 className="text-white font-black text-2xl">🏡 Fincas registradas</h2>
+            <p className="text-gray-400 text-sm mt-0.5">{fincasFiltradas.length} fincas encontradas</p>
+          </div>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+            <input
+              className="pl-9 pr-4 py-2.5 rounded-xl text-sm text-white w-64 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+              style={{ background: "#1e2330", border: "1px solid #2d3748" }}
+              placeholder="Buscar finca o email..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+            />
+          </div>
         </div>
 
-        {/* Lista de fincas */}
-        <div className="space-y-3">
-          {fincasFiltradas.map((finca) => (
-            <div key={finca.id} className="rounded-2xl border border-gray-800 overflow-hidden cursor-pointer hover:border-green-700 transition-colors"
-              style={{ background: "#1a1d27" }}
+        {/* Grid de fincas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {fincasFiltradas.map((finca, idx) => (
+            <div key={finca.id}
+              className="rounded-2xl overflow-hidden shadow-2xl cursor-pointer hover:scale-[1.02] transition-all"
+              style={{ border: finca.activa ? "1px solid rgba(45,158,63,0.4)" : "1px solid rgba(220,38,38,0.3)", background: "#161b27" }}
               onClick={() => router.push(`/superadmin/finca/${finca.id}`)}>
-              <div className="p-5 flex items-start justify-between gap-4 flex-wrap">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
-                    style={{ background: finca.activa ? "#1a3a1a" : "#3a1a1a" }}>
-                    {finca.activa ? "🏡" : "🔒"}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-white font-black text-lg">{finca.nombre}</p>
-                      <span className={`text-xs px-2 py-1 rounded-full font-bold ${finca.activa ? "bg-green-900 text-green-400" : "bg-red-900 text-red-400"}`}>
-                        {finca.activa ? "✅ Activa" : "🔒 Suspendida"}
-                      </span>
-                    </div>
-                    {finca.ubicacion && <p className="text-gray-400 text-sm">📍 {finca.ubicacion}</p>}
-                    {finca.usuarios[0] && (
-                      <p className="text-gray-400 text-sm mt-1">
-                        👤 Admin: <span className="text-gray-300">{finca.usuarios[0].nombre}</span>
-                        <span className="text-gray-500"> · {finca.usuarios[0].email}</span>
-                      </p>
-                    )}
-                    <p className="text-gray-500 text-xs mt-2">
-                      Registrada: {new Date(finca.createdAt).toLocaleDateString("es", { dateStyle: "medium" })}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="flex flex-col gap-2 items-end">
-                  <div className="flex gap-4 text-center">
-                    {[
-                      { label: "Animales", value: finca._count.animales },
-                      { label: "Usuarios", value: finca._count.usuarios },
-                      { label: "Ventas", value: finca._count.ventas },
-                    ].map((c) => (
-                      <div key={c.label}>
-                        <p className="text-white font-black text-xl">{c.value}</p>
-                        <p className="text-gray-500 text-xs">{c.label}</p>
-                      </div>
-                    ))}
-                  </div>
+              {/* Imagen de finca */}
+              <div className="relative h-36 overflow-hidden">
+                <img
+                  src={FINCA_IMGS[idx % FINCA_IMGS.length]}
+                  alt={finca.nombre}
+                  className="w-full h-full object-cover"
+                  style={{ filter: finca.activa ? "brightness(0.6)" : "brightness(0.35) grayscale(0.5)" }}
+                />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, #161b27 100%)" }} />
+                <div className="absolute top-3 left-3">
+                  <span className={`text-xs px-3 py-1.5 rounded-full font-bold shadow-lg ${finca.activa ? "bg-green-500 text-white" : "bg-red-600 text-white"}`}>
+                    {finca.activa ? "✅ Activa" : "🔒 Suspendida"}
+                  </span>
+                </div>
+                <div className="absolute top-3 right-3 flex gap-2 text-white text-xs">
+                  {[
+                    { icon: "🐄", v: finca._count.animales, label: "animales" },
+                    { icon: "👥", v: finca._count.usuarios, label: "usuarios" },
+                    { icon: "💰", v: finca._count.ventas, label: "ventas" },
+                  ].map((c) => (
+                    <div key={c.label} className="flex flex-col items-center px-2 py-1 rounded-lg"
+                      style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+                      <span>{c.icon} {c.v}</span>
+                      <span className="text-gray-300" style={{ fontSize: 9 }}>{c.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Info */}
+              <div className="px-5 pb-5">
+                <h3 className="text-white font-black text-xl mt-1">{finca.nombre}</h3>
+                {finca.ubicacion && (
+                  <p className="text-green-400 text-sm mt-0.5 font-medium">📍 {finca.ubicacion}</p>
+                )}
+                {finca.usuarios[0] && (
+                  <p className="text-gray-400 text-sm mt-1">
+                    👤 <span className="text-gray-300 font-semibold">{finca.usuarios[0].nombre}</span>
+                    <span className="text-gray-500"> · {finca.usuarios[0].email}</span>
+                  </p>
+                )}
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-gray-600 text-xs">
+                    Registrada: {new Date(finca.createdAt).toLocaleDateString("es", { dateStyle: "medium" })}
+                  </p>
                   <button
-                    onClick={() => toggleFinca(finca.id)}
-                    className="text-sm font-bold px-4 py-2 rounded-xl mt-2"
+                    onClick={(e) => toggleFinca(finca.id, e)}
+                    className="text-xs font-bold px-4 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
                     style={{
-                      background: finca.activa ? "#7b1a1a" : "#1a3a1a",
-                      color: finca.activa ? "#fc8181" : "#68d391",
+                      background: finca.activa ? "rgba(220,38,38,0.2)" : "rgba(34,197,94,0.2)",
+                      color: finca.activa ? "#f87171" : "#4ade80",
+                      border: finca.activa ? "1px solid rgba(220,38,38,0.4)" : "1px solid rgba(34,197,94,0.4)",
                     }}>
                     {finca.activa ? "🔒 Suspender" : "✅ Activar"}
                   </button>
@@ -150,8 +193,10 @@ export default function SuperAdminPage() {
         </div>
 
         {fincasFiltradas.length === 0 && (
-          <div className="text-center py-16">
-            <p className="text-gray-500 text-lg">No se encontraron fincas</p>
+          <div className="text-center py-20 rounded-2xl" style={{ background: "#161b27", border: "1px solid #1e2330" }}>
+            <p className="text-6xl mb-4">🏕️</p>
+            <p className="text-gray-400 text-lg font-semibold">No se encontraron fincas</p>
+            <p className="text-gray-600 text-sm mt-1">Intenta con otro término de búsqueda</p>
           </div>
         )}
       </div>
