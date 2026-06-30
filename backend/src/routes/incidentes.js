@@ -1,7 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const prisma = require("../prisma");
-const { requireAuth } = require("../middleware/auth");
+const { requireAuth, requireRole } = require("../middleware/auth");
 const { uploadMedia } = require("../lib/storage");
 
 const router = express.Router();
@@ -53,7 +53,7 @@ router.post("/", upload.array("archivos", 10), async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.patch("/:id/resolver", async (req, res, next) => {
+router.patch("/:id/resolver", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next) => {
   try {
     const inc = await prisma.incidente.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
     if (!inc) return res.status(404).json({ error: "No encontrado" });

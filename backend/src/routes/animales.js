@@ -1,7 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const prisma = require("../prisma");
-const { requireAuth } = require("../middleware/auth");
+const { requireAuth, requireRole } = require("../middleware/auth");
 const { uploadMedia } = require("../lib/storage");
 
 const router = express.Router();
@@ -61,7 +61,7 @@ router.post("/", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.patch("/:id", async (req, res, next) => {
+router.patch("/:id", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next) => {
   try {
     const animal = await prisma.animal.findFirst({
       where: { id: req.params.id, fincaId: req.user.fincaId },

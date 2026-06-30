@@ -67,6 +67,7 @@ model Finca {
   ventas      Venta[]
   incidentes  Incidente[]
   gastos      Gasto[]
+  anuncios    Anuncio[]
 }
 
 model Usuario {
@@ -83,6 +84,7 @@ model Usuario {
   ventas     Venta[]
   incidentes Incidente[]
   gastos     Gasto[]
+  anuncios   Anuncio[]
 }
 
 model Animal {
@@ -210,4 +212,16 @@ model Venta {
   createdAt     DateTime   @default(now())
 
   media         Media[]
+}
+
+model Anuncio {
+  id        String   @id @default(uuid())
+  titulo    String
+  mensaje   String
+  emoji     String   @default("📢")
+  fincaId   String
+  finca     Finca    @relation(fields: [fincaId], references: [id])
+  autorId   String
+  autor     Usuario  @relation(fields: [autorId], references: [id])
+  createdAt DateTime @default(now())
 }

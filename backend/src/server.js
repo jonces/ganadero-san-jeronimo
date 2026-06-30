@@ -13,6 +13,7 @@ const incidenteRoutes = require("./routes/incidentes");
 const gastoRoutes = require("./routes/gastos");
 const superadminRoutes = require("./routes/superadmin");
 const equipoRoutes = require("./routes/equipo");
+const anuncioRoutes = require("./routes/anuncios");
 
 const app = express();
 app.use(cors());
@@ -32,6 +33,7 @@ app.use("/api/gastos", gastoRoutes);
 app.use("/api/superadmin", superadminRoutes);
 app.use("/api/equipo", equipoRoutes);
 app.use("/api/ventas", ventaRoutes);
+app.use("/api/anuncios", anuncioRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

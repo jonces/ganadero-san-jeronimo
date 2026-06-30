@@ -13,6 +13,7 @@ const NAV_ITEMS_ADMIN = [
   { icon: "🚨", label: "Incidentes", href: "/incidentes" },
   { icon: "📄", label: "Docs", href: "/documentos" },
   { icon: "👥", label: "Equipo", href: "/equipo" },
+  { icon: "📢", label: "Tablón", href: "/anuncios" },
 ];
 
 const NAV_ITEMS_SUPER = [

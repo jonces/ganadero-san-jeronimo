@@ -1,6 +1,6 @@
 const express = require("express");
 const prisma = require("../prisma");
-const { requireAuth } = require("../middleware/auth");
+const { requireAuth, requireRole } = require("../middleware/auth");
 
 const router = express.Router();
 router.use(requireAuth);
@@ -60,7 +60,7 @@ router.post("/", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next) => {
   try {
     const g = await prisma.gasto.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
     if (!g) return res.status(404).json({ error: "No encontrado" });
