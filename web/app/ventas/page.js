@@ -296,7 +296,7 @@ export default function VentasPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-3 gap-2 mt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
                   {[
                     { key: "comision", label: "Comisión (C$)", placeholder: "0" },
                     { key: "descuento", label: "Descuento (C$)", placeholder: "0" },
@@ -334,7 +334,7 @@ export default function VentasPage() {
                   <div className="grid grid-cols-3 gap-2">
                     {ESTADOS_PAGO.map((s) => (
                       <button type="button" key={s.value} onClick={() => setForm({ ...form, estadoPago: s.value })}
-                        className="rounded-xl py-2 px-2 text-xs font-bold transition-all border-2"
+                        className="rounded-xl py-2.5 px-2 text-sm font-bold transition-all border-2"
                         style={{
                           background: form.estadoPago === s.value ? s.color : "#fff",
                           color: form.estadoPago === s.value ? "#fff" : s.color,
@@ -465,7 +465,7 @@ export default function VentasPage() {
                 {v.notas && <p className="text-xs text-gray-400 mt-2 border-t pt-2">📝 {v.notas}</p>}
 
                 {v.media?.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2 mt-3">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
                     {v.media.map((m) => (
                       <a key={m.id} href={m.url} target="_blank" rel="noreferrer">
                         <img src={m.url} className="w-full h-16 object-cover rounded-xl" />

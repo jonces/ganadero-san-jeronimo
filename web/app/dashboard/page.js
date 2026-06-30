@@ -29,15 +29,15 @@ export default function DashboardPage() {
       {/* Bienvenida hero */}
       <div className="rounded-3xl overflow-hidden mb-6 shadow-2xl relative"
         style={{ background: "rgba(5,30,15,0.6)", backdropFilter: "blur(20px)", border: "1px solid rgba(45,158,63,0.3)" }}>
-        <div className="px-8 py-8 flex items-center justify-between flex-wrap gap-4">
+        <div className="px-4 py-5 md:px-8 md:py-8 flex items-center justify-between flex-wrap gap-3">
           <div>
-            <p className="text-green-300 text-sm font-bold uppercase tracking-widest mb-1">Bienvenido a</p>
-            <h2 className="text-white font-black text-3xl">Ganadero San Jerónimo</h2>
-            <p className="text-white/50 text-sm mt-1">Sistema profesional de gestión ganadera · Nicaragua</p>
+            <p className="text-green-300 text-xs md:text-sm font-bold uppercase tracking-widest mb-1">Bienvenido a</p>
+            <h2 className="text-white font-black text-xl md:text-3xl">Ganadero San Jerónimo</h2>
+            <p className="text-white/50 text-xs md:text-sm mt-1">Sistema de gestión ganadera · Nicaragua</p>
           </div>
-          <div className="flex gap-1 text-4xl">
-            {["🐄","🐂","🐄","🐃","🐴"].map((e, i) => (
-              <span key={i} style={{ transform: i % 2 !== 0 ? "scaleX(-1)" : "none", fontSize: i === 2 ? 48 : 34 }}>{e}</span>
+          <div className="flex gap-1">
+            {["🐄","🐂","🐄","🐃"].map((e, i) => (
+              <span key={i} style={{ transform: i % 2 !== 0 ? "scaleX(-1)" : "none", fontSize: i === 2 ? 32 : 24 }}>{e}</span>
             ))}
           </div>
         </div>
@@ -45,7 +45,7 @@ export default function DashboardPage() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-6">
           {[
             { icon: "🐄", label: "Total Animales", value: a?.total, grad: "linear-gradient(135deg,#1a6b2a,#2d9e3f)", href: "/inventario" },
             { icon: "🐂", label: "Machos", value: a?.machos, grad: "linear-gradient(135deg,#1a4a8a,#3182ce)", href: "/inventario" },
@@ -53,11 +53,11 @@ export default function DashboardPage() {
             { icon: "💰", label: "Ventas mes", value: `C$ ${(v?.totalMesNIO || 0).toLocaleString("es",{maximumFractionDigits:0})}`, grad: "linear-gradient(135deg,#7b4f12,#d69e2e)", href: "/ventas" },
           ].map((s) => (
             <button key={s.label} onClick={() => router.push(s.href)}
-              className="rounded-2xl p-5 shadow-2xl hover:scale-105 transition-transform text-left"
+              className="rounded-2xl p-4 md:p-5 shadow-2xl active:scale-95 hover:scale-105 transition-transform text-left"
               style={{ background: s.grad, border: "1px solid rgba(255,255,255,0.2)" }}>
-              <span className="text-3xl">{s.icon}</span>
-              <p className="text-white font-black text-2xl mt-2">{s.value ?? "—"}</p>
-              <p className="text-white/70 text-xs mt-1 font-medium">{s.label}</p>
+              <span className="text-2xl md:text-3xl">{s.icon}</span>
+              <p className="text-white font-black text-xl md:text-2xl mt-1">{s.value ?? "—"}</p>
+              <p className="text-white/70 text-xs mt-0.5 font-medium">{s.label}</p>
             </button>
           ))}
         </div>

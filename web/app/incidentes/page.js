@@ -120,10 +120,10 @@ export default function IncidentesPage() {
 
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase">Gravedad</label>
-                <div className="grid grid-cols-4 gap-2 mt-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
                   {GRAVEDADES.map((g) => (
                     <button type="button" key={g.value} onClick={() => setForm({ ...form, gravedad: g.value })}
-                      className="rounded-xl py-2 text-xs font-bold border-2 transition-all"
+                      className="rounded-xl py-2.5 text-sm font-bold border-2 transition-all"
                       style={{ background: form.gravedad === g.value ? g.color : "#fff", color: form.gravedad === g.value ? "#fff" : g.color, borderColor: g.color }}>
                       {g.label}
                     </button>
