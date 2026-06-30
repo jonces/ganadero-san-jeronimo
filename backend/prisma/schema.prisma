@@ -84,7 +84,8 @@ model Usuario {
   ventas     Venta[]
   incidentes Incidente[]
   gastos     Gasto[]
-  anuncios   Anuncio[]
+  anuncios     Anuncio[]
+  comentarios  Comentario[]
 }
 
 model Animal {
@@ -215,13 +216,24 @@ model Venta {
 }
 
 model Anuncio {
-  id        String   @id @default(uuid())
-  titulo    String
-  mensaje   String
-  emoji     String   @default("📢")
-  fincaId   String
-  finca     Finca    @relation(fields: [fincaId], references: [id])
-  autorId   String
-  autor     Usuario  @relation(fields: [autorId], references: [id])
-  createdAt DateTime @default(now())
+  id          String       @id @default(uuid())
+  titulo      String
+  mensaje     String
+  emoji       String       @default("📢")
+  fincaId     String
+  finca       Finca        @relation(fields: [fincaId], references: [id])
+  autorId     String
+  autor       Usuario      @relation(fields: [autorId], references: [id])
+  comentarios Comentario[]
+  createdAt   DateTime     @default(now())
+}
+
+model Comentario {
+  id         String   @id @default(uuid())
+  mensaje    String
+  anuncioId  String
+  anuncio    Anuncio  @relation(fields: [anuncioId], references: [id], onDelete: Cascade)
+  autorId    String
+  autor      Usuario  @relation(fields: [autorId], references: [id])
+  createdAt  DateTime @default(now())
 }
