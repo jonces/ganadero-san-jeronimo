@@ -39,7 +39,7 @@ app.use("/api/actividad", actividadRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(500).json({ error: "Error interno del servidor" });
+  res.status(500).json({ error: err.message || "Error interno del servidor" });
 });
 
 const port = process.env.PORT || 4000;

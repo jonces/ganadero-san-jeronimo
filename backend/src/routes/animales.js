@@ -19,11 +19,21 @@ const includeAnimal = {
 
 router.get("/", async (req, res, next) => {
   try {
-    const animales = await prisma.animal.findMany({
-      where: { fincaId: req.user.fincaId },
-      orderBy: { createdAt: "desc" },
-      include: includeAnimal,
-    });
+    let animales;
+    try {
+      animales = await prisma.animal.findMany({
+        where: { fincaId: req.user.fincaId },
+        orderBy: { createdAt: "desc" },
+        include: includeAnimal,
+      });
+    } catch {
+      // Fallback si columnas nuevas aún no existen en BD
+      animales = await prisma.animal.findMany({
+        where: { fincaId: req.user.fincaId },
+        orderBy: { createdAt: "desc" },
+        include: { media: { orderBy: { createdAt: "desc" }, take: 5 }, eventos: { orderBy: { fecha: "desc" }, take: 1 } },
+      });
+    }
     res.json(animales);
   } catch (err) { next(err); }
 });
