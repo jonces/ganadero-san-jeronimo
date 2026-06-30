@@ -36,18 +36,33 @@ export default function ReportesPage() {
       const W = doc.internal.pageSize.getWidth();
 
       // Header
+      // Header con gradiente verde
       doc.setFillColor(26, 92, 42);
-      doc.rect(0, 0, W, 30, "F");
+      doc.rect(0, 0, W, 36, "F");
+      doc.setFillColor(45, 158, 63);
+      doc.rect(0, 28, W, 4, "F");
+
+      // Logo círculo
+      doc.setFillColor(255, 255, 255, 0.2);
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.5);
+      doc.circle(22, 15, 8, "D");
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
+      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text("🐄 Ganadero San Jerónimo", 14, 13);
-      doc.setFontSize(9);
+      doc.text("GSJ", 18, 18);
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text("Ganadero San Jeronimo", 34, 13);
+      doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      doc.text(`Generado: ${fecha}`, 14, 22);
+      doc.setTextColor(200, 240, 200);
+      doc.text(`Generado: ${fecha}`, 34, 22);
 
       doc.setTextColor(0, 0, 0);
-      let y = 38;
+      let y = 44;
 
       if (tipo === "animales") {
         doc.setFontSize(14);
@@ -137,13 +152,23 @@ export default function ReportesPage() {
         });
       }
 
-      // Footer
+      // Footer y banda lateral decorativa
       const pageCount = doc.internal.getNumberOfPages();
+      const H = doc.internal.pageSize.getHeight();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text(`Página ${i} de ${pageCount} — Ganadero San Jerónimo — ${fecha}`, 14, doc.internal.pageSize.getHeight() - 8);
+        // Banda lateral verde
+        doc.setFillColor(26, 92, 42);
+        doc.rect(0, 36, 3, H - 44, "F");
+        // Footer
+        doc.setFillColor(240, 248, 240);
+        doc.rect(0, H - 14, W, 14, "F");
+        doc.setFontSize(7);
+        doc.setTextColor(80, 120, 80);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Ganadero San Jeronimo  |  Pagina ${i} de ${pageCount}  |  ${fecha}`, 14, H - 5);
+        doc.setTextColor(150, 200, 150);
+        doc.text("ganaderosg.app", W - 35, H - 5);
       }
 
       doc.save(`${tipo}-${new Date().toISOString().slice(0, 10)}.pdf`);
