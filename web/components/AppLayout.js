@@ -5,7 +5,7 @@ import { logout } from "@/lib/api";
 const FARM_BG = "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1920&q=85";
 const LOGO_URL = "https://i.imgur.com/placeholder.png"; // fallback if no logo
 
-const NAV_ITEMS = [
+const NAV_ITEMS_ADMIN = [
   { icon: "🏠", label: "Inicio", href: "/dashboard" },
   { icon: "🐄", label: "Animales", href: "/inventario" },
   { icon: "💰", label: "Ventas", href: "/ventas" },
@@ -13,6 +13,10 @@ const NAV_ITEMS = [
   { icon: "🚨", label: "Incidentes", href: "/incidentes" },
   { icon: "📄", label: "Docs", href: "/documentos" },
   { icon: "👥", label: "Equipo", href: "/equipo" },
+];
+
+const NAV_ITEMS_SUPER = [
+  { icon: "🏡", label: "Fincas", href: "/superadmin" },
 ];
 
 export default function AppLayout({ children, title, subtitle }) {
@@ -39,7 +43,7 @@ export default function AppLayout({ children, title, subtitle }) {
       }} />
 
       {/* Sidebar */}
-      {!isSuperAdmin && (
+      {(
         <aside className="fixed left-0 top-0 h-full z-20 flex flex-col items-center py-6 gap-2"
           style={{
             width: 72,
@@ -54,7 +58,7 @@ export default function AppLayout({ children, title, subtitle }) {
           </div>
 
           {/* Nav links */}
-          {NAV_ITEMS.map((item) => {
+          {(isSuperAdmin ? NAV_ITEMS_SUPER : NAV_ITEMS_ADMIN).map((item) => {
             const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href));
             return (
               <button key={item.href}
@@ -84,7 +88,7 @@ export default function AppLayout({ children, title, subtitle }) {
       )}
 
       {/* Main content */}
-      <div className={`flex-1 flex flex-col min-h-screen relative z-10 ${!isSuperAdmin ? "ml-[72px]" : ""}`}>
+      <div className="flex-1 flex flex-col min-h-screen relative z-10 ml-[72px]">
 
         {/* Top header */}
         <header className="flex items-center justify-between px-6 py-4"
