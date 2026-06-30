@@ -1,206 +1,246 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, logout } from "@/lib/api";
+import { api } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
+
+const ESTADOS_REPRO = ["PREÑADA", "LACTANCIA", "PARIDA", "SECA", "VACIA"];
+const REPRO_CONFIG = {
+  PREÑADA:   { label: "Preñada",   color: "#e53e3e", bg: "rgba(229,62,62,0.2)",   icon: "🤰" },
+  LACTANCIA: { label: "Lactancia", color: "#38a169", bg: "rgba(56,161,105,0.2)",  icon: "🍼" },
+  PARIDA:    { label: "Parida",    color: "#d69e2e", bg: "rgba(214,158,46,0.2)",  icon: "🐮" },
+  SECA:      { label: "Seca",      color: "#718096", bg: "rgba(113,128,150,0.2)", icon: "🌵" },
+  VACIA:     { label: "Vacía",     color: "#805ad5", bg: "rgba(128,90,213,0.2)",  icon: "⬜" },
+};
 
 export default function InventarioPage() {
   const router = useRouter();
   const [animales, setAnimales] = useState([]);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", pesoActual: "", observacion: "" });
-  const [archivos, setArchivos] = useState([]);
+  const [showParto, setShowParto] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  const [archivos, setArchivos] = useState([]);
+  const [filtro, setFiltro] = useState("TODOS");
+  const [form, setForm] = useState({ identificador:"",nombre:"",raza:"",fierro:"",sexo:"HEMBRA",pesoActual:"",observacion:"",estadoReproductivo:"",madreId:"" });
+  const [formParto, setFormParto] = useState({ identificadorCria:"",nombreCria:"",sexoCria:"HEMBRA",pesoNacimiento:"" });
 
   async function load() {
     try {
       const data = await api("/animales");
-      setAnimales(data);
-    } catch (err) {
+      setAnimales(Array.isArray(data) ? data : []);
+    } catch(err) {
       setError(err.message);
-      if (err.message.includes("autenticado") || err.message.includes("inválido")) router.push("/");
+      if(err.message.includes("autenticado")||err.message.includes("inválido")) router.push("/");
     }
   }
 
-  useEffect(() => {
-    load();
-    const interval = setInterval(load, 15000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-  function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
+  useEffect(() => { load(); const i=setInterval(load,15000); return ()=>clearInterval(i); }, []);
 
   async function handleCreate(e) {
-    e.preventDefault();
-    setEnviando(true);
+    e.preventDefault(); setEnviando(true);
     try {
       const res = await fetch(`${API_URL}/animales`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${getToken()}` },
-        body: JSON.stringify(form),
+        method:"POST", headers:{"Content-Type":"application/json",Authorization:`Bearer ${getToken()}`},
+        body: JSON.stringify({...form, estadoReproductivo: form.sexo==="HEMBRA"?form.estadoReproductivo:undefined }),
       });
       const animal = await res.json();
-      if (!res.ok) throw new Error(animal.error || "Error");
-
-      if (archivos.length > 0) {
-        const fd = new FormData();
-        Array.from(archivos).forEach((f) => fd.append("archivos", f));
-        await fetch(`${API_URL}/animales/${animal.id}/media`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${getToken()}` },
-          body: fd,
-        });
+      if(!res.ok) throw new Error(animal.error||"Error");
+      if(archivos.length>0){
+        const fd=new FormData(); Array.from(archivos).forEach(f=>fd.append("archivos",f));
+        await fetch(`${API_URL}/animales/${animal.id}/media`,{method:"POST",headers:{Authorization:`Bearer ${getToken()}`},body:fd});
       }
-
-      setForm({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", pesoActual: "", observacion: "" });
-      setArchivos([]);
-      setShowForm(false);
-      load();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setEnviando(false);
-    }
+      setForm({identificador:"",nombre:"",raza:"",fierro:"",sexo:"HEMBRA",pesoActual:"",observacion:"",estadoReproductivo:"",madreId:""});
+      setArchivos([]); setShowForm(false); load();
+    } catch(err){ setError(err.message); } finally{ setEnviando(false); }
   }
 
-  const activos = animales.filter((a) => a.estado === "ACTIVO");
-  const vendidos = animales.filter((a) => a.estado === "VENDIDO");
+  async function handleParto(e) {
+    e.preventDefault(); setEnviando(true);
+    try {
+      const res = await fetch(`${API_URL}/animales/${showParto}/parto`,{
+        method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${getToken()}`},
+        body:JSON.stringify(formParto),
+      });
+      const d = await res.json();
+      if(!res.ok) throw new Error(d.error||"Error");
+      setShowParto(null); setFormParto({identificadorCria:"",nombreCria:"",sexoCria:"HEMBRA",pesoNacimiento:""}); load();
+    } catch(err){ setError(err.message); } finally{ setEnviando(false); }
+  }
 
-  const glassCard = { background: "rgba(5,25,12,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.12)" };
-  const glassInput = { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", color: "#fff" };
+  const activos=animales.filter(a=>a.estado==="ACTIVO");
+  const vendidos=animales.filter(a=>a.estado==="VENDIDO");
+  const hembras=activos.filter(a=>a.sexo==="HEMBRA");
+  const crias=activos.filter(a=>a.madreId);
+
+  const METRICAS=[
+    {label:"Vientres Preñadas",valor:hembras.filter(a=>a.estadoReproductivo==="PREÑADA").length,icon:"🤰",color:"#e53e3e",filtroKey:"PREÑADA"},
+    {label:"Paridas",valor:hembras.filter(a=>a.estadoReproductivo==="PARIDA").length,icon:"🐮",color:"#d69e2e",filtroKey:"PARIDA"},
+    {label:"Crías/Terneros",valor:crias.length,icon:"🐃",color:"#38b2ac",filtroKey:"CRIAS"},
+    {label:"En Lactancia",valor:hembras.filter(a=>a.estadoReproductivo==="LACTANCIA").length,icon:"🍼",color:"#38a169",filtroKey:"LACTANCIA"},
+    {label:"Secas",valor:hembras.filter(a=>a.estadoReproductivo==="SECA").length,icon:"🌵",color:"#718096",filtroKey:"SECA"},
+    {label:"Sementales/Toros",valor:activos.filter(a=>a.sexo==="MACHO").length,icon:"🐂",color:"#3182ce",filtroKey:"SEMENTALES"},
+    {label:"Activos",valor:activos.length,icon:"✅",color:"#2d9e3f",filtroKey:"ACTIVOS"},
+    {label:"Total",valor:animales.length,icon:"📋",color:"#553c9a",filtroKey:"TODOS"},
+    {label:"Vendidos",valor:vendidos.length,icon:"💰",color:"#b7791f",filtroKey:"VENDIDOS"},
+  ];
+
+  const filtrados=animales.filter(a=>{
+    if(filtro==="TODOS") return true;
+    if(filtro==="ACTIVOS") return a.estado==="ACTIVO";
+    if(filtro==="VENDIDOS") return a.estado==="VENDIDO";
+    if(filtro==="SEMENTALES") return a.sexo==="MACHO"&&a.estado==="ACTIVO";
+    if(filtro==="CRIAS") return !!a.madreId&&a.estado==="ACTIVO";
+    return a.estadoReproductivo===filtro&&a.estado==="ACTIVO";
+  });
+
+  const hembrasActivas=animales.filter(a=>a.sexo==="HEMBRA"&&a.estado==="ACTIVO");
+  const glass={background:"rgba(5,25,12,0.65)",backdropFilter:"blur(16px)",border:"1px solid rgba(255,255,255,0.12)"};
+  const gi={background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff"};
+
+  function etiqueta(a){
+    if(a.madreId&&a.madre) return `Cría de ${a.madre.nombre||a.madre.identificador}`;
+    if((a.estadoReproductivo==="LACTANCIA"||a.estadoReproductivo==="PARIDA")&&a.crias?.length>0){
+      const c=a.crias[a.crias.length-1];
+      return `${a.estadoReproductivo==="LACTANCIA"?"Lactancia":"Parida"} - Cría ${c.nombre||c.identificador}`;
+    }
+    if(a.estadoReproductivo==="PREÑADA"&&a.fechaParto){
+      return `Preñada - Prev. ${new Date(a.fechaParto).toLocaleDateString("es",{month:"long",year:"numeric"})}`;
+    }
+    return null;
+  }
+
+  const conFoto=filtrados.filter(a=>a.media?.some(m=>m.tipo==="FOTO")).slice(0,3);
+  const resto=filtrados.filter(a=>!conFoto.includes(a));
 
   return (
     <AppLayout title="Inventario Animal" subtitle="Gestión de Ganado">
-      {error && <p className="text-red-300 mb-4 rounded-xl p-3 text-sm" style={{ background: "rgba(220,38,38,0.2)", border: "1px solid rgba(220,38,38,0.4)" }}>{error}</p>}
+      {error&&<div className="mb-4 text-red-300 text-sm p-3 rounded-xl flex items-center justify-between" style={{background:"rgba(220,38,38,0.2)",border:"1px solid rgba(220,38,38,0.4)"}}>
+        {error}<button onClick={()=>setError("")} className="text-red-400 ml-4">✕</button></div>}
 
-      {/* Stats rápidas */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
-        {[
-          { label: "Total", valor: animales.length, grad: "linear-gradient(135deg,#1a6b2a,#2d9e3f)" },
-          { label: "Activos", valor: activos.length, grad: "linear-gradient(135deg,#1a4a8a,#3182ce)" },
-          { label: "Vendidos", valor: vendidos.length, grad: "linear-gradient(135deg,#7b4f12,#d69e2e)" },
-        ].map((s) => (
-          <div key={s.label} className="rounded-2xl text-white text-center py-4 shadow-xl" style={{ background: s.grad, border: "1px solid rgba(255,255,255,0.2)" }}>
-            <p className="text-3xl font-black">{s.valor}</p>
-            <p className="text-xs font-semibold opacity-80">{s.label}</p>
-          </div>
+      {/* MÉTRICAS */}
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-5">
+        {METRICAS.map(m=>(
+          <button key={m.filtroKey} onClick={()=>setFiltro(m.filtroKey)}
+            className="shrink-0 rounded-2xl p-3 text-center transition-all hover:scale-105"
+            style={{minWidth:88,background:filtro===m.filtroKey?`${m.color}44`:"rgba(5,25,12,0.6)",border:filtro===m.filtroKey?`2px solid ${m.color}`:"1px solid rgba(255,255,255,0.1)",backdropFilter:"blur(12px)"}}>
+            <div className="text-2xl">{m.icon}</div>
+            <p className="text-white font-black text-xl leading-none mt-1">{m.valor}</p>
+            <p className="text-white/50 leading-tight mt-0.5" style={{fontSize:9}}>{m.label}</p>
+          </button>
         ))}
       </div>
 
-      <button
-        onClick={() => setShowForm((s) => !s)}
-        className="w-full text-white rounded-xl py-3 font-bold text-lg mb-4 flex items-center justify-center gap-2 shadow-xl hover:scale-[1.01] transition-transform"
-        style={{ background: showForm ? "rgba(100,100,100,0.4)" : "linear-gradient(135deg,#1a6b2a,#2d9e3f)", border: "1px solid rgba(255,255,255,0.2)" }}
-      >
-        {showForm ? "✕ Cancelar" : "+ Registrar Animal"}
+      {/* Botón */}
+      <button onClick={()=>setShowForm(s=>!s)}
+        className="w-full text-white rounded-2xl py-3 font-black text-lg mb-4 flex items-center justify-center gap-2 shadow-xl hover:scale-[1.01] transition-transform"
+        style={{background:showForm?"rgba(100,100,100,0.4)":"linear-gradient(135deg,#1a6b2a,#2d9e3f)",border:"1px solid rgba(255,255,255,0.2)"}}>
+        {showForm?"✕ Cancelar":"+ Registrar Animal"}
       </button>
 
-      {showForm && (
-        <form onSubmit={handleCreate} className="rounded-2xl mb-5 overflow-hidden shadow-2xl" style={glassCard}>
-          <div className="px-5 py-4" style={{ background: "linear-gradient(135deg,#1a6b2a,#2d9e3f)" }}>
-            <h2 className="text-white font-black text-lg">🐄 Nuevo Animal</h2>
+      {/* Formulario */}
+      {showForm&&(
+        <form onSubmit={handleCreate} className="rounded-3xl p-5 mb-4 space-y-3" style={glass}>
+          <h3 className="text-white font-black text-lg">Nuevo Animal</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="text-white/50 text-xs">Arete/ID *</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="M001" value={form.identificador} onChange={e=>setForm({...form,identificador:e.target.value})} required/></div>
+            <div><label className="text-white/50 text-xs">Nombre</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="Paloma" value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})}/></div>
+            <div><label className="text-white/50 text-xs">Sexo *</label><select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.sexo} onChange={e=>setForm({...form,sexo:e.target.value})}><option value="HEMBRA">Hembra</option><option value="MACHO">Macho</option></select></div>
+            <div><label className="text-white/50 text-xs">Raza</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="Brahman" value={form.raza} onChange={e=>setForm({...form,raza:e.target.value})}/></div>
+            <div><label className="text-white/50 text-xs">Fierro</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="M20" value={form.fierro} onChange={e=>setForm({...form,fierro:e.target.value})}/></div>
+            <div><label className="text-white/50 text-xs">Peso (kg)</label><input type="number" className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="350" value={form.pesoActual} onChange={e=>setForm({...form,pesoActual:e.target.value})}/></div>
+            {form.sexo==="HEMBRA"&&<div><label className="text-white/50 text-xs">Estado reproductivo</label><select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.estadoReproductivo} onChange={e=>setForm({...form,estadoReproductivo:e.target.value})}><option value="">Sin definir</option>{ESTADOS_REPRO.map(e=><option key={e} value={e}>{REPRO_CONFIG[e].icon} {REPRO_CONFIG[e].label}</option>)}</select></div>}
+            <div><label className="text-white/50 text-xs">Madre (si es cría)</label><select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.madreId} onChange={e=>setForm({...form,madreId:e.target.value})}><option value="">Sin madre</option>{hembrasActivas.map(h=><option key={h.id} value={h.id}>{h.nombre||h.identificador}</option>)}</select></div>
           </div>
-          <div className="p-5 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { key: "identificador", label: "Arete / ID *", placeholder: "Ej: M-001", required: true },
-                { key: "nombre", label: "Nombre", placeholder: "Ej: La Prieta" },
-                { key: "raza", label: "Raza", placeholder: "Ej: Brahman" },
-                { key: "fierro", label: "Fierro (marca)", placeholder: "Ej: JCH-22" },
-              ].map((f) => (
-                <div key={f.key}>
-                  <label className="text-xs font-bold text-white/50 uppercase">{f.label}</label>
-                  <input className="w-full rounded-xl p-3 mt-1 focus:outline-none focus:ring-2 focus:ring-green-400"
-                    style={glassInput} placeholder={f.placeholder} value={form[f.key]}
-                    onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} required={f.required} />
-                </div>
-              ))}
-              <div>
-                <label className="text-xs font-bold text-white/50 uppercase">Sexo</label>
-                <select className="w-full rounded-xl p-3 mt-1 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  style={glassInput} value={form.sexo} onChange={(e) => setForm({ ...form, sexo: e.target.value })}>
-                  <option value="HEMBRA">🐄 Hembra</option>
-                  <option value="MACHO">🐂 Macho</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-white/50 uppercase">Peso (kg)</label>
-                <input type="number" className="w-full rounded-xl p-3 mt-1 focus:outline-none focus:ring-2 focus:ring-green-400"
-                  style={glassInput} placeholder="Ej: 350" value={form.pesoActual}
-                  onChange={(e) => setForm({ ...form, pesoActual: e.target.value })} />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-bold text-white/50 uppercase">Observación</label>
-              <textarea className="w-full rounded-xl p-3 mt-1 focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
-                style={glassInput} placeholder="Notas..." rows={2} value={form.observacion}
-                onChange={(e) => setForm({ ...form, observacion: e.target.value })} />
-            </div>
-            <div className="rounded-xl p-4 text-center" style={{ border: "2px dashed rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.05)" }}>
-              <p className="text-2xl mb-1">📷</p>
-              <p className="text-white/70 text-sm font-semibold">Fotos y videos del animal</p>
-              <input type="file" multiple accept="image/*,video/*" onChange={(e) => setArchivos(e.target.files)} className="text-sm text-white/50 mt-2" />
-              {archivos.length > 0 && <p className="text-green-400 text-sm mt-2 font-medium">✓ {archivos.length} archivo(s)</p>}
-            </div>
-            <button disabled={enviando} className="w-full text-white rounded-xl p-3 font-bold disabled:opacity-50 shadow-xl"
-              style={{ background: "linear-gradient(135deg,#1a6b2a,#2d9e3f)" }}>
-              {enviando ? "Guardando..." : "Guardar Animal"}
-            </button>
-          </div>
+          <textarea className="w-full rounded-xl px-3 py-2 text-sm" style={gi} placeholder="Observación..." rows={2} value={form.observacion} onChange={e=>setForm({...form,observacion:e.target.value})}/>
+          <input type="file" accept="image/*,video/*" multiple className="w-full text-white/60 text-sm" onChange={e=>setArchivos(e.target.files)}/>
+          <button type="submit" disabled={enviando} className="w-full text-white font-black py-3 rounded-2xl disabled:opacity-50" style={{background:"linear-gradient(135deg,#1a6b2a,#2d9e3f)"}}>
+            {enviando?"Guardando...":"✅ Registrar Animal"}
+          </button>
         </form>
       )}
 
-      <p className="text-white/40 text-sm mb-3 font-medium">{activos.length} animal{activos.length !== 1 ? "es" : ""} activo{activos.length !== 1 ? "s" : ""}</p>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {animales.map((a) => {
-          const foto = a.media?.find((m) => m.tipo === "FOTO") || a.media?.[0];
-          return (
-            <a key={a.id} href={`/animales/${a.id}`}
-              className="rounded-2xl shadow-xl overflow-hidden hover:scale-[1.02] transition-all relative"
-              style={glassCard}>
-              {a.estado === "VENDIDO" && (
-                <div className="absolute top-2 right-2 z-10 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">VENDIDO</div>
-              )}
-              {foto ? (
-                foto.tipo === "FOTO"
-                  ? <img src={foto.url} alt={a.identificador} className="w-full h-44 object-cover" />
-                  : <video src={foto.url} className="w-full h-44 object-cover" muted />
-              ) : (
-                <div className="w-full h-44 flex items-center justify-center text-6xl"
-                  style={{ background: a.sexo === "HEMBRA" ? "rgba(30,60,30,0.8)" : "rgba(20,40,80,0.8)" }}>
-                  {a.sexo === "HEMBRA" ? "🐄" : "🐂"}
-                </div>
-              )}
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-1">
-                  <h2 className="font-bold text-white text-base">{a.nombre || a.identificador}</h2>
-                  <span className="text-xs font-bold px-2 py-1 rounded-full text-white ml-1 shrink-0"
-                    style={{ background: a.sexo === "HEMBRA" ? "#e53e3e" : "#3182ce" }}>
-                    {a.sexo === "HEMBRA" ? "♀" : "♂"}
-                  </span>
-                </div>
-                <div className="space-y-1 text-sm">
-                  {a.raza && <p className="text-white/50">🐾 Raza: <span className="text-white/80">{a.raza}</span></p>}
-                  {a.fierro && <p className="text-white/50">🔥 Fierro: <span className="text-white/80">{a.fierro}</span></p>}
-                  {a.pesoActual && <p className="text-white/50">⚖️ Peso: <span className="font-medium text-green-400">{a.pesoActual} kg</span></p>}
-                  {a.observacion && <p className="text-white/30 text-xs mt-1 truncate">📝 {a.observacion}</p>}
-                </div>
-                <p className="text-xs text-white/25 mt-2">Arete: {a.identificador}</p>
-              </div>
-            </a>
-          );
-        })}
-      </div>
-
-      {animales.length === 0 && !error && (
-        <div className="text-center py-16 rounded-2xl" style={glassCard}>
-          <div className="text-7xl mb-4">🐄</div>
-          <p className="text-white/50 text-lg">Aún no hay animales registrados</p>
+      {/* Modal Parto */}
+      {showParto&&(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)"}}>
+          <form onSubmit={handleParto} className="w-full max-w-sm rounded-3xl p-6 space-y-3 shadow-2xl" style={glass}>
+            <h3 className="text-white font-black text-xl">Registrar Parto</h3>
+            <p className="text-white/50 text-sm">La madre pasará automáticamente a Lactancia.</p>
+            <div><label className="text-white/50 text-xs">Arete/ID de la cría *</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="C001" required value={formParto.identificadorCria} onChange={e=>setFormParto({...formParto,identificadorCria:e.target.value})}/></div>
+            <div><label className="text-white/50 text-xs">Nombre de la cría</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="Opcional" value={formParto.nombreCria} onChange={e=>setFormParto({...formParto,nombreCria:e.target.value})}/></div>
+            <div><label className="text-white/50 text-xs">Sexo *</label><select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={formParto.sexoCria} onChange={e=>setFormParto({...formParto,sexoCria:e.target.value})}><option value="HEMBRA">Hembra</option><option value="MACHO">Macho</option></select></div>
+            <div><label className="text-white/50 text-xs">Peso al nacer (kg)</label><input type="number" className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="Opcional" value={formParto.pesoNacimiento} onChange={e=>setFormParto({...formParto,pesoNacimiento:e.target.value})}/></div>
+            <div className="flex gap-3"><button type="button" onClick={()=>setShowParto(null)} className="flex-1 text-white/50 py-2 rounded-xl" style={{border:"1px solid rgba(255,255,255,0.2)"}}>Cancelar</button>
+            <button type="submit" disabled={enviando} className="flex-1 text-white font-black py-2 rounded-xl disabled:opacity-50" style={{background:"linear-gradient(135deg,#1a6b2a,#2d9e3f)"}}>{enviando?"...":"Registrar"}</button></div>
+          </form>
         </div>
       )}
+
+      <p className="text-white/30 text-xs mb-3">{METRICAS.find(m=>m.filtroKey===filtro)?.label||"Todos"} — {filtrados.length} registros</p>
+
+      {/* Tarjetas grandes */}
+      {conFoto.length>0&&(
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {conFoto.map(a=>{
+            const foto=a.media?.find(m=>m.tipo==="FOTO");
+            const et=etiqueta(a); const repro=a.estadoReproductivo?REPRO_CONFIG[a.estadoReproductivo]:null;
+            return (
+              <div key={a.id} className="rounded-2xl overflow-hidden shadow-xl relative cursor-pointer hover:scale-[1.02] transition-all" onClick={()=>router.push(`/inventario/${a.id}`)}>
+                {foto&&<img src={foto.url} className="w-full h-44 object-cover"/>}
+                {a.estado==="VENDIDO"&&<div className="absolute top-3 right-3 text-white text-xs font-black px-3 py-1 rounded-full" style={{background:"#d69e2e"}}>VENDIDO</div>}
+                <div className="p-4" style={{background:"rgba(5,20,10,0.88)",backdropFilter:"blur(8px)"}}>
+                  <div className="flex items-start justify-between">
+                    <div><p className="text-white font-black text-lg">{a.nombre||a.identificador}</p>
+                    <p className="text-white/40 text-xs">{a.raza||""} · Tag: {a.identificador}</p></div>
+                    <span style={{color:a.sexo==="HEMBRA"?"#f687b3":"#63b3ed",fontSize:18}}>{a.sexo==="HEMBRA"?"♀":"♂"}</span>
+                  </div>
+                  {a.fierro&&<p className="text-white/40 text-xs mt-1">Fierro: {a.fierro}</p>}
+                  {a.pesoActual&&<p className="text-green-400 text-sm font-bold mt-1">⚖️ {a.pesoActual} kg</p>}
+                  {(et||repro)&&<p className="text-xs mt-2 px-2 py-1 rounded-lg font-semibold inline-block" style={{background:repro?.bg||"rgba(255,255,255,0.1)",color:repro?.color||"white"}}>{repro?.icon} {et||repro?.label}</p>}
+                  {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
+                    <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}} className="mt-2 text-xs px-3 py-1 rounded-lg font-bold w-full" style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
+                      Registrar Parto
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Tarjetas pequeñas */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        {resto.map(a=>{
+          const et=etiqueta(a); const repro=a.estadoReproductivo?REPRO_CONFIG[a.estadoReproductivo]:null;
+          return (
+            <div key={a.id} className="rounded-2xl p-3 cursor-pointer hover:scale-105 transition-all"
+              style={{background:"rgba(5,25,12,0.6)",backdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,0.1)"}}
+              onClick={()=>router.push(`/inventario/${a.id}`)}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-black text-white truncate">{a.nombre||a.identificador}</span>
+                <span style={{color:a.sexo==="HEMBRA"?"#f687b3":"#63b3ed",fontSize:11}}>{a.sexo==="HEMBRA"?"♀":"♂"}</span>
+              </div>
+              <p className="text-white/40" style={{fontSize:10}}>Tag: {a.identificador}</p>
+              {a.madre&&<p className="text-white/30" style={{fontSize:10}}>Madre: {a.madre.nombre||a.madre.identificador}</p>}
+              {a.crias?.length>0&&<p className="text-white/30" style={{fontSize:10}}>Crías: {a.crias.length}</p>}
+              {repro&&<p className="text-xs mt-1 font-semibold" style={{color:repro.color}}>{repro.icon} {repro.label}</p>}
+              {et&&!repro&&<p className="text-white/30 mt-1 truncate" style={{fontSize:10}}>{et}</p>}
+              {a.pesoActual&&<p className="text-green-400 font-bold mt-1" style={{fontSize:10}}>⚖️ {a.pesoActual} kg</p>}
+              {a.estado==="VENDIDO"&&<p className="text-yellow-400 font-bold" style={{fontSize:10}}>💰 Vendido</p>}
+              {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
+                <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}} className="mt-1 font-bold w-full rounded py-0.5" style={{background:"rgba(229,62,62,0.3)",color:"#fc8181",fontSize:10}}>
+                  Parto
+                </button>
+              )}
+            </div>
+          );
+        })}
+        {filtrados.length===0&&<div className="col-span-6 text-center py-16 text-white/30"><p className="text-5xl mb-3">🐄</p><p>No hay animales en esta categoría</p></div>}
+      </div>
     </AppLayout>
   );
 }
