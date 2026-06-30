@@ -24,7 +24,7 @@ router.post("/", requireRole("ADMIN"), async (req, res, next) => {
     const { titulo, mensaje, emoji } = req.body;
     if (!titulo || !mensaje) return res.status(400).json({ error: "Título y mensaje son requeridos" });
     const anuncio = await prisma.anuncio.create({
-      data: { titulo, mensaje, emoji: emoji || "📢", fincaId: req.user.fincaId, autorId: req.user.id },
+      data: { titulo, mensaje, emoji: emoji || "📢", fincaId: req.user.fincaId, autorId: req.user.sub },
       include: { autor: { select: { nombre: true, role: true } } },
     });
     res.json(anuncio);
