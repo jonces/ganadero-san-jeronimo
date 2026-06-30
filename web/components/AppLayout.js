@@ -14,6 +14,8 @@ const NAV_ITEMS_ADMIN = [
   { icon: "📄", label: "Docs", href: "/documentos" },
   { icon: "👥", label: "Equipo", href: "/equipo" },
   { icon: "📢", label: "Tablón", href: "/anuncios", notif: true },
+  { icon: "📊", label: "Reportes", href: "/reportes" },
+  { icon: "🕐", label: "Actividad", href: "/actividad" },
 ];
 
 const NAV_ITEMS_SUPER = [

@@ -119,6 +119,10 @@ export default function LoginPage() {
               style={{ background: "linear-gradient(135deg, #1a6b2a, #2d9e3f)" }}>
               {loading ? "Entrando..." : "Entrar"}
             </button>
+            <button type="button" onClick={() => router.push("/olvide-password")}
+              className="w-full text-green-400/70 text-sm hover:text-green-300 transition-colors">
+              ¿Olvidaste tu contraseña?
+            </button>
             <button type="button" onClick={() => setShowLogin(false)}
               className="w-full text-gray-500 text-sm underline">
               ← Volver

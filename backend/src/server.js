@@ -14,6 +14,7 @@ const gastoRoutes = require("./routes/gastos");
 const superadminRoutes = require("./routes/superadmin");
 const equipoRoutes = require("./routes/equipo");
 const anuncioRoutes = require("./routes/anuncios");
+const actividadRoutes = require("./routes/actividad");
 
 const app = express();
 app.use(cors());
@@ -34,6 +35,7 @@ app.use("/api/superadmin", superadminRoutes);
 app.use("/api/equipo", equipoRoutes);
 app.use("/api/ventas", ventaRoutes);
 app.use("/api/anuncios", anuncioRoutes);
+app.use("/api/actividad", actividadRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

@@ -67,7 +67,8 @@ model Finca {
   ventas      Venta[]
   incidentes  Incidente[]
   gastos      Gasto[]
-  anuncios    Anuncio[]
+  anuncios      Anuncio[]
+  actividadLogs ActividadLog[]
 }
 
 model Usuario {
@@ -78,14 +79,17 @@ model Usuario {
   role         Role     @default(TRABAJADOR)
   fincaId      String
   finca        Finca    @relation(fields: [fincaId], references: [id])
+  resetCodigo  String?
+  resetExpira  DateTime?
   createdAt    DateTime @default(now())
 
   eventos    Evento[]
   ventas     Venta[]
   incidentes Incidente[]
   gastos     Gasto[]
-  anuncios     Anuncio[]
-  comentarios  Comentario[]
+  anuncios      Anuncio[]
+  comentarios   Comentario[]
+  actividadLogs ActividadLog[]
 }
 
 model Animal {
@@ -236,4 +240,16 @@ model Comentario {
   autorId    String
   autor      Usuario  @relation(fields: [autorId], references: [id])
   createdAt  DateTime @default(now())
+}
+
+model ActividadLog {
+  id        String   @id @default(uuid())
+  accion    String
+  detalle   String?
+  modulo    String
+  fincaId   String
+  finca     Finca    @relation(fields: [fincaId], references: [id])
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  createdAt DateTime @default(now())
 }

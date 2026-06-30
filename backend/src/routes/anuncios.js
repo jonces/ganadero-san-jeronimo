@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const prisma = require("../prisma");
 const { requireAuth, requireRole } = require("../middleware/auth");
+const logActividad = require("../lib/logActividad");
 
 router.use(requireAuth);
 
@@ -35,6 +36,7 @@ router.post("/", requireRole("ADMIN"), async (req, res, next) => {
       data: { titulo, mensaje, emoji: emoji || "📢", fincaId: req.user.fincaId, autorId: req.user.sub },
       include: includeAnuncio,
     });
+    logActividad({ accion: "Publicó anuncio", detalle: titulo, modulo: "Tablón", fincaId: req.user.fincaId, usuarioId: req.user.sub });
     res.json(anuncio);
   } catch (err) { next(err); }
 });
