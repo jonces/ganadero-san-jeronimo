@@ -77,15 +77,15 @@ export default function InventarioPage() {
   const crias=activos.filter(a=>a.madreId);
 
   const METRICAS=[
-    {label:"Vientres Preñadas",valor:hembras.filter(a=>a.estadoReproductivo==="PREÑADA").length,icon:"🤰",color:"#e53e3e",filtroKey:"PREÑADA"},
-    {label:"Paridas",valor:hembras.filter(a=>a.estadoReproductivo==="PARIDA").length,icon:"🐮",color:"#d69e2e",filtroKey:"PARIDA"},
-    {label:"Crías/Terneros",valor:crias.length,icon:"🐃",color:"#38b2ac",filtroKey:"CRIAS"},
-    {label:"En Lactancia",valor:hembras.filter(a=>a.estadoReproductivo==="LACTANCIA").length,icon:"🍼",color:"#38a169",filtroKey:"LACTANCIA"},
-    {label:"Secas",valor:hembras.filter(a=>a.estadoReproductivo==="SECA").length,icon:"🌵",color:"#718096",filtroKey:"SECA"},
-    {label:"Sementales/Toros",valor:activos.filter(a=>a.sexo==="MACHO").length,icon:"🐂",color:"#3182ce",filtroKey:"SEMENTALES"},
-    {label:"Activos",valor:activos.length,icon:"✅",color:"#2d9e3f",filtroKey:"ACTIVOS"},
-    {label:"Total",valor:animales.length,icon:"📋",color:"#553c9a",filtroKey:"TODOS"},
-    {label:"Vendidos",valor:vendidos.length,icon:"💰",color:"#b7791f",filtroKey:"VENDIDOS"},
+    {label:"Preñadas",valor:hembras.filter(a=>a.estadoReproductivo==="PREÑADA").length,img:"https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=120&q=70",color:"#e53e3e",filtroKey:"PREÑADA"},
+    {label:"Paridas",valor:hembras.filter(a=>a.estadoReproductivo==="PARIDA").length,img:"https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=120&q=70",color:"#d69e2e",filtroKey:"PARIDA"},
+    {label:"Crías",valor:crias.length,img:"https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=120&q=70",color:"#38b2ac",filtroKey:"CRIAS"},
+    {label:"Lactancia",valor:hembras.filter(a=>a.estadoReproductivo==="LACTANCIA").length,img:"https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=120&q=70",color:"#38a169",filtroKey:"LACTANCIA"},
+    {label:"Secas",valor:hembras.filter(a=>a.estadoReproductivo==="SECA").length,img:"https://images.unsplash.com/photo-1596733430284-f7437764b1a9?w=120&q=70",color:"#718096",filtroKey:"SECA"},
+    {label:"Sementales",valor:activos.filter(a=>a.sexo==="MACHO").length,img:"https://images.unsplash.com/photo-1527153098-02c5b5b29c9d?w=120&q=70",color:"#3182ce",filtroKey:"SEMENTALES"},
+    {label:"Activos",valor:activos.length,img:"https://images.unsplash.com/photo-1493962853295-0fd70327578a?w=120&q=70",color:"#2d9e3f",filtroKey:"ACTIVOS"},
+    {label:"Total",valor:animales.length,img:"https://images.unsplash.com/photo-1466721591366-2d5fba72006d?w=120&q=70",color:"#553c9a",filtroKey:"TODOS"},
+    {label:"Vendidos",valor:vendidos.length,img:"https://images.unsplash.com/photo-1472396961693-142e6e269027?w=120&q=70",color:"#b7791f",filtroKey:"VENDIDOS"},
   ];
 
   const filtrados=animales.filter(a=>{
@@ -122,14 +122,18 @@ export default function InventarioPage() {
         {error}<button onClick={()=>setError("")} className="text-red-400 ml-4">✕</button></div>}
 
       {/* MÉTRICAS */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-5">
+      <div className="flex gap-3 overflow-x-auto pb-2 mb-5">
         {METRICAS.map(m=>(
           <button key={m.filtroKey} onClick={()=>setFiltro(m.filtroKey)}
-            className="shrink-0 rounded-2xl p-3 text-center transition-all hover:scale-105"
-            style={{minWidth:88,background:filtro===m.filtroKey?`${m.color}44`:"rgba(5,25,12,0.6)",border:filtro===m.filtroKey?`2px solid ${m.color}`:"1px solid rgba(255,255,255,0.1)",backdropFilter:"blur(12px)"}}>
-            <div className="text-2xl">{m.icon}</div>
-            <p className="text-white font-black text-xl leading-none mt-1">{m.valor}</p>
-            <p className="text-white/50 leading-tight mt-0.5" style={{fontSize:9}}>{m.label}</p>
+            className="shrink-0 rounded-2xl overflow-hidden transition-all hover:scale-105 relative"
+            style={{minWidth:100,height:120,border:filtro===m.filtroKey?`3px solid ${m.color}`:"2px solid rgba(255,255,255,0.1)"}}>
+            <img src={m.img} alt={m.label} className="absolute inset-0 w-full h-full object-cover"/>
+            <div className="absolute inset-0" style={{background:filtro===m.filtroKey?`${m.color}99`:"rgba(0,0,0,0.55)"}}/>
+            <div className="relative z-10 flex flex-col items-center justify-center h-full px-1">
+              <p className="text-white font-black leading-none" style={{fontSize:36,textShadow:"0 2px 8px rgba(0,0,0,0.8)"}}>{m.valor}</p>
+              <p className="text-white font-bold text-center leading-tight mt-1" style={{fontSize:10,textShadow:"0 1px 4px rgba(0,0,0,0.9)"}}>{m.label}</p>
+              {filtro===m.filtroKey&&<div className="mt-1 rounded-full px-2 py-0.5" style={{background:m.color,fontSize:8,color:"white",fontWeight:900}}>▼ Filtro</div>}
+            </div>
           </button>
         ))}
       </div>
