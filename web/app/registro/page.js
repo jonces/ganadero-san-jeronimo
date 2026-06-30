@@ -18,9 +18,9 @@ export default function RegistroPage() {
     setError("");
     setLoading(true);
     try {
-      const data = await api("/auth/registro-finca", { method: "POST", body: form });
+      const data = await api("/auth/registro", { method: "POST", body: form });
       saveToken(data.token);
-      router.push("/animales");
+      router.push("/dashboard");
     } catch (err) {
       setError(err.message);
     } finally {
