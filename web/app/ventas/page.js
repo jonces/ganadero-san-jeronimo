@@ -53,7 +53,9 @@ export default function VentasPage() {
 
   useEffect(() => { load(); }, []);
 
-  const precioNum = Number(form.precioOriginal) || 0;
+  // Para POR_PESO: calcular total automáticamente desde libras * precio/lb
+  const totalPorPeso = form.tipoVenta === "POR_PESO" ? (Number(form.pesoKg) || 0) * (Number(form.precioKg) || 0) : 0;
+  const precioNum = form.tipoVenta === "POR_PESO" ? totalPorPeso : (Number(form.precioOriginal) || 0);
   const precioNIO = form.moneda === "USD" ? precioNum * tipoCambio : precioNum;
   const precioUSD = form.moneda === "USD" ? precioNum : precioNum / tipoCambio;
 
@@ -70,7 +72,12 @@ export default function VentasPage() {
     setEnviando(true);
     try {
       const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => { if (v) fd.append(k, v); });
+      const formToSend = { ...form };
+      if (form.tipoVenta === "POR_PESO") {
+        formToSend.precioOriginal = String(totalPorPeso);
+        formToSend.unidadPeso = "LB";
+      }
+      Object.entries(formToSend).forEach(([k, v]) => { if (v) fd.append(k, v); });
       Array.from(archivos).forEach((f) => fd.append("archivos", f));
       const res = await fetch(`${API_URL}/ventas`, {
         method: "POST",
@@ -195,101 +202,97 @@ export default function VentasPage() {
                 </div>
               </section>
 
-              {/* Sección: Precio y moneda */}
+              {/* Sección: Precio */}
               <section>
                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-black" style={{ background: "#d69e2e" }}>2</span>
-                  Precio y Moneda
+                  {form.tipoVenta === "POR_PESO" ? "Peso y Precio por Libra" : "Precio y Moneda"}
                 </h3>
 
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  {[
-                    { value: "NIO", label: "🇳🇮 Córdoba (NIO)" },
-                    { value: "USD", label: "🇺🇸 Dólar (USD)" },
-                  ].map((m) => (
-                    <button type="button" key={m.value} onClick={() => setForm({ ...form, moneda: m.value })}
-                      className="rounded-xl py-2 text-sm font-bold transition-all border-2"
-                      style={{
-                        background: form.moneda === m.value ? "#d69e2e" : "#fff",
-                        color: form.moneda === m.value ? "#fff" : "#92400e",
-                        borderColor: "#d69e2e",
-                      }}>
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="relative">
-                  <label className="text-xs font-bold text-gray-500 uppercase">
-                    Precio Total ({form.moneda}) *
-                  </label>
-                  <div className="relative mt-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-gray-400">
-                      {form.moneda === "NIO" ? "C$" : "$"}
-                    </span>
-                    <input type="number" step="0.01"
-                      className="w-full border-2 border-gray-100 rounded-xl p-3 pl-10 mt-0 focus:border-yellow-400 focus:outline-none bg-gray-50 text-xl font-black"
-                      placeholder="0.00" value={form.precioOriginal}
-                      onChange={(e) => setForm({ ...form, precioOriginal: e.target.value })} required />
-                  </div>
-                  {precioNum > 0 && (
-                    <div className="mt-2 rounded-xl p-3 flex items-center justify-between"
-                      style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)" }}>
-                      <div>
-                        <p className="text-xs text-yellow-700 font-semibold">Equivalente automático</p>
-                        <p className="font-black text-yellow-900 text-lg">C$ {precioNIO.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-yellow-700 font-semibold">≈ USD</p>
-                        <p className="font-black text-yellow-900 text-lg">$ {precioUSD.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {form.tipoVenta === "POR_PESO" && (
-                  <div className="space-y-3 mt-3">
-                    {/* Selector de unidad */}
-                    <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Unidad de peso</label>
-                      <div className="grid grid-cols-2 gap-2 mt-2">
-                        {[
-                          { value: "LB", label: "🇳🇮 Libras (lb)", sub: "Más usado en Nicaragua" },
-                          { value: "KG", label: "🌎 Kilogramos (kg)", sub: "Internacional" },
-                        ].map((u) => (
-                          <button type="button" key={u.value}
-                            onClick={() => setForm({ ...form, unidadPeso: u.value })}
-                            className="rounded-xl py-2 px-3 text-sm font-bold transition-all border-2 text-left"
-                            style={{
-                              background: form.unidadPeso === u.value ? "#d69e2e" : "#fff",
-                              color: form.unidadPeso === u.value ? "#fff" : "#92400e",
-                              borderColor: "#d69e2e",
-                            }}>
-                            <div>{u.label}</div>
-                            <div style={{ fontSize: 10, opacity: 0.75 }}>{u.sub}</div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                {form.tipoVenta === "POR_PESO" ? (
+                  /* === VENTA POR PESO: solo libras + precio/lb, total automático === */
+                  <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase">Peso ({form.unidadPeso === "LB" ? "libras" : "kg"})</label>
-                        <input type="number" className="w-full border-2 border-gray-100 rounded-xl p-3 mt-1 focus:border-yellow-400 focus:outline-none bg-gray-50"
-                          placeholder={form.unidadPeso === "LB" ? "Ej: 900 lb" : "Ej: 420 kg"}
-                          value={form.pesoKg} onChange={(e) => setForm({ ...form, pesoKg: e.target.value })} />
+                        <label className="text-xs font-bold text-gray-500 uppercase">Peso (libras) *</label>
+                        <div className="relative mt-1">
+                          <input type="number" step="0.1"
+                            className="w-full border-2 border-gray-100 rounded-xl p-3 pr-10 focus:border-yellow-400 focus:outline-none bg-gray-50 text-lg font-black"
+                            placeholder="Ej: 900" value={form.pesoKg}
+                            onChange={(e) => setForm({ ...form, pesoKg: e.target.value })} required />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">lb</span>
+                        </div>
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase">Precio/{form.unidadPeso === "LB" ? "lb" : "kg"} ({form.moneda})</label>
-                        <input type="number" className="w-full border-2 border-gray-100 rounded-xl p-3 mt-1 focus:border-yellow-400 focus:outline-none bg-gray-50"
-                          placeholder={form.unidadPeso === "LB" ? "Ej: C$ 18/lb" : "Ej: C$ 40/kg"}
-                          value={form.precioKg} onChange={(e) => setForm({ ...form, precioKg: e.target.value })} />
+                        <label className="text-xs font-bold text-gray-500 uppercase">Precio / libra (C$) *</label>
+                        <div className="relative mt-1">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-gray-400 text-sm">C$</span>
+                          <input type="number" step="0.01"
+                            className="w-full border-2 border-gray-100 rounded-xl p-3 pl-9 focus:border-yellow-400 focus:outline-none bg-gray-50 text-lg font-black"
+                            placeholder="Ej: 18" value={form.precioKg}
+                            onChange={(e) => setForm({ ...form, precioKg: e.target.value })} required />
+                        </div>
                       </div>
                     </div>
-                    {form.pesoKg && form.unidadPeso === "LB" && (
-                      <p className="text-xs text-gray-400">
-                        ≈ {(Number(form.pesoKg) / 2.205).toFixed(1)} kg · {(Number(form.pesoKg) * 0.4536).toFixed(1)} kg exactos
+
+                    {/* Total calculado automáticamente */}
+                    <div className="rounded-2xl p-4" style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)" }}>
+                      <p className="text-xs text-yellow-700 font-bold uppercase mb-1">Total calculado automáticamente</p>
+                      <p className="font-black text-yellow-900 text-3xl">
+                        C$ {totalPorPeso > 0 ? totalPorPeso.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
                       </p>
-                    )}
+                      {totalPorPeso > 0 && (
+                        <p className="text-yellow-700 text-sm mt-1">
+                          ≈ $ {(totalPorPeso / tipoCambio).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                          {form.pesoKg && form.precioKg && <span className="ml-2 opacity-70">· {form.pesoKg} lb × C$ {form.precioKg}/lb</span>}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  /* === VENTA EN PIE: precio manual con moneda === */
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-2 mb-1">
+                      {[
+                        { value: "NIO", label: "🇳🇮 Córdoba (NIO)" },
+                        { value: "USD", label: "🇺🇸 Dólar (USD)" },
+                      ].map((m) => (
+                        <button type="button" key={m.value} onClick={() => setForm({ ...form, moneda: m.value })}
+                          className="rounded-xl py-2 text-sm font-bold transition-all border-2"
+                          style={{
+                            background: form.moneda === m.value ? "#d69e2e" : "#fff",
+                            color: form.moneda === m.value ? "#fff" : "#92400e",
+                            borderColor: "#d69e2e",
+                          }}>
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Precio Total ({form.moneda}) *</label>
+                      <div className="relative mt-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-gray-400">
+                          {form.moneda === "NIO" ? "C$" : "$"}
+                        </span>
+                        <input type="number" step="0.01"
+                          className="w-full border-2 border-gray-100 rounded-xl p-3 pl-10 focus:border-yellow-400 focus:outline-none bg-gray-50 text-xl font-black"
+                          placeholder="0.00" value={form.precioOriginal}
+                          onChange={(e) => setForm({ ...form, precioOriginal: e.target.value })} required />
+                      </div>
+                      {precioNum > 0 && (
+                        <div className="mt-2 rounded-xl p-3 flex items-center justify-between"
+                          style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)" }}>
+                          <div>
+                            <p className="text-xs text-yellow-700 font-semibold">Córdoba (NIO)</p>
+                            <p className="font-black text-yellow-900 text-lg">C$ {precioNIO.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-yellow-700 font-semibold">≈ USD</p>
+                            <p className="font-black text-yellow-900 text-lg">$ {precioUSD.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
