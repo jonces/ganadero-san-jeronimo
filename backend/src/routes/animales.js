@@ -13,27 +13,15 @@ router.use(requireAuth);
 const includeAnimal = {
   media: { orderBy: { createdAt: "desc" }, take: 5 },
   eventos: { orderBy: { fecha: "desc" }, take: 1 },
-  madre: { select: { id: true, nombre: true, identificador: true } },
-  crias: { select: { id: true, nombre: true, identificador: true, estado: true } },
 };
 
 router.get("/", async (req, res, next) => {
   try {
-    let animales;
-    try {
-      animales = await prisma.animal.findMany({
-        where: { fincaId: req.user.fincaId },
-        orderBy: { createdAt: "desc" },
-        include: includeAnimal,
-      });
-    } catch {
-      // Fallback si columnas nuevas aún no existen en BD
-      animales = await prisma.animal.findMany({
-        where: { fincaId: req.user.fincaId },
-        orderBy: { createdAt: "desc" },
-        include: { media: { orderBy: { createdAt: "desc" }, take: 5 }, eventos: { orderBy: { fecha: "desc" }, take: 1 } },
-      });
-    }
+    const animales = await prisma.animal.findMany({
+      where: { fincaId: req.user.fincaId },
+      orderBy: { createdAt: "desc" },
+      include: includeAnimal,
+    });
     res.json(animales);
   } catch (err) { next(err); }
 });
@@ -45,8 +33,6 @@ router.get("/:id", async (req, res, next) => {
       include: {
         media: { orderBy: { createdAt: "desc" } },
         eventos: { orderBy: { fecha: "desc" }, include: { media: true, usuario: { select: { nombre: true } } } },
-        madre: { select: { id: true, nombre: true, identificador: true } },
-        crias: { select: { id: true, nombre: true, identificador: true, estado: true } },
       },
     });
     if (!animal) return res.status(404).json({ error: "Animal no encontrado" });
@@ -69,8 +55,8 @@ router.post("/", async (req, res, next) => {
         fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento) : null,
         pesoActual: pesoActual ? Number(pesoActual) : null,
         observacion: observacion || null,
-        estadoReproductivo: sexo === "HEMBRA" ? (estadoReproductivo || null) : null,
-        madreId: madreId || null,
+        ...(sexo === "HEMBRA" && estadoReproductivo ? { estadoReproductivo } : {}),
+        ...(madreId ? { madreId } : {}),
         fincaId: req.user.fincaId,
       },
       include: includeAnimal,
