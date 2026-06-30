@@ -121,18 +121,22 @@ export default function InventarioPage() {
       {error&&<div className="mb-4 text-red-300 text-sm p-3 rounded-xl flex items-center justify-between" style={{background:"rgba(220,38,38,0.2)",border:"1px solid rgba(220,38,38,0.4)"}}>
         {error}<button onClick={()=>setError("")} className="text-red-400 ml-4">✕</button></div>}
 
-      {/* MÉTRICAS */}
-      <div className="flex gap-3 overflow-x-auto pb-2 mb-5">
+      {/* MÉTRICAS — 3 columnas en móvil, scroll horizontal en tablet/desktop */}
+      <div className="grid grid-cols-3 gap-2 mb-5 md:flex md:gap-3 md:overflow-x-auto md:pb-2">
         {METRICAS.map(m=>(
           <button key={m.filtroKey} onClick={()=>setFiltro(m.filtroKey)}
-            className="shrink-0 rounded-2xl overflow-hidden transition-all hover:scale-105 relative"
-            style={{minWidth:100,height:120,border:filtro===m.filtroKey?`3px solid ${m.color}`:"2px solid rgba(255,255,255,0.1)"}}>
+            className="rounded-2xl overflow-hidden transition-all active:scale-95 relative"
+            style={{
+              minHeight:90,
+              border:filtro===m.filtroKey?`3px solid ${m.color}`:"2px solid rgba(255,255,255,0.15)",
+              flex:"0 0 auto",
+            }}>
             <img src={m.img} alt={m.label} className="absolute inset-0 w-full h-full object-cover"/>
-            <div className="absolute inset-0" style={{background:filtro===m.filtroKey?`${m.color}99`:"rgba(0,0,0,0.55)"}}/>
-            <div className="relative z-10 flex flex-col items-center justify-center h-full px-1">
-              <p className="text-white font-black leading-none" style={{fontSize:36,textShadow:"0 2px 8px rgba(0,0,0,0.8)"}}>{m.valor}</p>
-              <p className="text-white font-bold text-center leading-tight mt-1" style={{fontSize:10,textShadow:"0 1px 4px rgba(0,0,0,0.9)"}}>{m.label}</p>
-              {filtro===m.filtroKey&&<div className="mt-1 rounded-full px-2 py-0.5" style={{background:m.color,fontSize:8,color:"white",fontWeight:900}}>▼ Filtro</div>}
+            <div className="absolute inset-0" style={{background:filtro===m.filtroKey?`${m.color}aa`:"rgba(0,0,0,0.6)"}}/>
+            <div className="relative z-10 flex flex-col items-center justify-center h-full py-3 px-1">
+              <p className="text-white font-black leading-none" style={{fontSize:28,textShadow:"0 2px 8px rgba(0,0,0,0.9)"}}>{m.valor}</p>
+              <p className="text-white font-bold text-center leading-tight mt-1" style={{fontSize:9,textShadow:"0 1px 4px rgba(0,0,0,0.9)"}}>{m.label}</p>
+              {filtro===m.filtroKey&&<div className="mt-1 rounded-full px-1.5 py-0.5" style={{background:m.color,fontSize:7,color:"white",fontWeight:900}}>✓ activo</div>}
             </div>
           </button>
         ))}
@@ -149,15 +153,15 @@ export default function InventarioPage() {
       {showForm&&(
         <form onSubmit={handleCreate} className="rounded-3xl p-5 mb-4 space-y-3" style={glass}>
           <h3 className="text-white font-black text-lg">Nuevo Animal</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-white/50 text-xs">Arete/ID *</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="M001" value={form.identificador} onChange={e=>setForm({...form,identificador:e.target.value})} required/></div>
-            <div><label className="text-white/50 text-xs">Nombre</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="Paloma" value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})}/></div>
-            <div><label className="text-white/50 text-xs">Sexo *</label><select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.sexo} onChange={e=>setForm({...form,sexo:e.target.value})}><option value="HEMBRA">Hembra</option><option value="MACHO">Macho</option></select></div>
-            <div><label className="text-white/50 text-xs">Raza</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="Brahman" value={form.raza} onChange={e=>setForm({...form,raza:e.target.value})}/></div>
-            <div><label className="text-white/50 text-xs">Fierro</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="M20" value={form.fierro} onChange={e=>setForm({...form,fierro:e.target.value})}/></div>
-            <div><label className="text-white/50 text-xs">Peso (kg)</label><input type="number" className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="350" value={form.pesoActual} onChange={e=>setForm({...form,pesoActual:e.target.value})}/></div>
-            {form.sexo==="HEMBRA"&&<div><label className="text-white/50 text-xs">Estado reproductivo</label><select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.estadoReproductivo} onChange={e=>setForm({...form,estadoReproductivo:e.target.value})}><option value="">Sin definir</option>{ESTADOS_REPRO.map(e=><option key={e} value={e}>{REPRO_CONFIG[e].icon} {REPRO_CONFIG[e].label}</option>)}</select></div>}
-            <div><label className="text-white/50 text-xs">Madre (si es cría)</label><select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.madreId} onChange={e=>setForm({...form,madreId:e.target.value})}><option value="">Sin madre</option>{hembrasActivas.map(h=><option key={h.id} value={h.id}>{h.nombre||h.identificador}</option>)}</select></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div><label className="text-white/50 text-xs">Arete/ID *</label><input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="M001" value={form.identificador} onChange={e=>setForm({...form,identificador:e.target.value})} required/></div>
+            <div><label className="text-white/50 text-xs">Nombre</label><input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="Paloma" value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})}/></div>
+            <div><label className="text-white/50 text-xs">Sexo *</label><select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.sexo} onChange={e=>setForm({...form,sexo:e.target.value})}><option value="HEMBRA">Hembra</option><option value="MACHO">Macho</option></select></div>
+            <div><label className="text-white/50 text-xs">Raza</label><input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="Brahman" value={form.raza} onChange={e=>setForm({...form,raza:e.target.value})}/></div>
+            <div><label className="text-white/50 text-xs">Fierro</label><input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="M20" value={form.fierro} onChange={e=>setForm({...form,fierro:e.target.value})}/></div>
+            <div><label className="text-white/50 text-xs">Peso (kg)</label><input type="number" className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="350" value={form.pesoActual} onChange={e=>setForm({...form,pesoActual:e.target.value})}/></div>
+            {form.sexo==="HEMBRA"&&<div className="sm:col-span-2"><label className="text-white/50 text-xs">Estado reproductivo</label><select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.estadoReproductivo} onChange={e=>setForm({...form,estadoReproductivo:e.target.value})}><option value="">Sin definir</option>{ESTADOS_REPRO.map(e=><option key={e} value={e}>{REPRO_CONFIG[e].icon} {REPRO_CONFIG[e].label}</option>)}</select></div>}
+            <div className="sm:col-span-2"><label className="text-white/50 text-xs">Madre (si es cría)</label><select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.madreId} onChange={e=>setForm({...form,madreId:e.target.value})}><option value="">Sin madre</option>{hembrasActivas.map(h=><option key={h.id} value={h.id}>{h.nombre||h.identificador}</option>)}</select></div>
           </div>
           <textarea className="w-full rounded-xl px-3 py-2 text-sm" style={gi} placeholder="Observación..." rows={2} value={form.observacion} onChange={e=>setForm({...form,observacion:e.target.value})}/>
           <input type="file" accept="image/*,video/*" multiple className="w-full text-white/60 text-sm" onChange={e=>setArchivos(e.target.files)}/>
@@ -216,34 +220,52 @@ export default function InventarioPage() {
         </div>
       )}
 
-      {/* Tarjetas pequeñas */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      {/* Tarjetas — lista en móvil, grid en desktop */}
+      <div className="flex flex-col gap-3 md:grid md:grid-cols-3 lg:grid-cols-4">
         {resto.map(a=>{
           const et=etiqueta(a); const repro=a.estadoReproductivo?REPRO_CONFIG[a.estadoReproductivo]:null;
+          const foto=a.media?.find(m=>m.tipo==="FOTO");
           return (
-            <div key={a.id} className="rounded-2xl p-3 cursor-pointer hover:scale-105 transition-all"
-              style={{background:"rgba(5,25,12,0.6)",backdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,0.1)"}}
+            <div key={a.id} className="rounded-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-all flex md:flex-col"
+              style={{background:"rgba(5,25,12,0.65)",backdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,0.12)"}}
               onClick={()=>router.push(`/inventario/${a.id}`)}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-black text-white truncate">{a.nombre||a.identificador}</span>
-                <span style={{color:a.sexo==="HEMBRA"?"#f687b3":"#63b3ed",fontSize:11}}>{a.sexo==="HEMBRA"?"♀":"♂"}</span>
+              {/* Foto — izquierda en móvil, arriba en desktop */}
+              {foto
+                ? <img src={foto.url} className="w-20 h-20 md:w-full md:h-36 object-cover shrink-0"/>
+                : <div className="w-20 h-20 md:w-full md:h-28 shrink-0 flex items-center justify-center text-3xl"
+                    style={{background:"rgba(45,158,63,0.15)"}}>
+                    {a.sexo==="HEMBRA"?"🐄":"🐂"}
+                  </div>
+              }
+              {/* Info */}
+              <div className="flex-1 p-3 flex flex-col justify-center min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-white font-black text-base truncate">{a.nombre||a.identificador}</p>
+                  <span className="shrink-0 font-bold text-base" style={{color:a.sexo==="HEMBRA"?"#f687b3":"#63b3ed"}}>{a.sexo==="HEMBRA"?"♀":"♂"}</span>
+                </div>
+                <p className="text-white/40 text-xs">{a.raza||"Sin raza"} · {a.identificador}</p>
+                {a.pesoActual&&<p className="text-green-400 text-sm font-bold mt-1">⚖️ {a.pesoActual} kg</p>}
+                {repro&&<p className="text-xs mt-1 font-semibold" style={{color:repro.color}}>{repro.icon} {repro.label}</p>}
+                {et&&!repro&&<p className="text-white/40 text-xs mt-1 truncate">{et}</p>}
+                {a.estado==="VENDIDO"&&<span className="text-xs font-black px-2 py-0.5 rounded-full mt-1 inline-block" style={{background:"rgba(214,158,46,0.3)",color:"#d69e2e"}}>💰 Vendido</span>}
+                {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
+                  <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}}
+                    className="mt-2 text-xs px-3 py-1.5 rounded-xl font-bold"
+                    style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
+                    Registrar Parto
+                  </button>
+                )}
               </div>
-              <p className="text-white/40" style={{fontSize:10}}>Tag: {a.identificador}</p>
-              {a.madre&&<p className="text-white/30" style={{fontSize:10}}>Madre: {a.madre.nombre||a.madre.identificador}</p>}
-              {a.crias?.length>0&&<p className="text-white/30" style={{fontSize:10}}>Crías: {a.crias.length}</p>}
-              {repro&&<p className="text-xs mt-1 font-semibold" style={{color:repro.color}}>{repro.icon} {repro.label}</p>}
-              {et&&!repro&&<p className="text-white/30 mt-1 truncate" style={{fontSize:10}}>{et}</p>}
-              {a.pesoActual&&<p className="text-green-400 font-bold mt-1" style={{fontSize:10}}>⚖️ {a.pesoActual} kg</p>}
-              {a.estado==="VENDIDO"&&<p className="text-yellow-400 font-bold" style={{fontSize:10}}>💰 Vendido</p>}
-              {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
-                <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}} className="mt-1 font-bold w-full rounded py-0.5" style={{background:"rgba(229,62,62,0.3)",color:"#fc8181",fontSize:10}}>
-                  Parto
-                </button>
-              )}
             </div>
           );
         })}
-        {filtrados.length===0&&<div className="col-span-6 text-center py-16 text-white/30"><p className="text-5xl mb-3">🐄</p><p>No hay animales en esta categoría</p></div>}
+        {filtrados.length===0&&(
+          <div className="col-span-4 text-center py-20 text-white/30">
+            <p className="text-6xl mb-4">🐄</p>
+            <p className="text-lg font-bold text-white/40">Aún no hay animales registrados</p>
+            <p className="text-sm mt-1">Toca el botón verde de arriba para agregar tu primer animal</p>
+          </div>
+        )}
       </div>
     </AppLayout>
   );
