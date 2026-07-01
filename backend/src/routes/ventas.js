@@ -3,6 +3,7 @@ const multer = require("multer");
 const prisma = require("../prisma");
 const { requireAuth, requireRole } = require("../middleware/auth");
 const { uploadMedia } = require("../lib/storage");
+const logActividad = require("../lib/logActividad");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
@@ -125,6 +126,7 @@ router.post("/", upload.array("archivos", 10), async (req, res, next) => {
       }));
     }
 
+    logActividad({ accion: "Registró venta", detalle: `${tipoVenta} — C$ ${precioOriginal}`, modulo: "Ventas", fincaId: req.user.fincaId, usuarioId: req.user.sub });
     res.status(201).json(venta);
   } catch (err) { next(err); }
 });

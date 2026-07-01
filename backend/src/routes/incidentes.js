@@ -3,6 +3,7 @@ const multer = require("multer");
 const prisma = require("../prisma");
 const { requireAuth, requireRole } = require("../middleware/auth");
 const { uploadMedia } = require("../lib/storage");
+const notificarAdmin = require("../lib/notificarAdmin");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
@@ -48,6 +49,16 @@ router.post("/", upload.array("archivos", 10), async (req, res, next) => {
         return prisma.media.create({ data: { url, tipo: tipoMedia, incidenteId: incidente.id } });
       }));
     }
+
+    // Notificación urgente al admin siempre que se registre un incidente
+    notificarAdmin({
+      fincaId: req.user.fincaId,
+      usuarioId: req.user.sub,
+      accion: `Incidente registrado: ${tipo}`,
+      detalle: `${gravedad || "LEVE"} — ${descripcion}`,
+      modulo: "Incidentes",
+      urgente: true,
+    });
 
     res.status(201).json(incidente);
   } catch (err) { next(err); }

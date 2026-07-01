@@ -1,6 +1,7 @@
 const express = require("express");
 const prisma = require("../prisma");
 const { requireAuth, requireRole } = require("../middleware/auth");
+const logActividad = require("../lib/logActividad");
 
 const router = express.Router();
 router.use(requireAuth);
@@ -56,6 +57,7 @@ router.post("/", async (req, res, next) => {
       },
       include: { usuario: { select: { nombre: true } } },
     });
+    logActividad({ accion: "Registró gasto", detalle: `${descripcion} — C$ ${monto}`, modulo: "Gastos", fincaId: req.user.fincaId, usuarioId: req.user.sub });
     res.status(201).json(gasto);
   } catch (err) { next(err); }
 });
