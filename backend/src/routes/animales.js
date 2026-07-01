@@ -64,6 +64,20 @@ router.post("/", async (req, res, next) => {
       include: includeAnimal,
     });
 
+    // Si se registra una cría y se especifica madre, actualizar estado de la madre automáticamente
+    if (madreId) {
+      const madre = await prisma.animal.findFirst({ where: { id: madreId, fincaId: req.user.fincaId } });
+      if (madre && madre.sexo === "HEMBRA") {
+        await prisma.animal.update({
+          where: { id: madre.id },
+          data: {
+            estadoReproductivo: "LACTANCIA",
+            fechaParto: madre.fechaParto || new Date(),
+          },
+        });
+      }
+    }
+
     logActividad({ accion: "Registró animal", detalle: `${identificador} - ${nombre || ""}`, modulo: "Animales", fincaId: req.user.fincaId, usuarioId: req.user.sub });
     res.status(201).json(animal);
   } catch (err) { next(err); }
