@@ -65,13 +65,13 @@ export default function ReportesPage() {
       // Círculo con inicial
       const inicial = fincaNombre.charAt(0).toUpperCase();
       doc.setFillColor(255, 255, 255);
-      doc.circle(20, 19, 13, 'F');
+      doc.circle(20, 19, 10, "F");
       doc.setFillColor(...p.mid);
-      doc.circle(20, 19, 11, 'F');
+      doc.circle(20, 19, 8, "F");
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
+      doc.setFontSize(20);
       doc.setFont('helvetica', 'bold');
-      doc.text(inicial, 20, 23, { align: 'center' });
+      doc.text(inicial, 20, 22, { align: 'center' });
 
       // Nombre de la finca
       doc.setTextColor(255, 255, 255);
