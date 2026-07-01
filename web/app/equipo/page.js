@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, getUsuario } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
 export default function EquipoPage() {
@@ -11,6 +11,9 @@ export default function EquipoPage() {
   const [showForm, setShowForm] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [form, setForm] = useState({ nombre: "", email: "", password: "", role: "TRABAJADOR" });
+
+  const usuario = getUsuario();
+  const esAdmin = usuario?.role === "ADMIN" || usuario?.role === "SUPER_ADMIN";
 
   async function load() {
     try {
@@ -64,13 +67,15 @@ export default function EquipoPage() {
         ))}
       </div>
 
-      <button onClick={() => setShowForm((s) => !s)}
-        className="w-full text-white rounded-2xl py-4 font-black text-lg mb-5 shadow-xl hover:scale-[1.01] transition-transform"
-        style={{ background: showForm ? "rgba(100,100,100,0.4)" : "linear-gradient(135deg,#44337a,#805ad5)", border: "1px solid rgba(255,255,255,0.2)" }}>
-        {showForm ? "✕ Cancelar" : "+ Agregar Usuario"}
-      </button>
+      {esAdmin && (
+        <button onClick={() => setShowForm((s) => !s)}
+          className="w-full text-white rounded-2xl py-4 font-black text-lg mb-5 shadow-xl hover:scale-[1.01] transition-transform"
+          style={{ background: showForm ? "rgba(100,100,100,0.4)" : "linear-gradient(135deg,#44337a,#805ad5)", border: "1px solid rgba(255,255,255,0.2)" }}>
+          {showForm ? "✕ Cancelar" : "+ Agregar Usuario"}
+        </button>
+      )}
 
-      {showForm && (
+      {esAdmin && showForm && (
         <form onSubmit={handleCreate} className="rounded-2xl mb-5 overflow-hidden shadow-2xl" style={glass}>
           <div className="px-5 py-4" style={{ background: "linear-gradient(135deg,#44337a,#805ad5)" }}>
             <h2 className="text-white font-black text-lg">Nuevo Usuario</h2>
@@ -138,7 +143,7 @@ export default function EquipoPage() {
                       </p>
                     </div>
                   </div>
-                  {u.role === "TRABAJADOR" && (
+                  {esAdmin && u.role === "TRABAJADOR" && (
                     <button onClick={() => eliminar(u.id)}
                       className="text-white text-sm font-bold px-3 py-2 rounded-xl"
                       style={{ background: "rgba(220,38,38,0.3)", border: "1px solid rgba(220,38,38,0.5)" }}>

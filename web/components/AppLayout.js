@@ -62,7 +62,9 @@ export default function AppLayout({ children, title, subtitle }) {
   const isSuperAdmin = pathname?.startsWith("/superadmin");
   const enTablon = pathname === "/anuncios";
   const enActividad = pathname === "/actividad";
-  const navItems = isSuperAdmin ? NAV_ITEMS_SUPER : NAV_ITEMS_ADMIN;
+  const esTrabajador = usuario?.role === "TRABAJADOR";
+  const navItemsBase = isSuperAdmin ? NAV_ITEMS_SUPER : NAV_ITEMS_ADMIN;
+  const navItems = esTrabajador ? navItemsBase.filter(i => i.href !== "/equipo" && i.href !== "/actividad" && i.href !== "/reportes") : navItemsBase;
   const mobileItems = navItems.filter(i => NAV_MOBILE_PRIMARY.includes(i.href));
 
   useEffect(() => {
