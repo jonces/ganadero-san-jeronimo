@@ -18,7 +18,13 @@ export async function api(path, { method = "GET", body, isForm = false } = {}) {
   });
 
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.error || "Error en la solicitud");
+  if (!res.ok) {
+    if (data?.error === "FINCA_SUSPENDIDA") {
+      if (typeof window !== "undefined") localStorage.setItem("finca_suspendida", "1");
+    }
+    throw new Error(data?.error || "Error en la solicitud");
+  }
+  if (typeof window !== "undefined") localStorage.removeItem("finca_suspendida");
   return data;
 }
 

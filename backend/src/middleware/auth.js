@@ -16,7 +16,7 @@ async function requireAuth(req, res, next) {
     if (req.user.fincaId) {
       const finca = await prisma.finca.findUnique({ where: { id: req.user.fincaId }, select: { activa: true } });
       if (finca && !finca.activa) {
-        return res.status(403).json({ error: "Tu cuenta ha sido suspendida. Contacta al administrador." });
+        return res.status(403).json({ error: "FINCA_SUSPENDIDA" });
       }
     }
 

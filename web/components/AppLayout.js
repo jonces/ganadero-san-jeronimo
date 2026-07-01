@@ -30,6 +30,19 @@ export default function AppLayout({ children, title, subtitle }) {
   const pathname = usePathname();
   const [nuevos, setNuevos] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [suspendida, setSuspendida] = useState(false);
+
+  useEffect(() => {
+    function checkSuspension() {
+      if (typeof window !== "undefined" && localStorage.getItem("finca_suspendida") === "1") {
+        setSuspendida(true);
+      }
+    }
+    checkSuspension();
+    window.addEventListener("storage", checkSuspension);
+    const t = setInterval(checkSuspension, 3000);
+    return () => { window.removeEventListener("storage", checkSuspension); clearInterval(t); };
+  }, []);
 
   const isSuperAdmin = pathname?.startsWith("/superadmin");
   const enTablon = pathname === "/anuncios";
@@ -66,6 +79,38 @@ export default function AppLayout({ children, title, subtitle }) {
     backdropFilter: "blur(20px)",
     borderColor: "rgba(255,255,255,0.1)",
   };
+
+  // Pantalla de finca suspendida
+  if (suspendida) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6" style={{
+        backgroundImage: `url(${FARM_BG})`,
+        backgroundSize: "cover", backgroundPosition: "center",
+      }}>
+        <div className="rounded-3xl p-8 max-w-md w-full text-center shadow-2xl" style={{
+          background: "rgba(10,5,20,0.88)", backdropFilter: "blur(24px)",
+          border: "1px solid rgba(239,68,68,0.4)",
+        }}>
+          <div className="text-6xl mb-4">🔒</div>
+          <h2 className="text-white font-black text-2xl mb-2">Finca Suspendida</h2>
+          <p className="text-white/70 text-sm mb-6 leading-relaxed">
+            Tu finca ha sido <span className="text-red-400 font-bold">suspendida temporalmente</span>. No puedes acceder al sistema en este momento.
+          </p>
+          <div className="rounded-2xl p-4 mb-6" style={{ background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)" }}>
+            <p className="text-white/60 text-xs mb-1">Para reactivar tu cuenta, comunícate con:</p>
+            <p className="text-white font-bold text-sm">Administrador del Sistema</p>
+            <p className="text-blue-300 text-sm mt-1">jhonces20@gmail.com</p>
+          </div>
+          <button
+            onClick={() => { logout(); router.push("/"); }}
+            className="w-full py-3 rounded-xl text-white font-bold text-sm"
+            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex" style={{
