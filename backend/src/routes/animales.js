@@ -167,6 +167,13 @@ router.delete("/:id", async (req, res, next) => {
   try {
     const animal = await prisma.animal.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
     if (!animal) return res.status(404).json({ error: "Animal no encontrado" });
+    // Borrar relaciones antes de borrar el animal
+    await prisma.media.deleteMany({ where: { animalId: animal.id } });
+    await prisma.evento.deleteMany({ where: { animalId: animal.id } });
+    await prisma.incidente.updateMany({ where: { animalId: animal.id }, data: { animalId: null } });
+    await prisma.venta.updateMany({ where: { animalId: animal.id }, data: { animalId: null } });
+    // Desvincular crías
+    await prisma.animal.updateMany({ where: { madreId: animal.id }, data: { madreId: null } });
     await prisma.animal.delete({ where: { id: animal.id } });
     logActividad({ accion: "Eliminó animal", detalle: animal.identificador, modulo: "Animales", fincaId: req.user.fincaId, usuarioId: req.user.sub });
     res.json({ ok: true });

@@ -75,6 +75,7 @@ export default function InventarioPage() {
 
   const activos=animales.filter(a=>a.estado==="ACTIVO");
   const vendidos=animales.filter(a=>a.estado==="VENDIDO");
+  const visibles=animales.filter(a=>a.estado!=="ELIMINADO");
   const hembras=activos.filter(a=>a.sexo==="HEMBRA");
   const crias=activos.filter(a=>a.madreId);
 
@@ -90,7 +91,7 @@ export default function InventarioPage() {
     {label:"Vendidos",valor:vendidos.length,img:"https://images.unsplash.com/photo-1472396961693-142e6e269027?w=120&q=70",color:"#b7791f",filtroKey:"VENDIDOS"},
   ];
 
-  const filtrados=animales.filter(a=>{
+  const filtrados=visibles.filter(a=>{
     if(filtro==="TODOS") return true;
     if(filtro==="ACTIVOS") return a.estado==="ACTIVO";
     if(filtro==="VENDIDOS") return a.estado==="VENDIDO";
