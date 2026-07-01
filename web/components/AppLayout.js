@@ -1,7 +1,7 @@
 "use client";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { logout, api } from "@/lib/api";
+import { logout, api, getUsuario } from "@/lib/api";
 
 const FARM_BG = "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1920&q=85";
 
@@ -31,6 +31,9 @@ export default function AppLayout({ children, title, subtitle }) {
   const [nuevos, setNuevos] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [suspendida, setSuspendida] = useState(false);
+  const [usuario, setUsuario] = useState(null);
+
+  useEffect(() => { setUsuario(getUsuario()); }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && localStorage.getItem("finca_suspendida") === "1") {
@@ -191,10 +194,32 @@ export default function AppLayout({ children, title, subtitle }) {
             </div>
           </div>
 
-          <div className="hidden md:flex flex-col items-center">
-            <div className="text-2xl">🐄</div>
-            <p className="text-white/60 font-bold tracking-widest uppercase" style={{ fontSize: 9 }}>Ganadero SG</p>
-          </div>
+          {/* Badge usuario — centro en desktop, derecha en móvil */}
+          {usuario && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center font-black text-sm shrink-0"
+                style={{
+                  background: usuario.role === "ADMIN" ? "linear-gradient(135deg,#1a5c2a,#2d9e3f)"
+                    : usuario.role === "SUPER_ADMIN" ? "linear-gradient(135deg,#4a235a,#8e44ad)"
+                    : "linear-gradient(135deg,#1a3a6c,#2980b9)",
+                  color: "white",
+                }}>
+                {usuario.nombre?.charAt(0).toUpperCase()}
+              </div>
+              <div className="hidden sm:block">
+                <p className="text-white font-black leading-none" style={{ fontSize: 12 }}>{usuario.nombre}</p>
+                <p className="leading-none mt-0.5 font-bold" style={{
+                  fontSize: 9,
+                  color: usuario.role === "ADMIN" ? "#4ade80"
+                    : usuario.role === "SUPER_ADMIN" ? "#c084fc"
+                    : "#60a5fa",
+                }}>
+                  {usuario.role === "ADMIN" ? "Admin" : usuario.role === "SUPER_ADMIN" ? "Super Admin" : "Trabajador"}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Botón menú completo en móvil */}
           <div className="flex items-center gap-2">

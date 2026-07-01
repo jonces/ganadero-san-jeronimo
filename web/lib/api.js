@@ -35,3 +35,13 @@ export function saveToken(token) {
 export function logout() {
   localStorage.removeItem("token");
 }
+
+export function getUsuario() {
+  if (typeof window === "undefined") return null;
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return { nombre: payload.nombre, role: payload.role };
+  } catch { return null; }
+}
