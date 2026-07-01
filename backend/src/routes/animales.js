@@ -86,7 +86,7 @@ router.patch("/:id", async (req, res, next) => {
     if (fechaSecado !== undefined) data.fechaSecado = fechaSecado ? new Date(fechaSecado) : null;
 
     // Transición de estado reproductivo con lógica automática
-    if (estadoReproductivo !== undefined && animal.sexo === "HEMBRA") {
+    if (estadoReproductivo !== undefined && estadoReproductivo !== null && animal.sexo === "HEMBRA") {
       data.estadoReproductivo = estadoReproductivo;
       // Si pasa a PARIDA, registrar fecha de parto
       if (estadoReproductivo === "PARIDA" && !animal.fechaParto) {
