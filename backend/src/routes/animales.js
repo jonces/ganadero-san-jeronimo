@@ -173,4 +173,15 @@ router.post("/:id/media", upload.array("archivos", 10), async (req, res, next) =
   } catch (err) { next(err); }
 });
 
+router.delete("/:id/media/:mediaId", async (req, res, next) => {
+  try {
+    const animal = await prisma.animal.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
+    if (!animal) return res.status(404).json({ error: "Animal no encontrado" });
+    const media = await prisma.media.findFirst({ where: { id: req.params.mediaId, animalId: animal.id } });
+    if (!media) return res.status(404).json({ error: "Archivo no encontrado" });
+    await prisma.media.delete({ where: { id: media.id } });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

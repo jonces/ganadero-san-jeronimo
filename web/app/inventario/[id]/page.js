@@ -27,6 +27,8 @@ export default function AnimalDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [mediaIdx, setMediaIdx] = useState(0);
+  const [nuevosArchivos, setNuevosArchivos] = useState([]);
+  const [eliminandoMedia, setEliminandoMedia] = useState(null);
   const [form, setForm] = useState({});
 
   async function load() {
@@ -68,12 +70,36 @@ export default function AnimalDetailPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al guardar");
-      setAnimal(data);
+      // Subir nuevos archivos si hay
+      if (nuevosArchivos.length > 0) {
+        const fd = new FormData();
+        Array.from(nuevosArchivos).forEach(f => fd.append("archivos", f));
+        await fetch(`${API_URL}/animales/${id}/media`, {
+          method: "POST", headers: { Authorization: `Bearer ${getToken()}` }, body: fd,
+        });
+        setNuevosArchivos([]);
+      }
+      await load();
       setEditando(false);
     } catch (err) {
       setError(err.message);
     } finally {
       setEnviando(false);
+    }
+  }
+
+  async function eliminarMedia(mediaId) {
+    setEliminandoMedia(mediaId);
+    try {
+      await fetch(`${API_URL}/animales/${id}/media/${mediaId}`, {
+        method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      await load();
+      setMediaIdx(0);
+    } catch (err) {
+      setError("No se pudo eliminar el archivo");
+    } finally {
+      setEliminandoMedia(null);
     }
   }
 
@@ -297,37 +323,75 @@ export default function AnimalDetailPage() {
 
       {/* Formulario de edición */}
       {editando && (
-        <form onSubmit={handleEdit} className="rounded-3xl p-5 mb-4 space-y-3 shadow-xl" style={glass}>
-          <div className="flex items-center justify-between mb-2">
+        <form onSubmit={handleEdit} className="rounded-3xl p-5 mb-4 space-y-4 shadow-xl" style={glass}>
+          <div className="flex items-center justify-between">
             <h3 className="text-white font-black text-lg">✏️ Editar Animal</h3>
-            <button type="button" onClick={() => setEditando(false)} className="text-white/40 text-xl">✕</button>
+            <button type="button" onClick={() => setEditando(false)} className="text-white/40 text-2xl leading-none">✕</button>
           </div>
 
+          {/* Fotos y videos actuales */}
+          {todosMedia.length > 0 && (
+            <div>
+              <p className="text-white/50 text-xs font-bold uppercase tracking-wider mb-2">Fotos y Videos actuales</p>
+              <div className="flex gap-2 flex-wrap">
+                {todosMedia.map((m) => (
+                  <div key={m.id} className="relative rounded-xl overflow-hidden shrink-0" style={{ width: 72, height: 72 }}>
+                    {m.tipo === "VIDEO"
+                      ? <div className="w-full h-full flex flex-col items-center justify-center gap-1"
+                          style={{ background: "linear-gradient(135deg,#1a3a6c,#2d9e3f)" }}>
+                          <span style={{ fontSize: 20 }}>▶️</span>
+                          <span className="text-white font-black" style={{ fontSize: 8 }}>VIDEO</span>
+                        </div>
+                      : <img src={m.url} className="w-full h-full object-cover" onError={e => e.target.style.opacity=0.3} />
+                    }
+                    <button type="button" onClick={() => eliminarMedia(m.id)}
+                      disabled={eliminandoMedia === m.id}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full flex items-center justify-center text-white font-black"
+                      style={{ background: "rgba(220,38,38,0.9)", fontSize: 10 }}>
+                      {eliminandoMedia === m.id ? "…" : "✕"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Agregar nuevos archivos */}
+          <div className="rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.06)", border: "1px dashed rgba(255,255,255,0.2)" }}>
+            <p className="text-white/50 text-xs mb-2">➕ Agregar fotos o videos nuevos</p>
+            <input type="file" accept="image/*,video/*" multiple className="w-full text-white/60 text-sm"
+              onChange={e => setNuevosArchivos(e.target.files)} />
+            {nuevosArchivos.length > 0 && (
+              <p className="text-green-400 text-xs mt-2 font-bold">✅ {nuevosArchivos.length} archivo{nuevosArchivos.length > 1 ? "s" : ""} listo{nuevosArchivos.length > 1 ? "s" : ""} para subir</p>
+            )}
+          </div>
+
+          {/* Campos de info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-white/50 text-xs">Nombre</label>
-              <input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi}
-                value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} />
+              <input className="w-full rounded-xl px-3 py-3 text-white text-base mt-0.5" style={gi}
+                placeholder="Nombre del animal" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} />
             </div>
             <div>
               <label className="text-white/50 text-xs">Raza</label>
-              <input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi}
-                placeholder="Brahman" value={form.raza} onChange={e => setForm({ ...form, raza: e.target.value })} />
+              <input className="w-full rounded-xl px-3 py-3 text-white text-base mt-0.5" style={gi}
+                placeholder="Ej: Brahman" value={form.raza} onChange={e => setForm({ ...form, raza: e.target.value })} />
             </div>
             <div>
               <label className="text-white/50 text-xs">Fierro</label>
-              <input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi}
-                value={form.fierro} onChange={e => setForm({ ...form, fierro: e.target.value })} />
+              <input className="w-full rounded-xl px-3 py-3 text-white text-base mt-0.5" style={gi}
+                placeholder="Ej: M20" value={form.fierro} onChange={e => setForm({ ...form, fierro: e.target.value })} />
             </div>
             <div>
               <label className="text-white/50 text-xs">Peso (kg)</label>
-              <input type="number" className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi}
-                value={form.pesoActual} onChange={e => setForm({ ...form, pesoActual: e.target.value })} />
+              <input type="number" className="w-full rounded-xl px-3 py-3 text-white text-base mt-0.5" style={gi}
+                placeholder="Ej: 350" value={form.pesoActual} onChange={e => setForm({ ...form, pesoActual: e.target.value })} />
             </div>
             {animal.sexo === "HEMBRA" && (
               <div className="sm:col-span-2">
                 <label className="text-white/50 text-xs">Estado Reproductivo</label>
-                <select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi}
+                <select className="w-full rounded-xl px-3 py-3 text-white text-base mt-0.5" style={gi}
                   value={form.estadoReproductivo} onChange={e => setForm({ ...form, estadoReproductivo: e.target.value })}>
                   <option value="">Sin definir</option>
                   {ESTADOS_REPRO.map(e => (
@@ -338,7 +402,7 @@ export default function AnimalDetailPage() {
             )}
             <div className="sm:col-span-2">
               <label className="text-white/50 text-xs">Estado</label>
-              <select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi}
+              <select className="w-full rounded-xl px-3 py-3 text-white text-base mt-0.5" style={gi}
                 value={form.estado} onChange={e => setForm({ ...form, estado: e.target.value })}>
                 <option value="ACTIVO">Activo</option>
                 <option value="VENDIDO">Vendido</option>
@@ -346,12 +410,12 @@ export default function AnimalDetailPage() {
             </div>
             <div className="sm:col-span-2">
               <label className="text-white/50 text-xs">Observación</label>
-              <textarea className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} rows={3}
-                value={form.observacion} onChange={e => setForm({ ...form, observacion: e.target.value })} />
+              <textarea className="w-full rounded-xl px-3 py-3 text-white text-base mt-0.5" style={gi} rows={3}
+                placeholder="Notas sobre este animal..." value={form.observacion} onChange={e => setForm({ ...form, observacion: e.target.value })} />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="grid grid-cols-2 gap-3 pt-1">
             <button type="button" onClick={() => setEditando(false)}
               className="text-white/60 font-bold py-3 rounded-2xl"
               style={{ border: "1px solid rgba(255,255,255,0.2)" }}>
