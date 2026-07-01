@@ -32,9 +32,11 @@ export default function InventarioPage() {
     try {
       const data = await api("/animales");
       setAnimales(Array.isArray(data) ? data : []);
+      setError("");
     } catch(err) {
-      setError(err.message);
+      // Solo mostrar error si es de auth, ignorar errores de red temporales
       if(err.message.includes("autenticado")||err.message.includes("inválido")) router.push("/");
+      else if(err.message !== "Failed to fetch") setError(err.message);
     }
   }
 
@@ -135,7 +137,7 @@ export default function InventarioPage() {
             <div className="absolute inset-0" style={{background:filtro===m.filtroKey?`${m.color}aa`:"rgba(0,0,0,0.6)"}}/>
             <div className="relative z-10 flex flex-col items-center justify-center h-full py-3 px-1">
               <p className="text-white font-black leading-none" style={{fontSize:28,textShadow:"0 2px 8px rgba(0,0,0,0.9)"}}>{m.valor}</p>
-              <p className="text-white font-bold text-center leading-tight mt-1" style={{fontSize:9,textShadow:"0 1px 4px rgba(0,0,0,0.9)"}}>{m.label}</p>
+              <p className="text-white font-bold text-center leading-tight mt-1 w-full truncate px-1" style={{fontSize:9,textShadow:"0 1px 4px rgba(0,0,0,0.9)"}}>{m.label}</p>
               {filtro===m.filtroKey&&<div className="mt-1 rounded-full px-1.5 py-0.5" style={{background:m.color,fontSize:7,color:"white",fontWeight:900}}>✓ activo</div>}
             </div>
           </button>
