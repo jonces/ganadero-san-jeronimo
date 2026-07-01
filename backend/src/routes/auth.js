@@ -97,7 +97,7 @@ router.post("/olvide-password", async (req, res, next) => {
       const { Resend } = require("resend");
       const resend = new Resend(process.env.RESEND_API_KEY);
       await resend.emails.send({
-        from: "Ganadero SG <noreply@ganaderosg.com>",
+        from: "Ganadero SG <noreply@ganaderosg.app>",
         to: email,
         subject: "Código para recuperar tu contraseña",
         html: `
