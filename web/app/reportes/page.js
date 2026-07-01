@@ -60,22 +60,25 @@ export default function ReportesPage() {
       doc.setFillColor(...p.accent);
       doc.rect(0, 44, 5, H - 52, "F");
 
-      // Circulo logo
-      doc.setFillColor(255, 255, 255);
-      doc.circle(22, 19, 11, "F");
-      doc.setFillColor(...p.mid);
-      doc.circle(22, 19, 9, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      const inicial = fincaNombre.charAt(0).toUpperCase();
-      doc.text(inicial, 22, 22.5, { align: "center" });
+
+      // Logo planta estilizada
+      const lx = 10, ly = 6;
+      doc.setFillColor(...p.accent);
+      doc.setDrawColor(255,255,255);
+      doc.setLineWidth(0.4);
+      doc.ellipse(lx + 4, ly + 13, 5, 8, 'FD');
+      doc.ellipse(lx + 12, ly + 10, 5, 8, 'FD');
+      doc.setFillColor(255,255,255);
+      doc.circle(lx + 8, ly + 13, 1.5, 'F');
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(1.2);
+      doc.line(lx + 8, ly + 19, lx + 8, ly + 26);
 
       // Nombre de la finca
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(17);
       doc.setFont("helvetica", "bold");
-      doc.text(fincaNombre, 38, 16);
+      doc.text("Finca: " + fincaNombre, 34, 16);
 
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
