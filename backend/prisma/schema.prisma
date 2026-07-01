@@ -103,6 +103,13 @@ model Animal {
   pesoActual      Float?
   observacion     String?
   estado          String    @default("ACTIVO")
+  // Estado reproductivo (solo hembras)
+  estadoReproductivo String? // PREÑADA, PARIDA, LACTANCIA, SECA, VACIA - sync v2
+  fechaParto         DateTime?
+  fechaSecado        DateTime?
+  madreId            String?
+  madre              Animal?   @relation("Crias", fields: [madreId], references: [id])
+  crias              Animal[]  @relation("Crias")
   fincaId         String
   finca           Finca     @relation(fields: [fincaId], references: [id])
   createdAt       DateTime  @default(now())
