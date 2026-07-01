@@ -172,8 +172,11 @@ export default function AnimalDetailPage() {
                   className="relative shrink-0 rounded-xl overflow-hidden transition-all hover:scale-105"
                   style={{ width: 60, height: 60, border: i === mediaIdx ? "2px solid #4ade80" : "2px solid transparent" }}>
                   {m.tipo === "VIDEO" ? (
-                    <div className="w-full h-full flex items-center justify-center text-2xl"
-                      style={{ background: "rgba(45,158,63,0.3)" }}>🎬</div>
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-1"
+                      style={{ background: "linear-gradient(135deg,#1a3a6c,#2d9e3f)" }}>
+                      <span style={{ fontSize: 22 }}>▶️</span>
+                      <span className="text-white font-black" style={{ fontSize: 9 }}>VIDEO</span>
+                    </div>
                   ) : (
                     <img src={m.url} className="w-full h-full object-cover" />
                   )}
