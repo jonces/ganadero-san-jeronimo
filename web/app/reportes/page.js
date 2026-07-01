@@ -61,75 +61,78 @@ export default function ReportesPage() {
       doc.rect(0, 44, 5, H - 52, "F");
 
 
-      // Logo estilo rancho ganadero
-      const lx = 7, ly = 1;
-      // --- Silueta de vaca (blanca) ---
-      doc.setFillColor(255, 255, 255);
-      // Cuerpo
-      doc.ellipse(lx + 13, ly + 14, 9, 5.5, 'F');
-      // Joroba brahman
-      doc.ellipse(lx + 17, ly + 9, 3.5, 3, 'F');
-      // Cuello
-      doc.ellipse(lx + 19, ly + 12, 3, 2.5, 'F');
-      // Cabeza
-      doc.circle(lx + 22, ly + 10, 3.8, 'F');
-      // Hocico
-      doc.ellipse(lx + 25, ly + 11.5, 1.8, 1.2, 'F');
-      // Oreja
-      doc.circle(lx + 21, ly + 6.8, 1.2, 'F');
-      // Cuernos
-      doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(0.9);
-      doc.line(lx + 20, ly + 7, lx + 18, ly + 4);
-      doc.line(lx + 22.5, ly + 7, lx + 24.5, ly + 5);
-      // Cola
-      doc.setLineWidth(1);
-      doc.line(lx + 4, ly + 13, lx + 2, ly + 8.5);
-      doc.line(lx + 2, ly + 8.5, lx + 1, ly + 7);
-      // Patas delanteras
-      doc.setFillColor(255, 255, 255);
-      doc.rect(lx + 18, ly + 19, 2, 5, 'F');
-      doc.rect(lx + 21.5, ly + 19, 2, 5, 'F');
-      // Patas traseras
-      doc.rect(lx + 8, ly + 18.5, 2, 5.5, 'F');
-      doc.rect(lx + 11.5, ly + 18.5, 2, 5.5, 'F');
-      // Línea de tierra / pasto
-      doc.setLineWidth(0.7);
-      doc.line(lx + 2, ly + 24.5, lx + 28, ly + 24.5);
-      // Hierba (líneas cortas)
-      [lx+4, lx+7, lx+10, lx+14, lx+18, lx+22, lx+26].forEach(gx => {
-        doc.line(gx, ly + 24.5, gx - 1, ly + 22.5);
-        doc.line(gx, ly + 24.5, gx + 1, ly + 22.5);
-      });
-      // --- Badge inferior ---
-      doc.setFillColor(...p.accent);
-      doc.roundedRect(lx, ly + 26, 30, 13, 3, 3, 'F');
-      // Alas del badge (rectángulos laterales inclinados con líneas)
-      doc.setFillColor(...p.accent);
-      doc.rect(lx - 4, ly + 28, 5, 7, 'F');
-      doc.rect(lx + 29, ly + 28, 5, 7, 'F');
-      // Borde blanco del badge
-      doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(0.5);
-      doc.roundedRect(lx + 1, ly + 27, 28, 11, 2, 2, 'D');
-      // Estrellas decorativas (asteriscos con líneas)
-      doc.setLineWidth(0.4);
-      [[lx+4, ly+30.5],[lx+26, ly+30.5]].forEach(([sx,sy]) => {
-        doc.line(sx-1.2,sy,sx+1.2,sy);
-        doc.line(sx,sy-1.2,sx,sy+1.2);
-        doc.line(sx-0.8,sy-0.8,sx+0.8,sy+0.8);
-        doc.line(sx+0.8,sy-0.8,sx-0.8,sy+0.8);
-      });
-      // Texto FINCA (pequeño, arriba)
-      doc.setTextColor(...p.dark);
-      doc.setFontSize(5.5);
-      doc.setFont('helvetica', 'bold');
-      doc.text('FINCA', lx + 15, ly + 31.5, { align: 'center' });
-      // Nombre de la finca (más grande)
-      doc.setFontSize(5);
-      doc.setFont('helvetica', 'normal');
-      const nombreCorto = fincaNombre.toUpperCase().substring(0, 14);
-      doc.text(nombreCorto, lx + 15, ly + 35.5, { align: 'center' });
+      // Logo: SVG a imagen en el PDF
+      async function svgToImg(svgStr, w, h) {
+        return new Promise((resolve) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          const img = new Image();
+          const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+          const url = URL.createObjectURL(blob);
+          img.onload = () => { ctx.drawImage(img, 0, 0, w, h); URL.revokeObjectURL(url); resolve(canvas.toDataURL('image/png')); };
+          img.src = url;
+        });
+      }
+
+      // Color de acento para el SVG (dorado/verde/morado según tipo)
+      const accentHex = tipo === 'animales' ? '#34a853' : tipo === 'ventas' ? '#d28c28' : '#8c5ae6';
+      const darkHex   = tipo === 'animales' ? '#0f4a1e' : tipo === 'ventas' ? '#5a320a' : '#321e64';
+
+      const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 180">
+        <!-- Silueta de vaca Brahman estilo rancho -->
+        <g fill="white">
+          <!-- Cuerpo principal -->
+          <ellipse cx="100" cy="108" rx="62" ry="36"/>
+          <!-- Joroba (Brahman) -->
+          <ellipse cx="128" cy="76" rx="24" ry="22"/>
+          <!-- Cuello -->
+          <ellipse cx="150" cy="95" rx="20" ry="16"/>
+          <!-- Cabeza -->
+          <ellipse cx="166" cy="76" rx="24" ry="20"/>
+          <!-- Hocico -->
+          <ellipse cx="186" cy="86" rx="12" ry="8"/>
+          <!-- Ollares -->
+          <ellipse cx="183" cy="86" rx="2.5" ry="2" fill="#333"/>
+          <ellipse cx="190" cy="87" rx="2.5" ry="2" fill="#333"/>
+          <!-- Ojo -->
+          <circle cx="172" cy="70" r="3.5" fill="#333"/>
+          <circle cx="172" cy="70" r="1.5" fill="white"/>
+          <!-- Oreja derecha -->
+          <ellipse cx="158" cy="56" rx="7" ry="5" transform="rotate(-30 158 56)"/>
+          <!-- Oreja izquierda -->
+          <ellipse cx="175" cy="54" rx="6" ry="4" transform="rotate(20 175 54)"/>
+          <!-- Cuernos -->
+          <path d="M 158 58 Q 148 38 140 30" stroke="white" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path d="M 172 56 Q 180 36 188 28" stroke="white" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <!-- Cola -->
+          <path d="M 38 104 Q 22 82 18 58 Q 16 48 22 44" stroke="white" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="22" cy="42" rx="4" ry="6" transform="rotate(-20 22 42)"/>
+          <!-- Patas traseras -->
+          <rect x="56" y="138" width="18" height="34" rx="4"/>
+          <rect x="84" y="138" width="18" height="34" rx="4"/>
+          <!-- Patas delanteras -->
+          <rect x="122" y="138" width="18" height="34" rx="4"/>
+          <rect x="148" y="136" width="18" height="34" rx="4"/>
+          <!-- Pezuñas (más oscuras) -->
+          <rect x="56" y="164" width="18" height="8" rx="3" fill="#ccc"/>
+          <rect x="84" y="164" width="18" height="8" rx="3" fill="#ccc"/>
+          <rect x="122" y="164" width="18" height="8" rx="3" fill="#ccc"/>
+          <rect x="148" y="162" width="18" height="8" rx="3" fill="#ccc"/>
+        </g>
+        <!-- Línea de tierra con pasto -->
+        <line x1="10" y1="172" x2="210" y2="172" stroke="white" stroke-width="3"/>
+        <g stroke="white" stroke-width="2.5" stroke-linecap="round">
+          <line x1="20" y1="172" x2="16" y2="164"/><line x1="20" y1="172" x2="24" y2="164"/>
+          <line x1="40" y1="172" x2="36" y2="163"/><line x1="40" y1="172" x2="44" y2="163"/>
+          <line x1="108" y1="172" x2="104" y2="162"/><line x1="108" y1="172" x2="112" y2="162"/>
+          <line x1="180" y1="172" x2="176" y2="164"/><line x1="180" y1="172" x2="184" y2="164"/>
+          <line x1="200" y1="172" x2="196" y2="165"/><line x1="200" y1="172" x2="204" y2="165"/>
+        </g>
+      </svg>`;
+
+      const logoImg = await svgToImg(logoSvg, 440, 360);
+      doc.addImage(logoImg, 'PNG', 5, 0, 36, 29);
 
       // Nombre de la finca
       doc.setTextColor(255, 255, 255);
