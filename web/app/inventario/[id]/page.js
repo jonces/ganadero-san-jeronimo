@@ -26,7 +26,7 @@ export default function AnimalDetailPage() {
   const [editando, setEditando] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const [fotoIdx, setFotoIdx] = useState(0);
+  const [mediaIdx, setMediaIdx] = useState(0);
   const [form, setForm] = useState({});
 
   async function load() {
@@ -99,7 +99,9 @@ export default function AnimalDetailPage() {
     }
   }
 
-  const fotos = animal?.media?.filter(m => m.tipo === "FOTO") || [];
+  const todosMedia = animal?.media || [];
+  const fotos = todosMedia.filter(m => m.tipo === "FOTO");
+  const mediaActual = todosMedia[mediaIdx];
   const repro = animal?.estadoReproductivo ? REPRO_CONFIG[animal.estadoReproductivo] : null;
 
   if (error) return (
@@ -127,19 +129,24 @@ export default function AnimalDetailPage() {
         </div>
       )}
 
-      {/* Galería de fotos */}
-      {fotos.length > 0 && (
-        <div className="rounded-3xl overflow-hidden mb-4 shadow-2xl relative">
-          <img src={fotos[fotoIdx].url} className="w-full object-cover" style={{ maxHeight: 280 }} />
-          {fotos.length > 1 && (
-            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
-              {fotos.map((_, i) => (
-                <button key={i} onClick={() => setFotoIdx(i)}
-                  className="rounded-full transition-all"
-                  style={{ width: i === fotoIdx ? 20 : 8, height: 8, background: i === fotoIdx ? "#fff" : "rgba(255,255,255,0.4)" }} />
-              ))}
-            </div>
+      {/* Galería de fotos y videos */}
+      {todosMedia.length > 0 && (
+        <div className="rounded-3xl overflow-hidden mb-4 shadow-2xl relative" style={{ background: "#000" }}>
+          {/* Visor principal */}
+          {mediaActual?.tipo === "VIDEO" ? (
+            <video
+              key={mediaActual.url}
+              src={mediaActual.url}
+              controls
+              playsInline
+              className="w-full"
+              style={{ maxHeight: 320, background: "#000", display: "block" }}
+            />
+          ) : (
+            <img src={mediaActual?.url} className="w-full object-cover" style={{ maxHeight: 280 }} />
           )}
+
+          {/* Badges */}
           <div className="absolute top-3 left-3">
             <span className="text-white font-black px-3 py-1 rounded-full text-sm"
               style={{ background: animal.sexo === "HEMBRA" ? "rgba(246,135,179,0.85)" : "rgba(99,179,237,0.85)" }}>
@@ -149,6 +156,30 @@ export default function AnimalDetailPage() {
           {animal.estado === "VENDIDO" && (
             <div className="absolute top-3 right-3 text-white font-black px-3 py-1 rounded-full text-sm"
               style={{ background: "#d69e2e" }}>💰 Vendido</div>
+          )}
+          {mediaActual?.tipo === "VIDEO" && (
+            <div className="absolute top-3" style={{ left: "50%", transform: "translateX(-50%)" }}>
+              <span className="text-white font-black px-3 py-1 rounded-full text-xs"
+                style={{ background: "rgba(0,0,0,0.6)" }}>🎬 Video</span>
+            </div>
+          )}
+
+          {/* Miniaturas si hay más de 1 */}
+          {todosMedia.length > 1 && (
+            <div className="flex gap-2 p-3 overflow-x-auto" style={{ background: "rgba(0,0,0,0.6)" }}>
+              {todosMedia.map((m, i) => (
+                <button key={i} onClick={() => setMediaIdx(i)}
+                  className="relative shrink-0 rounded-xl overflow-hidden transition-all hover:scale-105"
+                  style={{ width: 60, height: 60, border: i === mediaIdx ? "2px solid #4ade80" : "2px solid transparent" }}>
+                  {m.tipo === "VIDEO" ? (
+                    <div className="w-full h-full flex items-center justify-center text-2xl"
+                      style={{ background: "rgba(45,158,63,0.3)" }}>🎬</div>
+                  ) : (
+                    <img src={m.url} className="w-full h-full object-cover" />
+                  )}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       )}
