@@ -61,24 +61,81 @@ export default function ReportesPage() {
       doc.rect(0, 44, 5, H - 52, "F");
 
 
-      // Logo planta estilizada
-      const lx = 10, ly = 6;
-      doc.setFillColor(...p.accent);
-      doc.setDrawColor(255,255,255);
-      doc.setLineWidth(0.4);
-      doc.ellipse(lx + 4, ly + 13, 5, 8, 'FD');
-      doc.ellipse(lx + 12, ly + 10, 5, 8, 'FD');
-      doc.setFillColor(255,255,255);
-      doc.circle(lx + 8, ly + 13, 1.5, 'F');
+      // Logo estilo rancho ganadero
+      const lx = 7, ly = 1;
+      // --- Silueta de vaca (blanca) ---
+      doc.setFillColor(255, 255, 255);
+      // Cuerpo
+      doc.ellipse(lx + 13, ly + 14, 9, 5.5, 'F');
+      // Joroba brahman
+      doc.ellipse(lx + 17, ly + 9, 3.5, 3, 'F');
+      // Cuello
+      doc.ellipse(lx + 19, ly + 12, 3, 2.5, 'F');
+      // Cabeza
+      doc.circle(lx + 22, ly + 10, 3.8, 'F');
+      // Hocico
+      doc.ellipse(lx + 25, ly + 11.5, 1.8, 1.2, 'F');
+      // Oreja
+      doc.circle(lx + 21, ly + 6.8, 1.2, 'F');
+      // Cuernos
       doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(1.2);
-      doc.line(lx + 8, ly + 19, lx + 8, ly + 26);
+      doc.setLineWidth(0.9);
+      doc.line(lx + 20, ly + 7, lx + 18, ly + 4);
+      doc.line(lx + 22.5, ly + 7, lx + 24.5, ly + 5);
+      // Cola
+      doc.setLineWidth(1);
+      doc.line(lx + 4, ly + 13, lx + 2, ly + 8.5);
+      doc.line(lx + 2, ly + 8.5, lx + 1, ly + 7);
+      // Patas delanteras
+      doc.setFillColor(255, 255, 255);
+      doc.rect(lx + 18, ly + 19, 2, 5, 'F');
+      doc.rect(lx + 21.5, ly + 19, 2, 5, 'F');
+      // Patas traseras
+      doc.rect(lx + 8, ly + 18.5, 2, 5.5, 'F');
+      doc.rect(lx + 11.5, ly + 18.5, 2, 5.5, 'F');
+      // Línea de tierra / pasto
+      doc.setLineWidth(0.7);
+      doc.line(lx + 2, ly + 24.5, lx + 28, ly + 24.5);
+      // Hierba (líneas cortas)
+      [lx+4, lx+7, lx+10, lx+14, lx+18, lx+22, lx+26].forEach(gx => {
+        doc.line(gx, ly + 24.5, gx - 1, ly + 22.5);
+        doc.line(gx, ly + 24.5, gx + 1, ly + 22.5);
+      });
+      // --- Badge inferior ---
+      doc.setFillColor(...p.accent);
+      doc.roundedRect(lx, ly + 26, 30, 13, 3, 3, 'F');
+      // Alas del badge (rectángulos laterales inclinados con líneas)
+      doc.setFillColor(...p.accent);
+      doc.rect(lx - 4, ly + 28, 5, 7, 'F');
+      doc.rect(lx + 29, ly + 28, 5, 7, 'F');
+      // Borde blanco del badge
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(lx + 1, ly + 27, 28, 11, 2, 2, 'D');
+      // Estrellas decorativas (asteriscos con líneas)
+      doc.setLineWidth(0.4);
+      [[lx+4, ly+30.5],[lx+26, ly+30.5]].forEach(([sx,sy]) => {
+        doc.line(sx-1.2,sy,sx+1.2,sy);
+        doc.line(sx,sy-1.2,sx,sy+1.2);
+        doc.line(sx-0.8,sy-0.8,sx+0.8,sy+0.8);
+        doc.line(sx+0.8,sy-0.8,sx-0.8,sy+0.8);
+      });
+      // Texto FINCA (pequeño, arriba)
+      doc.setTextColor(...p.dark);
+      doc.setFontSize(5.5);
+      doc.setFont('helvetica', 'bold');
+      doc.text('FINCA', lx + 15, ly + 31.5, { align: 'center' });
+      // Nombre de la finca (más grande)
+      doc.setFontSize(5);
+      doc.setFont('helvetica', 'normal');
+      const nombreCorto = fincaNombre.toUpperCase().substring(0, 14);
+      doc.text(nombreCorto, lx + 15, ly + 35.5, { align: 'center' });
 
       // Nombre de la finca
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(17);
       doc.setFont("helvetica", "bold");
-      doc.text("Finca: " + fincaNombre, 34, 16);
+      doc.text("Finca: " + fincaNombre, 44, 16);
 
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
