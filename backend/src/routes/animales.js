@@ -13,6 +13,8 @@ router.use(requireAuth);
 const includeAnimal = {
   media: { orderBy: { createdAt: "desc" }, take: 5 },
   eventos: { orderBy: { fecha: "desc" }, take: 1 },
+  madre: { select: { id: true, identificador: true, nombre: true } },
+  crias: { select: { id: true, identificador: true, nombre: true, sexo: true, estado: true }, orderBy: { createdAt: "asc" } },
 };
 
 router.get("/", async (req, res, next) => {
@@ -33,6 +35,8 @@ router.get("/:id", async (req, res, next) => {
       include: {
         media: { orderBy: { createdAt: "desc" } },
         eventos: { orderBy: { fecha: "desc" }, include: { media: true, usuario: { select: { nombre: true } } } },
+        madre: { select: { id: true, identificador: true, nombre: true } },
+        crias: { select: { id: true, identificador: true, nombre: true, sexo: true, estado: true }, orderBy: { createdAt: "asc" } },
       },
     });
     if (!animal) return res.status(404).json({ error: "Animal no encontrado" });
