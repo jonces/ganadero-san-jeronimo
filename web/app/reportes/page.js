@@ -8,6 +8,7 @@ export default function ReportesPage() {
   const [animales, setAnimales] = useState([]);
   const [ventas, setVentas] = useState([]);
   const [gastos, setGastos] = useState([]);
+  const [finca, setFinca] = useState(null);
   const [generando, setGenerando] = useState(null);
   const [error, setError] = useState("");
 
@@ -17,12 +18,14 @@ export default function ReportesPage() {
       api("/animales").catch(() => []),
       api("/ventas").catch(() => []),
       api("/gastos").catch(() => ({ gastos: [] })),
-    ]).then(([s, a, v, g]) => {
+      api("/fincas/mi-finca").catch(() => null),
+    ]).then(([s, a, v, g, f]) => {
       setStats(s);
       setAnimales(Array.isArray(a) ? a : []);
       setVentas(Array.isArray(v) ? v : []);
       const listaGastos = Array.isArray(g) ? g : Array.isArray(g?.gastos) ? g.gastos : [];
       setGastos(listaGastos);
+      setFinca(f);
     }).catch(e => setError(e.message));
   }, []);
 
@@ -35,144 +38,206 @@ export default function ReportesPage() {
       const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const fecha = new Date().toLocaleDateString("es", { dateStyle: "long" });
       const W = doc.internal.pageSize.getWidth();
+      const H = doc.internal.pageSize.getHeight();
 
-      // Header
-      // Header con gradiente verde
-      doc.setFillColor(26, 92, 42);
-      doc.rect(0, 0, W, 36, "F");
-      doc.setFillColor(45, 158, 63);
-      doc.rect(0, 28, W, 4, "F");
+      const fincaNombre = finca?.nombre || "Mi Finca";
+      const fincaUbicacion = finca?.ubicacion || "";
+      const adminNombre = finca?.usuarios?.[0]?.nombre || "";
 
-      // Logo círculo
-      doc.setFillColor(255, 255, 255, 0.2);
-      doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(0.5);
-      doc.circle(22, 15, 8, "D");
+      // Paleta de colores por tipo
+      const paleta = {
+        animales: { dark: [15, 74, 30], mid: [34, 139, 60], light: [220, 245, 225], accent: [52, 168, 83] },
+        ventas:   { dark: [90, 50, 10], mid: [180, 100, 20], light: [255, 248, 225], accent: [210, 140, 40] },
+        gastos:   { dark: [50, 30, 100], mid: [110, 70, 200], light: [240, 232, 255], accent: [140, 90, 230] },
+      };
+      const p = paleta[tipo];
+
+      // HEADER PRINCIPAL
+      doc.setFillColor(...p.dark);
+      doc.rect(0, 0, W, 42, "F");
+      doc.setFillColor(...p.mid);
+      doc.rect(0, 38, W, 6, "F");
+      doc.setFillColor(...p.accent);
+      doc.rect(0, 44, 5, H - 52, "F");
+
+      // Circulo logo
+      doc.setFillColor(255, 255, 255);
+      doc.circle(22, 19, 11, "F");
+      doc.setFillColor(...p.mid);
+      doc.circle(22, 19, 9, "F");
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
+      doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text("GSJ", 18, 18);
+      const inicial = fincaNombre.charAt(0).toUpperCase();
+      doc.text(inicial, 22, 22.5, { align: "center" });
 
+      // Nombre de la finca
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
+      doc.setFontSize(17);
       doc.setFont("helvetica", "bold");
-      doc.text("Ganadero San Jeronimo", 34, 13);
+      doc.text(fincaNombre, 38, 16);
+
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(200, 240, 200);
-      doc.text(`Generado: ${fecha}`, 34, 22);
+      doc.setTextColor(210, 235, 210);
+      let infoY = 23;
+      if (fincaUbicacion) {
+        doc.text("Ubicacion: " + fincaUbicacion, 38, infoY);
+        infoY += 6;
+      }
+      if (adminNombre) {
+        doc.text("Administrador: " + adminNombre, 38, infoY);
+      }
 
-      doc.setTextColor(0, 0, 0);
-      let y = 44;
+      doc.setFontSize(7);
+      doc.setTextColor(180, 220, 180);
+      doc.text("Generado: " + fecha, W - 10, 10, { align: "right" });
+
+      // TITULO DEL REPORTE
+      const titulos = {
+        animales: "REPORTE DE INVENTARIO ANIMAL",
+        ventas:   "REPORTE DE VENTAS",
+        gastos:   "REPORTE DE CONTROL DE GASTOS",
+      };
+      let y = 54;
+
+      doc.setFillColor(...p.light);
+      doc.roundedRect(8, y - 6, W - 16, 12, 2, 2, "F");
+      doc.setTextColor(...p.dark);
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text(titulos[tipo], W / 2, y + 1, { align: "center" });
+      y += 14;
+
+      // TARJETAS RESUMEN
+      function drawCards(cards) {
+        const cardW = (W - 20) / 4 - 2;
+        cards.forEach((c, i) => {
+          const cx = 10 + i * (cardW + 2.5);
+          doc.setFillColor(...c.color);
+          doc.roundedRect(cx, y, cardW, 16, 2, 2, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFontSize(c.valor.length > 8 ? 7.5 : 13);
+          doc.setFont("helvetica", "bold");
+          doc.text(c.valor, cx + cardW / 2, y + 8, { align: "center" });
+          doc.setFontSize(6);
+          doc.setFont("helvetica", "normal");
+          doc.text(c.label, cx + cardW / 2, y + 13.5, { align: "center" });
+        });
+        y += 22;
+      }
 
       if (tipo === "animales") {
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text("Reporte de Inventario Animal", 14, y);
-        y += 6;
-
         const activos = animales.filter(a => a.estado === "ACTIVO");
-        const vendidos = animales.filter(a => a.estado === "VENDIDO");
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Total: ${animales.length}  |  Activos: ${activos.length}  |  Vendidos: ${vendidos.length}`, 14, y);
-        y += 8;
-
+        const hembras = animales.filter(a => a.sexo === "HEMBRA");
+        const machos = animales.filter(a => a.sexo === "MACHO");
+        drawCards([
+          { label: "Total", valor: String(animales.length), color: p.dark },
+          { label: "Activos", valor: String(activos.length), color: [20, 100, 40] },
+          { label: "Hembras", valor: String(hembras.length), color: [160, 60, 140] },
+          { label: "Machos", valor: String(machos.length), color: [30, 80, 180] },
+        ]);
         autoTable(doc, {
           startY: y,
+          margin: { left: 10, right: 10 },
           head: [["Arete/ID", "Nombre", "Raza", "Sexo", "Fierro", "Peso (kg)", "Estado"]],
           body: animales.map(a => [
             a.identificador,
-            a.nombre || "—",
-            a.raza || "—",
+            a.nombre || "-",
+            a.raza || "-",
             a.sexo === "HEMBRA" ? "Hembra" : "Macho",
-            a.fierro || "—",
-            a.pesoActual ? `${a.pesoActual} kg` : "—",
+            a.fierro || "-",
+            a.pesoActual ? (a.pesoActual + " kg") : "-",
             a.estado,
           ]),
-          styles: { fontSize: 8, cellPadding: 2 },
-          headStyles: { fillColor: [26, 92, 42], textColor: 255, fontStyle: "bold" },
-          alternateRowStyles: { fillColor: [240, 248, 240] },
+          styles: { fontSize: 8, cellPadding: 2.5 },
+          headStyles: { fillColor: p.dark, textColor: [255,255,255], fontStyle: "bold", fontSize: 8.5 },
+          alternateRowStyles: { fillColor: p.light },
+          columnStyles: { 6: { fontStyle: "bold" } },
         });
       }
 
       if (tipo === "ventas") {
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text("Reporte de Ventas", 14, y);
-        y += 8;
-
-        if (stats?.ventas) {
-          doc.setFontSize(10);
-          doc.setFont("helvetica", "normal");
-          doc.text(`Total histórico: C$ ${(stats.ventas.totalHistoricoNIO || 0).toLocaleString("es")}  |  Este mes: C$ ${(stats.ventas.totalMesNIO || 0).toLocaleString("es")}`, 14, y);
-          y += 8;
-        }
-
+        const totalNIO = ventas.reduce((s, v) => s + (v.precioNIO || 0), 0);
+        const pagadas = ventas.filter(v => v.estadoPago === "PAGADO").length;
+        const pendientes = ventas.filter(v => v.estadoPago === "PENDIENTE").length;
+        drawCards([
+          { label: "Total ventas", valor: String(ventas.length), color: p.dark },
+          { label: "Ingresos NIO", valor: "C$ " + totalNIO.toLocaleString("es", { maximumFractionDigits: 0 }), color: [20, 100, 40] },
+          { label: "Pagadas", valor: String(pagadas), color: [140, 80, 10] },
+          { label: "Pendientes", valor: String(pendientes), color: [180, 40, 40] },
+        ]);
         autoTable(doc, {
           startY: y,
+          margin: { left: 10, right: 10 },
           head: [["Fecha", "Tipo", "Animal", "Peso", "Precio NIO", "Estado pago"]],
           body: ventas.map(v => [
             new Date(v.fecha || v.createdAt).toLocaleDateString("es"),
             v.tipoVenta === "EN_PIE" ? "En pie" : "Por peso",
-            v.animal?.nombre || v.animal?.identificador || "—",
-            v.pesoVenta ? `${v.pesoVenta} kg` : "—",
-            `C$ ${(v.precioNIO || 0).toLocaleString("es")}`,
-            v.estadoPago || "—",
+            v.animal?.nombre || v.animal?.identificador || "-",
+            v.pesoVenta ? (v.pesoVenta + " kg") : "-",
+            "C$ " + (v.precioNIO || 0).toLocaleString("es"),
+            v.estadoPago || "-",
           ]),
-          styles: { fontSize: 8, cellPadding: 2 },
-          headStyles: { fillColor: [123, 79, 18], textColor: 255, fontStyle: "bold" },
-          alternateRowStyles: { fillColor: [255, 252, 235] },
+          styles: { fontSize: 8, cellPadding: 2.5 },
+          headStyles: { fillColor: p.dark, textColor: [255,255,255], fontStyle: "bold" },
+          alternateRowStyles: { fillColor: p.light },
+          columnStyles: { 4: { fontStyle: "bold" } },
         });
       }
 
       if (tipo === "gastos") {
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.text("Reporte de Gastos", 14, y);
-        y += 8;
-
         const total = gastos.reduce((s, g) => s + (g.monto || 0), 0);
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Total de gastos: C$ ${total.toLocaleString("es")}`, 14, y);
-        y += 8;
-
+        const categorias = [...new Set(gastos.map(g => g.categoria).filter(Boolean))];
+        const now = new Date();
+        const esteMes = gastos.filter(g => {
+          const d = new Date(g.fecha || g.createdAt);
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        });
+        const totalMes = esteMes.reduce((s, g) => s + (g.monto || 0), 0);
+        drawCards([
+          { label: "Total gastos", valor: String(gastos.length), color: p.dark },
+          { label: "Total NIO", valor: "C$ " + total.toLocaleString("es", { maximumFractionDigits: 0 }), color: [80, 40, 140] },
+          { label: "Este mes", valor: "C$ " + totalMes.toLocaleString("es", { maximumFractionDigits: 0 }), color: [140, 40, 100] },
+          { label: "Categorias", valor: String(categorias.length), color: [40, 80, 160] },
+        ]);
         autoTable(doc, {
           startY: y,
-          head: [["Fecha", "Descripción", "Categoría", "Monto NIO"]],
+          margin: { left: 10, right: 10 },
+          head: [["Fecha", "Descripcion", "Categoria", "Monto NIO"]],
           body: gastos.map(g => [
             new Date(g.fecha || g.createdAt).toLocaleDateString("es"),
             g.descripcion,
-            g.categoria,
-            `C$ ${(g.monto || 0).toLocaleString("es")}`,
+            g.categoria || "-",
+            "C$ " + (g.monto || 0).toLocaleString("es"),
           ]),
-          styles: { fontSize: 8, cellPadding: 2 },
-          headStyles: { fillColor: [68, 51, 122], textColor: 255, fontStyle: "bold" },
-          alternateRowStyles: { fillColor: [245, 240, 255] },
+          styles: { fontSize: 8, cellPadding: 2.5 },
+          headStyles: { fillColor: p.dark, textColor: [255,255,255], fontStyle: "bold" },
+          alternateRowStyles: { fillColor: p.light },
+          columnStyles: { 3: { fontStyle: "bold" } },
         });
       }
 
-      // Footer y banda lateral decorativa
+      // FOOTER EN CADA PAGINA
       const pageCount = doc.internal.getNumberOfPages();
-      const H = doc.internal.pageSize.getHeight();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        // Banda lateral verde
-        doc.setFillColor(26, 92, 42);
-        doc.rect(0, 36, 3, H - 44, "F");
-        // Footer
-        doc.setFillColor(240, 248, 240);
-        doc.rect(0, H - 14, W, 14, "F");
+        if (i > 1) {
+          doc.setFillColor(...p.accent);
+          doc.rect(0, 0, 5, H, "F");
+        }
+        doc.setFillColor(...p.dark);
+        doc.rect(0, H - 12, W, 12, "F");
         doc.setFontSize(7);
-        doc.setTextColor(80, 120, 80);
+        doc.setTextColor(200, 230, 200);
         doc.setFont("helvetica", "normal");
-        doc.text(`Ganadero San Jeronimo  |  Pagina ${i} de ${pageCount}  |  ${fecha}`, 14, H - 5);
-        doc.setTextColor(150, 200, 150);
-        doc.text("ganaderosg.app", W - 35, H - 5);
+        doc.text(fincaNombre + "  |  Pagina " + i + " de " + pageCount + "  |  " + fecha, 10, H - 4);
+        if (adminNombre) {
+          doc.text("Adm: " + adminNombre, W - 10, H - 4, { align: "right" });
+        }
       }
 
-      doc.save(`${tipo}-${new Date().toISOString().slice(0, 10)}.pdf`);
+      doc.save(tipo + "-" + fincaNombre.replace(/\s+/g, "-").toLowerCase() + "-" + new Date().toISOString().slice(0, 10) + ".pdf");
     } catch (e) {
       setError("Error generando PDF: " + e.message);
     } finally {
@@ -183,13 +248,13 @@ export default function ReportesPage() {
   const glass = { background: "rgba(5,25,12,0.65)", backdropFilter: "blur(18px)", border: "1px solid rgba(255,255,255,0.12)" };
 
   const REPORTES = [
-    { tipo: "animales", icon: "🐄", titulo: "Inventario Animal", sub: `${animales.length} animales registrados`, grad: "linear-gradient(135deg,#1a6b2a,#2d9e3f)" },
-    { tipo: "ventas", icon: "💰", titulo: "Ventas", sub: `${ventas.length} ventas registradas`, grad: "linear-gradient(135deg,#7b4f12,#d69e2e)" },
-    { tipo: "gastos", icon: "💸", titulo: "Control de Gastos", sub: `${gastos.length} gastos registrados`, grad: "linear-gradient(135deg,#44337a,#805ad5)" },
+    { tipo: "animales", icon: "🐄", titulo: "Inventario Animal", sub: animales.length + " animales registrados", grad: "linear-gradient(135deg,#1a6b2a,#2d9e3f)" },
+    { tipo: "ventas", icon: "💰", titulo: "Ventas", sub: ventas.length + " ventas registradas", grad: "linear-gradient(135deg,#7b4f12,#d69e2e)" },
+    { tipo: "gastos", icon: "💸", titulo: "Control de Gastos", sub: gastos.length + " gastos registrados", grad: "linear-gradient(135deg,#44337a,#805ad5)" },
   ];
 
   return (
-    <AppLayout title="Reportes PDF" subtitle="Exportar información">
+    <AppLayout title="Reportes PDF" subtitle="Exportar informacion">
       {error && <p className="text-red-300 mb-4 rounded-xl p-3 text-sm" style={{ background: "rgba(220,38,38,0.2)", border: "1px solid rgba(220,38,38,0.4)" }}>{error}</p>}
 
       {/* Banner */}
@@ -198,7 +263,9 @@ export default function ReportesPage() {
         <div className="text-5xl">📊</div>
         <div>
           <h2 className="text-white font-black text-2xl">Reportes PDF</h2>
-          <p className="text-white/60 text-sm mt-1">Descarga reportes completos de tu finca en formato PDF profesional.</p>
+          <p className="text-white/60 text-sm mt-1">
+            {finca ? (finca.nombre + (finca.ubicacion ? " · " + finca.ubicacion : "")) : "Descarga reportes completos de tu finca en formato PDF profesional."}
+          </p>
         </div>
       </div>
 
@@ -215,7 +282,7 @@ export default function ReportesPage() {
                 disabled={generando === r.tipo}
                 className="w-full text-white font-bold py-3 rounded-xl shadow-xl hover:scale-[1.02] transition-all disabled:opacity-50"
                 style={{ background: r.grad, border: "1px solid rgba(255,255,255,0.2)" }}>
-                {generando === r.tipo ? "⏳ Generando..." : "⬇️ Descargar PDF"}
+                {generando === r.tipo ? "Generando..." : "Descargar PDF"}
               </button>
             </div>
           </div>
@@ -229,9 +296,9 @@ export default function ReportesPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: "Total animales", valor: stats.animales?.total || 0, icon: "🐄" },
-              { label: "Ventas este mes", valor: `C$ ${(stats.ventas?.totalMesNIO || 0).toLocaleString("es", { maximumFractionDigits: 0 })}`, icon: "💰" },
-              { label: "Histórico ventas", valor: `C$ ${(stats.ventas?.totalHistoricoNIO || 0).toLocaleString("es", { maximumFractionDigits: 0 })}`, icon: "📊" },
-              { label: "Tipo de cambio", valor: `C$ ${stats.tipoCambio}`, icon: "💱" },
+              { label: "Ventas este mes", valor: "C$ " + (stats.ventas?.totalMesNIO || 0).toLocaleString("es", { maximumFractionDigits: 0 }), icon: "💰" },
+              { label: "Historico ventas", valor: "C$ " + (stats.ventas?.totalHistoricoNIO || 0).toLocaleString("es", { maximumFractionDigits: 0 }), icon: "📊" },
+              { label: "Tipo de cambio", valor: "C$ " + stats.tipoCambio, icon: "💱" },
             ].map(s => (
               <div key={s.label} className="rounded-xl p-4" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
                 <p className="text-2xl mb-1">{s.icon}</p>
