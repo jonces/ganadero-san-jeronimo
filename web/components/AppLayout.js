@@ -33,16 +33,27 @@ export default function AppLayout({ children, title, subtitle }) {
   const [suspendida, setSuspendida] = useState(false);
 
   useEffect(() => {
-    function checkSuspension() {
-      if (typeof window !== "undefined" && localStorage.getItem("finca_suspendida") === "1") {
-        setSuspendida(true);
-      }
+    if (typeof window !== "undefined" && localStorage.getItem("finca_suspendida") === "1") {
+      setSuspendida(true);
     }
-    checkSuspension();
-    window.addEventListener("storage", checkSuspension);
-    const t = setInterval(checkSuspension, 3000);
-    return () => { window.removeEventListener("storage", checkSuspension); clearInterval(t); };
   }, []);
+
+  // Cuando está suspendida, revisar cada 5s si ya se reactivó
+  useEffect(() => {
+    if (!suspendida) return;
+    const t = setInterval(async () => {
+      try {
+        await api("/fincas/mi-finca");
+        // Si llega aquí es porque la finca está activa de nuevo
+        localStorage.removeItem("finca_suspendida");
+        setSuspendida(false);
+        router.refresh();
+      } catch (e) {
+        // Sigue suspendida, no hacer nada
+      }
+    }, 5000);
+    return () => clearInterval(t);
+  }, [suspendida]);
 
   const isSuperAdmin = pathname?.startsWith("/superadmin");
   const enTablon = pathname === "/anuncios";
