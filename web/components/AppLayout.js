@@ -92,17 +92,25 @@ export default function AppLayout({ children, title, subtitle }) {
     if (isSuperAdmin) return;
     const u = getUsuario();
     if (u?.role !== "ADMIN") return;
+
+    // Guardar timestamp inicial si no existe
+    if (!localStorage.getItem("actividad_last_visto")) {
+      localStorage.setItem("actividad_last_visto", new Date().toISOString());
+    }
+
     async function checkActividades() {
       try {
         const data = await api("/actividad");
         const lastVisto = localStorage.getItem("actividad_last_visto");
-        const soloTrabajadores = data.filter(a => a.usuario?.role === "TRABAJADOR");
-        if (!lastVisto) { setNuevasActividades(soloTrabajadores.length > 0 ? soloTrabajadores.length : 0); return; }
-        setNuevasActividades(soloTrabajadores.filter(a => new Date(a.createdAt) > new Date(lastVisto)).length);
+        const nuevas = data.filter(a =>
+          a.usuario?.role === "TRABAJADOR" &&
+          new Date(a.createdAt) > new Date(lastVisto)
+        );
+        setNuevasActividades(nuevas.length);
       } catch {}
     }
     checkActividades();
-    const interval = setInterval(checkActividades, 30000);
+    const interval = setInterval(checkActividades, 20000);
     return () => clearInterval(interval);
   }, [isSuperAdmin]);
 
