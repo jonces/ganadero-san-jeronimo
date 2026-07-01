@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -110,9 +111,15 @@ export default function LoginPage() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-600 mb-1">Contraseña</label>
-              <input className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-500 focus:outline-none"
-                type="password" placeholder="••••••••"
-                value={password} onChange={(e) => setPassword(e.target.value)} required />
+              <div className="relative">
+                <input className="w-full border-2 border-gray-200 rounded-xl p-3 pr-12 focus:border-green-500 focus:outline-none"
+                  type={showPassword ? "text" : "password"} placeholder="••••••••"
+                  value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <button type="button" onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg">
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
             </div>
             <button disabled={loading}
               className="w-full text-white rounded-xl p-3 font-bold text-lg disabled:opacity-50"

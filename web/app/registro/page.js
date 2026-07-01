@@ -8,6 +8,7 @@ export default function RegistroPage() {
   const [form, setForm] = useState({ nombreFinca: "", ubicacion: "", nombre: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
@@ -38,7 +39,13 @@ export default function RegistroPage() {
         <input className="w-full border rounded-lg p-2" placeholder="Ubicación" value={form.ubicacion} onChange={update("ubicacion")} />
         <input className="w-full border rounded-lg p-2" placeholder="Tu nombre" value={form.nombre} onChange={update("nombre")} required />
         <input className="w-full border rounded-lg p-2" type="email" placeholder="Email" value={form.email} onChange={update("email")} required />
-        <input className="w-full border rounded-lg p-2" type="password" placeholder="Contraseña" value={form.password} onChange={update("password")} required />
+        <div className="relative">
+          <input className="w-full border rounded-lg p-2 pr-10" type={showPassword ? "text" : "password"} placeholder="Contraseña" value={form.password} onChange={update("password")} required />
+          <button type="button" onClick={() => setShowPassword(v => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg">
+            {showPassword ? "🙈" : "👁️"}
+          </button>
+        </div>
 
         <button disabled={loading} className="w-full bg-green-700 text-white rounded-lg p-2 font-medium disabled:opacity-50">
           {loading ? "Creando..." : "Crear finca"}
