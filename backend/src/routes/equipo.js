@@ -37,6 +37,16 @@ router.post("/", requireAdmin, async (req, res, next) => {
     const existente = await prisma.usuario.findUnique({ where: { email } });
     if (existente) return res.status(409).json({ error: "Email ya registrado" });
 
+    // Máximo 2 administradores por finca
+    if (role === "ADMIN") {
+      const totalAdmins = await prisma.usuario.count({
+        where: { fincaId: req.user.fincaId, role: "ADMIN" },
+      });
+      if (totalAdmins >= 2) {
+        return res.status(400).json({ error: "Esta finca ya tiene el máximo de 2 administradores permitidos" });
+      }
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
     const usuario = await prisma.usuario.create({
       data: {
