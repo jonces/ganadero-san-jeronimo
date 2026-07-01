@@ -113,8 +113,8 @@ export default function InventarioPage() {
     return null;
   }
 
-  const conFoto=filtrados.filter(a=>a.media?.some(m=>m.tipo==="FOTO")).slice(0,3);
-  const resto=filtrados.filter(a=>!conFoto.includes(a));
+  const conFoto=[];
+  const resto=filtrados;
 
   return (
     <AppLayout title="Inventario Animal" subtitle="Gestión de Ganado">
@@ -164,7 +164,13 @@ export default function InventarioPage() {
             <div className="sm:col-span-2"><label className="text-white/50 text-xs">Madre (si es cría)</label><select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.madreId} onChange={e=>setForm({...form,madreId:e.target.value})}><option value="">Sin madre</option>{hembrasActivas.map(h=><option key={h.id} value={h.id}>{h.nombre||h.identificador}</option>)}</select></div>
           </div>
           <textarea className="w-full rounded-xl px-3 py-2 text-sm" style={gi} placeholder="Observación..." rows={2} value={form.observacion} onChange={e=>setForm({...form,observacion:e.target.value})}/>
-          <input type="file" accept="image/*,video/*" multiple className="w-full text-white/60 text-sm" onChange={e=>setArchivos(e.target.files)}/>
+          <div className="rounded-2xl p-3" style={{background:"rgba(255,255,255,0.06)",border:"1px dashed rgba(255,255,255,0.2)"}}>
+            <p className="text-white/50 text-xs mb-2">📷 Fotos y 🎬 Videos — puedes seleccionar varios a la vez</p>
+            <input type="file" accept="image/*,video/*" multiple className="w-full text-white/60 text-sm" onChange={e=>setArchivos(e.target.files)}/>
+            {archivos.length>0&&(
+              <p className="text-green-400 text-xs mt-2 font-bold">✅ {archivos.length} archivo{archivos.length>1?"s":""} seleccionado{archivos.length>1?"s":""}</p>
+            )}
+          </div>
           <button type="submit" disabled={enviando} className="w-full text-white font-black py-3 rounded-2xl disabled:opacity-50" style={{background:"linear-gradient(135deg,#1a6b2a,#2d9e3f)"}}>
             {enviando?"Guardando...":"✅ Registrar Animal"}
           </button>
@@ -220,37 +226,52 @@ export default function InventarioPage() {
         </div>
       )}
 
-      {/* Tarjetas — lista en móvil, grid en desktop */}
-      <div className="flex flex-col gap-3 md:grid md:grid-cols-3 lg:grid-cols-4">
+      {/* Tarjetas — grid con foto grande */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {resto.map(a=>{
           const et=etiqueta(a); const repro=a.estadoReproductivo?REPRO_CONFIG[a.estadoReproductivo]:null;
           const foto=a.media?.find(m=>m.tipo==="FOTO");
           return (
-            <div key={a.id} className="rounded-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-all flex md:flex-col"
-              style={{background:"rgba(5,25,12,0.65)",backdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,0.12)"}}
+            <div key={a.id} className="rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.03] active:scale-[0.98] transition-all shadow-xl"
+              style={{background:"rgba(5,25,12,0.75)",backdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,0.12)"}}
               onClick={()=>router.push(`/inventario/${a.id}`)}>
-              {/* Foto — izquierda en móvil, arriba en desktop */}
-              {foto
-                ? <img src={foto.url} className="w-20 h-20 md:w-full md:h-36 object-cover shrink-0"/>
-                : <div className="w-20 h-20 md:w-full md:h-28 shrink-0 flex items-center justify-center text-3xl"
-                    style={{background:"rgba(45,158,63,0.15)"}}>
-                    {a.sexo==="HEMBRA"?"🐄":"🐂"}
-                  </div>
-              }
-              {/* Info */}
-              <div className="flex-1 p-3 flex flex-col justify-center min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-white font-black text-base truncate">{a.nombre||a.identificador}</p>
-                  <span className="shrink-0 font-bold text-base" style={{color:a.sexo==="HEMBRA"?"#f687b3":"#63b3ed"}}>{a.sexo==="HEMBRA"?"♀":"♂"}</span>
+              {/* Foto grande arriba */}
+              <div className="relative w-full" style={{height:160}}>
+                {foto
+                  ? <img src={foto.url} className="w-full h-full object-cover"/>
+                  : <div className="w-full h-full flex items-center justify-center text-5xl"
+                      style={{background:"linear-gradient(135deg,rgba(45,158,63,0.2),rgba(26,107,42,0.3))"}}>
+                      {a.sexo==="HEMBRA"?"🐄":"🐂"}
+                    </div>
+                }
+                {/* Badge sexo */}
+                <div className="absolute top-2 left-2">
+                  <span className="text-white font-black px-2 py-0.5 rounded-full text-xs"
+                    style={{background: a.sexo==="HEMBRA"?"rgba(246,135,179,0.85)":"rgba(99,179,237,0.85)"}}>
+                    {a.sexo==="HEMBRA"?"♀":"♂"}
+                  </span>
                 </div>
-                <p className="text-white/40 text-xs">{a.raza||"Sin raza"} · {a.identificador}</p>
-                {a.pesoActual&&<p className="text-green-400 text-sm font-bold mt-1">⚖️ {a.pesoActual} kg</p>}
-                {repro&&<p className="text-xs mt-1 font-semibold" style={{color:repro.color}}>{repro.icon} {repro.label}</p>}
-                {et&&!repro&&<p className="text-white/40 text-xs mt-1 truncate">{et}</p>}
-                {a.estado==="VENDIDO"&&<span className="text-xs font-black px-2 py-0.5 rounded-full mt-1 inline-block" style={{background:"rgba(214,158,46,0.3)",color:"#d69e2e"}}>💰 Vendido</span>}
+                {a.estado==="VENDIDO"&&(
+                  <div className="absolute top-2 right-2">
+                    <span className="text-white font-black px-2 py-0.5 rounded-full text-xs" style={{background:"#d69e2e"}}>💰</span>
+                  </div>
+                )}
+                {repro&&(
+                  <div className="absolute bottom-2 right-2">
+                    <span className="text-white font-black px-2 py-0.5 rounded-full text-xs" style={{background:repro.bg,color:repro.color,border:`1px solid ${repro.color}`}}>
+                      {repro.icon} {repro.label}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {/* Info abajo */}
+              <div className="p-3">
+                <p className="text-white font-black text-sm truncate">{a.nombre||a.identificador}</p>
+                <p className="text-white/40 text-xs truncate">{a.raza||"Sin raza"} · {a.identificador}</p>
+                {a.pesoActual&&<p className="text-green-400 text-xs font-bold mt-1">⚖️ {a.pesoActual} kg</p>}
                 {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
                   <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}}
-                    className="mt-2 text-xs px-3 py-1.5 rounded-xl font-bold"
+                    className="mt-2 text-xs px-3 py-1.5 rounded-xl font-bold w-full"
                     style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
                     Registrar Parto
                   </button>
