@@ -51,6 +51,20 @@ export default function SuperAdminPage() {
 
   return (
     <AppLayout title="Panel de Control" subtitle="Super Administrador">
+      {/* Acceso rápido a informes */}
+      <div className="mb-6">
+        <button
+          onClick={() => router.push("/superadmin/informes")}
+          className="flex items-center gap-3 px-5 py-3 rounded-2xl text-white font-bold shadow-xl hover:scale-[1.02] transition-all"
+          style={{ background: "linear-gradient(135deg,#1a3a6c,#2980b9)", border: "1px solid rgba(255,255,255,0.2)" }}>
+          <span className="text-2xl">📋</span>
+          <div className="text-left">
+            <p className="text-sm font-black">Informes por Finca</p>
+            <p className="text-white/60 text-xs">Descarga PDF completo de cada finca</p>
+          </div>
+        </button>
+      </div>
+
       {error && (
         <div className="mb-6 rounded-2xl p-4 flex items-center gap-3"
           style={{ background: "rgba(220,38,38,0.25)", border: "1px solid rgba(220,38,38,0.5)", backdropFilter: "blur(10px)" }}>
