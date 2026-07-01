@@ -87,30 +87,31 @@ export default function AppLayout({ children, title, subtitle }) {
     }
   }, [enTablon]);
 
-  // Badge de nuevas actividades de trabajadores (solo para ADMIN)
+  // Badge de actividades de trabajadores no vistas (solo para ADMIN)
   useEffect(() => {
     if (isSuperAdmin) return;
     const u = getUsuario();
     if (u?.role !== "ADMIN") return;
 
-    // Guardar timestamp inicial si no existe
-    if (!localStorage.getItem("actividad_last_visto")) {
-      localStorage.setItem("actividad_last_visto", new Date().toISOString());
-    }
-
     async function checkActividades() {
       try {
         const data = await api("/actividad");
         const lastVisto = localStorage.getItem("actividad_last_visto");
-        const nuevas = data.filter(a =>
-          a.usuario?.role === "TRABAJADOR" &&
-          new Date(a.createdAt) > new Date(lastVisto)
-        );
+        const deTrabajadores = data.filter(a => a.usuario?.role === "TRABAJADOR");
+        if (!lastVisto) {
+          // Primera vez — marcar todas como vistas
+          if (deTrabajadores.length > 0) {
+            localStorage.setItem("actividad_last_visto", deTrabajadores[0].createdAt);
+          }
+          setNuevasActividades(0);
+          return;
+        }
+        const nuevas = deTrabajadores.filter(a => new Date(a.createdAt) > new Date(lastVisto));
         setNuevasActividades(nuevas.length);
       } catch {}
     }
     checkActividades();
-    const interval = setInterval(checkActividades, 20000);
+    const interval = setInterval(checkActividades, 15000);
     return () => clearInterval(interval);
   }, [isSuperAdmin]);
 
