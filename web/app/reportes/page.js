@@ -16,12 +16,13 @@ export default function ReportesPage() {
       api("/ventas/stats").catch(() => null),
       api("/animales").catch(() => []),
       api("/ventas").catch(() => []),
-      api("/gastos").catch(() => []),
+      api("/gastos").catch(() => ({ gastos: [] })),
     ]).then(([s, a, v, g]) => {
       setStats(s);
       setAnimales(Array.isArray(a) ? a : []);
       setVentas(Array.isArray(v) ? v : []);
-      setGastos(Array.isArray(g) ? g : []);
+      const listaGastos = Array.isArray(g) ? g : Array.isArray(g?.gastos) ? g.gastos : [];
+      setGastos(listaGastos);
     }).catch(e => setError(e.message));
   }, []);
 
