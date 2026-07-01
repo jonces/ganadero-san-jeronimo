@@ -74,12 +74,13 @@ router.patch("/:id", async (req, res, next) => {
 
     const { nombre, raza, fierro, pesoActual, estado, estadoReproductivo, fechaParto, fechaSecado, madreId, observacion } = req.body;
 
+    const str = (v) => (v === "" || v === undefined) ? null : v;
     const data = {};
-    if (nombre !== undefined) data.nombre = nombre;
-    if (raza !== undefined) data.raza = raza;
-    if (fierro !== undefined) data.fierro = fierro;
+    if (nombre !== undefined) data.nombre = str(nombre);
+    if (raza !== undefined) data.raza = str(raza);
+    if (fierro !== undefined) data.fierro = str(fierro);
     if (pesoActual !== undefined) data.pesoActual = pesoActual ? Number(pesoActual) : null;
-    if (observacion !== undefined) data.observacion = observacion;
+    if (observacion !== undefined) data.observacion = str(observacion);
     if (madreId !== undefined) data.madreId = madreId || null;
     if (fechaParto !== undefined) data.fechaParto = fechaParto ? new Date(fechaParto) : null;
     if (fechaSecado !== undefined) data.fechaSecado = fechaSecado ? new Date(fechaSecado) : null;
