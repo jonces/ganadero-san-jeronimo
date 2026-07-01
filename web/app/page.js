@@ -83,8 +83,8 @@ export default function LoginPage() {
             <div className="w-10 h-10 rounded-xl flex items-center justify-center text-2xl shadow-lg"
               style={{ background: "rgba(45,158,63,0.35)", border: "1px solid rgba(45,158,63,0.6)" }}>🐄</div>
             <div>
-              <p className="text-green-400 font-black text-xs tracking-widest uppercase">Software Ganadero</p>
-              <p className="text-white font-black text-sm leading-none">Henriquez</p>
+              <p className="text-green-400 font-black text-sm tracking-widest uppercase">Software Ganadero</p>
+              <p className="text-white font-black text-xl leading-none">Henriquez</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
