@@ -143,7 +143,8 @@ export default function AnimalDetailPage() {
               style={{ maxHeight: 320, background: "#000", display: "block" }}
             />
           ) : (
-            <img src={mediaActual?.url} className="w-full object-cover" style={{ maxHeight: 280 }} />
+            <img src={mediaActual?.url} className="w-full object-cover" style={{ maxHeight: 280 }}
+              onError={e => { e.target.style.display="none"; }} />
           )}
 
           {/* Badges */}
@@ -178,7 +179,8 @@ export default function AnimalDetailPage() {
                       <span className="text-white font-black" style={{ fontSize: 9 }}>VIDEO</span>
                     </div>
                   ) : (
-                    <img src={m.url} className="w-full h-full object-cover" />
+                    <img src={m.url} className="w-full h-full object-cover"
+                      onError={e => { e.target.style.display="none"; e.target.parentElement.innerHTML='<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(45,158,63,0.2);font-size:20px">🐄</div>'; }} />
                   )}
                 </button>
               ))}
