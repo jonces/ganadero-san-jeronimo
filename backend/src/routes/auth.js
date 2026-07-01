@@ -22,7 +22,7 @@ router.post("/registro", async (req, res, next) => {
     });
 
     const token = jwt.sign(
-      { sub: usuario.id, role: usuario.role, fincaId: finca.id },
+      { sub: usuario.id, role: usuario.role, fincaId: finca.id, nombre: usuario.nombre },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
@@ -42,7 +42,7 @@ router.post("/login", async (req, res, next) => {
     if (!ok) return res.status(401).json({ error: "Credenciales inválidas" });
 
     const token = jwt.sign(
-      { sub: usuario.id, role: usuario.role, fincaId: usuario.fincaId },
+      { sub: usuario.id, role: usuario.role, fincaId: usuario.fincaId, nombre: usuario.nombre },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
@@ -68,7 +68,7 @@ router.post("/setup-superadmin", async (req, res, next) => {
     });
 
     const token = jwt.sign(
-      { sub: usuario.id, role: usuario.role, fincaId: finca.id },
+      { sub: usuario.id, role: usuario.role, fincaId: finca.id, nombre: usuario.nombre },
       process.env.JWT_SECRET,
       { expiresIn: "30d" }
     );
