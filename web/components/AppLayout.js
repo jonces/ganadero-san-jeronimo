@@ -15,7 +15,7 @@ const NAV_ITEMS_ADMIN = [
   { icon: "👥", label: "Equipo",     href: "/equipo" },
   { icon: "📢", label: "Tablón",     href: "/anuncios", notif: true },
   { icon: "📊", label: "Reportes",   href: "/reportes" },
-  { icon: "🕐", label: "Actividad",  href: "/actividad" },
+  { icon: "🕐", label: "Actividad",  href: "/actividad", notifActividad: true },
 ];
 
 // En móvil solo mostramos los 5 más usados en la barra inferior
@@ -29,6 +29,7 @@ export default function AppLayout({ children, title, subtitle }) {
   const router = useRouter();
   const pathname = usePathname();
   const [nuevos, setNuevos] = useState(0);
+  const [nuevasActividades, setNuevasActividades] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [suspendida, setSuspendida] = useState(false);
   const [usuario, setUsuario] = useState(null);
@@ -60,6 +61,7 @@ export default function AppLayout({ children, title, subtitle }) {
 
   const isSuperAdmin = pathname?.startsWith("/superadmin");
   const enTablon = pathname === "/anuncios";
+  const enActividad = pathname === "/actividad";
   const navItems = isSuperAdmin ? NAV_ITEMS_SUPER : NAV_ITEMS_ADMIN;
   const mobileItems = navItems.filter(i => NAV_MOBILE_PRIMARY.includes(i.href));
 
@@ -84,6 +86,32 @@ export default function AppLayout({ children, title, subtitle }) {
       setNuevos(0);
     }
   }, [enTablon]);
+
+  // Badge de nuevas actividades de trabajadores (solo para ADMIN)
+  useEffect(() => {
+    if (isSuperAdmin) return;
+    const u = getUsuario();
+    if (u?.role !== "ADMIN") return;
+    async function checkActividades() {
+      try {
+        const data = await api("/actividad");
+        const lastVisto = localStorage.getItem("actividad_last_visto");
+        const soloTrabajadores = data.filter(a => a.usuario?.role === "TRABAJADOR");
+        if (!lastVisto) { setNuevasActividades(soloTrabajadores.length > 0 ? soloTrabajadores.length : 0); return; }
+        setNuevasActividades(soloTrabajadores.filter(a => new Date(a.createdAt) > new Date(lastVisto)).length);
+      } catch {}
+    }
+    checkActividades();
+    const interval = setInterval(checkActividades, 30000);
+    return () => clearInterval(interval);
+  }, [isSuperAdmin]);
+
+  useEffect(() => {
+    if (enActividad) {
+      localStorage.setItem("actividad_last_visto", new Date().toISOString());
+      setNuevasActividades(0);
+    }
+  }, [enActividad]);
 
   function handleLogout() { logout(); router.push("/"); }
   function go(href) { router.push(href); setMenuOpen(false); }
@@ -145,7 +173,8 @@ export default function AppLayout({ children, title, subtitle }) {
 
         {navItems.map((item) => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href));
-          const badge = item.notif && nuevos > 0 && !active;
+          const badge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
+          const badgeCount = item.notifActividad ? nuevasActividades : nuevos;
           return (
             <button key={item.href} onClick={() => go(item.href)}
               className="relative flex flex-col items-center gap-0.5 w-14 py-2 rounded-xl transition-all hover:scale-110"
@@ -160,7 +189,7 @@ export default function AppLayout({ children, title, subtitle }) {
               {badge && (
                 <span className="absolute top-0.5 right-0.5 flex items-center justify-center text-white font-black rounded-full animate-bounce"
                   style={{ background: "#e53e3e", fontSize: 8, minWidth: 15, height: 15, padding: "0 2px", boxShadow: "0 0 6px rgba(229,62,62,0.8)" }}>
-                  {nuevos > 9 ? "9+" : nuevos}
+                  {badgeCount > 9 ? "9+" : badgeCount}
                 </span>
               )}
             </button>
@@ -245,7 +274,8 @@ export default function AppLayout({ children, title, subtitle }) {
               <p className="col-span-4 text-white/40 text-xs font-bold uppercase tracking-widest mb-1">Todos los módulos</p>
               {navItems.map(item => {
                 const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href));
-                const badge = item.notif && nuevos > 0 && !active;
+                const badge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
+          const badgeCount = item.notifActividad ? nuevasActividades : nuevos;
                 return (
                   <button key={item.href} onClick={() => go(item.href)}
                     className="relative flex flex-col items-center gap-1 py-3 rounded-2xl"
@@ -260,7 +290,7 @@ export default function AppLayout({ children, title, subtitle }) {
                     {badge && (
                       <span className="absolute top-1 right-1 bg-red-500 text-white font-black rounded-full flex items-center justify-center"
                         style={{ fontSize: 9, minWidth: 16, height: 16 }}>
-                        {nuevos > 9 ? "9+" : nuevos}
+                        {badgeCount > 9 ? "9+" : badgeCount}
                       </span>
                     )}
                   </button>
@@ -286,7 +316,8 @@ export default function AppLayout({ children, title, subtitle }) {
         style={{ borderTop: "1px solid rgba(255,255,255,0.12)", ...glassNav }}>
         {mobileItems.map(item => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href));
-          const badge = item.notif && nuevos > 0 && !active;
+          const badge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
+          const badgeCount = item.notifActividad ? nuevasActividades : nuevos;
           return (
             <button key={item.href} onClick={() => go(item.href)}
               className="relative flex flex-col items-center gap-0.5 flex-1 py-1.5 rounded-xl transition-all"
@@ -301,7 +332,7 @@ export default function AppLayout({ children, title, subtitle }) {
               {badge && (
                 <span className="absolute top-0 right-3 bg-red-500 text-white font-black rounded-full flex items-center justify-center animate-bounce"
                   style={{ fontSize: 9, minWidth: 16, height: 16, boxShadow: "0 0 6px rgba(229,62,62,0.8)" }}>
-                  {nuevos > 9 ? "9+" : nuevos}
+                  {badgeCount > 9 ? "9+" : badgeCount}
                 </span>
               )}
             </button>
