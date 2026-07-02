@@ -25,6 +25,7 @@ export default function InventarioPage() {
   const [enviando, setEnviando] = useState(false);
   const [archivos, setArchivos] = useState([]);
   const [filtro, setFiltro] = useState("TODOS");
+  const [busqueda, setBusqueda] = useState("");
   const [form, setForm] = useState({ identificador:"",nombre:"",raza:"",fierro:"",sexo:"HEMBRA",pesoActual:"",observacion:"",estadoReproductivo:"",madreId:"" });
   const [formParto, setFormParto] = useState({ identificadorCria:"",nombreCria:"",sexoCria:"HEMBRA",pesoNacimiento:"" });
 
@@ -98,6 +99,10 @@ export default function InventarioPage() {
     if(filtro==="SEMENTALES") return a.sexo==="MACHO"&&a.estado==="ACTIVO";
     if(filtro==="CRIAS") return !!a.madreId&&a.estado==="ACTIVO";
     return a.estadoReproductivo===filtro&&a.estado==="ACTIVO";
+  }).filter(a=>{
+    if(!busqueda.trim()) return true;
+    const q=busqueda.toLowerCase();
+    return (a.nombre||"").toLowerCase().includes(q)||(a.identificador||"").toLowerCase().includes(q)||(a.raza||"").toLowerCase().includes(q)||(a.fierro||"").toLowerCase().includes(q);
   });
 
   const hembrasActivas=animales.filter(a=>a.sexo==="HEMBRA"&&a.estado==="ACTIVO");
@@ -123,6 +128,19 @@ export default function InventarioPage() {
     <AppLayout title="Inventario Animal" subtitle="Gestión de Ganado">
       {error&&<div className="mb-4 text-red-300 text-sm p-3 rounded-xl flex items-center justify-between" style={{background:"rgba(220,38,38,0.2)",border:"1px solid rgba(220,38,38,0.4)"}}>
         {error}<button onClick={()=>setError("")} className="text-red-400 ml-4">✕</button></div>}
+
+      {/* Buscador */}
+      <div className="relative mb-4">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-lg">🔍</span>
+        <input
+          className="w-full rounded-2xl pl-11 pr-4 py-3 text-white text-base"
+          style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",outline:"none"}}
+          placeholder="Buscar por nombre, arete, raza o fierro..."
+          value={busqueda}
+          onChange={e=>setBusqueda(e.target.value)}
+        />
+        {busqueda&&<button onClick={()=>setBusqueda("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 text-lg">✕</button>}
+      </div>
 
       {/* MÉTRICAS — 3 columnas en móvil, scroll horizontal en tablet/desktop */}
       <div className="grid grid-cols-3 gap-2 mb-5 md:flex md:gap-3 md:overflow-x-auto md:pb-2">

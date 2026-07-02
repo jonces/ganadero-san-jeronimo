@@ -13,6 +13,53 @@ const MODULOS = [
   { label: "Mi Equipo", sub: "Administradores · Trabajadores", emoji: "👥", gradient: "linear-gradient(135deg,#1a2a4a,#2c5282)", href: "/equipo" },
 ];
 
+function Grafica({ datos }) {
+  if (!datos?.length) return null;
+  const maxVal = Math.max(...datos.map(d => Math.max(d.ventas, d.gastos)), 1);
+
+  return (
+    <div className="rounded-3xl p-5 mb-6 shadow-2xl"
+      style={{ background: "rgba(5,25,12,0.65)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)" }}>
+      <p className="text-white font-black text-base mb-1">Tendencia últimos 6 meses</p>
+      <div className="flex gap-4 mb-4">
+        <span className="text-xs text-green-400 font-bold">● Ventas</span>
+        <span className="text-xs text-red-400 font-bold">● Gastos</span>
+      </div>
+      <div className="flex items-end gap-2" style={{ height: 120 }}>
+        {datos.map((d, i) => (
+          <div key={i} className="flex-1 flex flex-col items-center gap-1">
+            <div className="w-full flex gap-0.5 items-end" style={{ height: 90 }}>
+              <div className="flex-1 rounded-t-lg transition-all"
+                style={{
+                  height: `${(d.ventas / maxVal) * 100}%`,
+                  minHeight: d.ventas > 0 ? 4 : 0,
+                  background: "linear-gradient(180deg,#38a169,#1a6b2a)",
+                }} />
+              <div className="flex-1 rounded-t-lg transition-all"
+                style={{
+                  height: `${(d.gastos / maxVal) * 100}%`,
+                  minHeight: d.gastos > 0 ? 4 : 0,
+                  background: "linear-gradient(180deg,#e53e3e,#7b1a1a)",
+                }} />
+            </div>
+            <p className="text-white/40 text-xs">{d.label}</p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 pt-3 grid grid-cols-2 gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="rounded-xl p-2 text-center" style={{ background: "rgba(56,161,105,0.15)" }}>
+          <p className="text-green-400 font-black text-sm">C$ {datos.reduce((s,d)=>s+d.ventas,0).toLocaleString("es",{maximumFractionDigits:0})}</p>
+          <p className="text-white/40 text-xs">Total ventas</p>
+        </div>
+        <div className="rounded-xl p-2 text-center" style={{ background: "rgba(229,62,62,0.15)" }}>
+          <p className="text-red-400 font-black text-sm">C$ {datos.reduce((s,d)=>s+d.gastos,0).toLocaleString("es",{maximumFractionDigits:0})}</p>
+          <p className="text-white/40 text-xs">Total gastos</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState(null);
@@ -62,6 +109,9 @@ export default function DashboardPage() {
           ))}
         </div>
       )}
+
+      {/* Gráfica */}
+      {stats?.grafica && <Grafica datos={stats.grafica} />}
 
       {/* Tipo de cambio */}
       {stats && (

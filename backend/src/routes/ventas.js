@@ -30,10 +30,13 @@ router.get("/stats", async (req, res, next) => {
     const ahora = new Date();
     const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
 
+    // Últimos 6 meses para gráficas
+    const hace6Meses = new Date(ahora.getFullYear(), ahora.getMonth() - 5, 1);
+
     const [
       totalAnimales, machos, hembras, activos, vendidos,
       ventasMes, todasVentas, vacunasPendientes, pesoPromedio,
-      finca,
+      finca, ventasHistoricas, gastosHistoricos,
     ] = await Promise.all([
       prisma.animal.count({ where: { fincaId } }),
       prisma.animal.count({ where: { fincaId, sexo: "MACHO" } }),
@@ -45,11 +48,34 @@ router.get("/stats", async (req, res, next) => {
       prisma.evento.count({ where: { animal: { fincaId }, tipo: "VACUNACION", fecha: { gte: inicioMes } } }),
       prisma.animal.aggregate({ where: { fincaId, estado: "ACTIVO", pesoActual: { gt: 0 } }, _avg: { pesoActual: true } }),
       prisma.finca.findUnique({ where: { id: fincaId } }),
+      prisma.venta.findMany({ where: { fincaId, fecha: { gte: hace6Meses } }, select: { fecha: true, precioNIO: true } }),
+      prisma.gasto.findMany({ where: { fincaId, fecha: { gte: hace6Meses } }, select: { fecha: true, monto: true } }),
     ]);
 
     const totalVentasMesNIO = ventasMes.reduce((s, v) => s + v.precioNIO, 0);
     const totalVentasMesUSD = ventasMes.reduce((s, v) => s + v.precioUSD, 0);
     const totalHistoricoNIO = todasVentas.reduce((s, v) => s + v.precioNIO, 0);
+
+    // Agrupar por mes
+    const meses = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1);
+      const label = d.toLocaleDateString("es", { month: "short" });
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      meses.push({ label, key, ventas: 0, gastos: 0 });
+    }
+    ventasHistoricas.forEach(v => {
+      const d = new Date(v.fecha);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const m = meses.find(m => m.key === key);
+      if (m) m.ventas += v.precioNIO;
+    });
+    gastosHistoricos.forEach(g => {
+      const d = new Date(g.fecha);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const m = meses.find(m => m.key === key);
+      if (m) m.gastos += g.monto;
+    });
 
     res.json({
       animales: { total: totalAnimales, machos, hembras, activos, vendidos },
@@ -62,6 +88,7 @@ router.get("/stats", async (req, res, next) => {
       vacunasMes: vacunasPendientes,
       pesoPromedio: pesoPromedio._avg.pesoActual || 0,
       tipoCambio: finca?.tipoCambio || 36.5,
+      grafica: meses,
     });
   } catch (err) { next(err); }
 });
