@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import { crearSelloFinca } from "@/lib/selloFinca";
 import AppLayout from "@/components/AppLayout";
 
 export default function SuperAdminInformesPage() {
@@ -28,7 +29,7 @@ export default function SuperAdminInformesPage() {
       const adminNombre = finca.usuarios?.[0]?.nombre || "—";
       const adminEmail = finca.usuarios?.[0]?.email || "—";
 
-      function drawHeader(titulo, cDark, cMid, cAccent) {
+      async function drawHeader(titulo, cDark, cMid, cAccent) {
         doc.setFillColor(...cDark);
         doc.rect(0, 0, W, 44, "F");
         doc.setFillColor(...cMid);
@@ -36,25 +37,19 @@ export default function SuperAdminInformesPage() {
         doc.setFillColor(...cAccent);
         doc.rect(0, 45, 5, H - 53, "F");
 
-        const inicial = (data.finca.nombre || "F").charAt(0).toUpperCase();
-        doc.setFillColor(255, 255, 255);
-        doc.circle(20, 20, 10, "F");
-        doc.setFillColor(...cMid);
-        doc.circle(20, 20, 8, "F");
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(18);
-        doc.setFont("helvetica", "bold");
-        doc.text(inicial, 20, 24, { align: "center" });
+        // Sello de la finca: cabeza de toro con nombre y ubicacion alrededor
+        const sello = await crearSelloFinca({ nombre: data.finca.nombre, ubicacion: data.finca.ubicacion, color: cMid });
+        doc.addImage(sello, "PNG", 5, 4, 34, 34);
 
         doc.setFontSize(15);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(255, 255, 255);
-        doc.text("Finca: " + data.finca.nombre, 36, 14);
+        doc.text("Finca: " + data.finca.nombre, 44, 14);
         doc.setFontSize(8);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(210, 235, 210);
-        if (data.finca.ubicacion) doc.text("Ubicacion: " + data.finca.ubicacion, 36, 21);
-        doc.text("Administrador: " + adminNombre + "  |  " + adminEmail, 36, 27);
+        if (data.finca.ubicacion) doc.text("Ubicacion: " + data.finca.ubicacion, 44, 21);
+        doc.text("Administrador: " + adminNombre + "  |  " + adminEmail, 44, 27);
         doc.setFontSize(7);
         doc.setTextColor(180, 220, 180);
         doc.text("Generado: " + fecha, W - 10, 10, { align: "right" });
@@ -84,7 +79,7 @@ export default function SuperAdminInformesPage() {
       const green = { dark: [15, 74, 30], mid: [34, 139, 60], accent: [52, 168, 83] };
 
       // ── PÁGINA 1: RESUMEN GENERAL ─────────────────────────────
-      drawHeader("INFORME GENERAL DE FINCA", green.dark, green.mid, green.accent);
+      await drawHeader("INFORME GENERAL DE FINCA", green.dark, green.mid, green.accent);
 
       // Tarjetas de resumen
       const cards = [
@@ -184,7 +179,7 @@ export default function SuperAdminInformesPage() {
       // ── PÁGINA 2: VENTAS ─────────────────────────────────────
       if (data.ventas.length > 0) {
         doc.addPage();
-        drawHeader("REPORTE DE VENTAS", [90, 50, 10], [180, 100, 20], [210, 140, 40]);
+        await drawHeader("REPORTE DE VENTAS", [90, 50, 10], [180, 100, 20], [210, 140, 40]);
         autoTable(doc, {
           startY: 68,
           margin: { left: 10, right: 10 },
@@ -206,7 +201,7 @@ export default function SuperAdminInformesPage() {
       // ── PÁGINA 3: GASTOS ─────────────────────────────────────
       if (data.gastos.length > 0) {
         doc.addPage();
-        drawHeader("REPORTE DE GASTOS", [50, 30, 100], [110, 70, 200], [140, 90, 230]);
+        await drawHeader("REPORTE DE GASTOS", [50, 30, 100], [110, 70, 200], [140, 90, 230]);
         autoTable(doc, {
           startY: 68,
           margin: { left: 10, right: 10 },
@@ -225,7 +220,7 @@ export default function SuperAdminInformesPage() {
       // ── PÁGINA 4: EQUIPO E INCIDENTES ─────────────────────────
       if (data.equipo.length > 0 || data.incidentes.length > 0) {
         doc.addPage();
-        drawHeader("EQUIPO E INCIDENTES", [20, 60, 120], [40, 100, 180], [60, 130, 210]);
+        await drawHeader("EQUIPO E INCIDENTES", [20, 60, 120], [40, 100, 180], [60, 130, 210]);
         let py = 68;
         if (data.equipo.length > 0) {
           doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(20, 60, 120);
