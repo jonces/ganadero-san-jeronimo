@@ -1,7 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { api, saveToken } from "@/lib/api";
+import { api } from "@/lib/api";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
 import AppLayout from "@/components/AppLayout";
 
 const glass = { background: "rgba(5,25,12,0.70)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.12)" };
@@ -24,12 +27,34 @@ export default function PerfilPage() {
   const [showPass, setShowPass] = useState(false);
   const [guardandoPass, setGuardandoPass] = useState(false);
   const [msgPass, setMsgPass] = useState("");
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const fotoInputRef = useRef(null);
 
   useEffect(() => {
     api("/usuarios/perfil")
       .then(d => { setPerfil(d); setNombre(d.nombre); })
       .catch(() => router.push("/"));
   }, []);
+
+  async function handleFoto(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSubiendoFoto(true);
+    try {
+      const fd = new FormData();
+      fd.append("foto", file);
+      const res = await fetch(`${API_URL}/usuarios/perfil/foto`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error");
+      setPerfil(p => ({ ...p, fotoPerfil: data.fotoPerfil }));
+    } catch (err) {
+      alert("Error al subir foto: " + err.message);
+    } finally { setSubiendoFoto(false); }
+  }
 
   async function handleNombre(e) {
     e.preventDefault();
@@ -69,9 +94,20 @@ export default function PerfilPage() {
     <AppLayout title="Mi Perfil" subtitle="Datos de tu cuenta">
       {/* Avatar y datos */}
       <div className="rounded-3xl p-6 mb-5 flex flex-col items-center gap-3 shadow-2xl" style={glass}>
-        <div className="w-20 h-20 rounded-full flex items-center justify-center font-black text-4xl text-white shadow-xl"
-          style={{ background: ROLE_BG[perfil.role] || "rgba(255,255,255,0.1)", border: `2px solid ${ROLE_COLOR[perfil.role] || "#fff"}` }}>
-          {inicial}
+        <div className="relative">
+          <div className="w-24 h-24 rounded-full overflow-hidden shadow-xl flex items-center justify-center font-black text-4xl text-white"
+            style={{ background: ROLE_BG[perfil.role] || "rgba(255,255,255,0.1)", border: `2px solid ${ROLE_COLOR[perfil.role] || "#fff"}` }}>
+            {perfil.fotoPerfil
+              ? <img src={perfil.fotoPerfil} alt="foto" className="w-full h-full object-cover" />
+              : inicial}
+          </div>
+          <button onClick={() => fotoInputRef.current?.click()}
+            disabled={subiendoFoto}
+            className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-110"
+            style={{ background: "linear-gradient(135deg,#1a6b2a,#2d9e3f)", border: "2px solid rgba(255,255,255,0.3)" }}>
+            {subiendoFoto ? <span className="text-xs animate-spin">⏳</span> : <span style={{fontSize:14}}>📷</span>}
+          </button>
+          <input ref={fotoInputRef} type="file" accept="image/*" className="hidden" onChange={handleFoto} />
         </div>
         <div className="text-center">
           <p className="text-white font-black text-xl">{perfil.nombre}</p>

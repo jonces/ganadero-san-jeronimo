@@ -33,8 +33,12 @@ export default function AppLayout({ children, title, subtitle }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [suspendida, setSuspendida] = useState(false);
   const [usuario, setUsuario] = useState(null);
+  const [fotoPerfil, setFotoPerfil] = useState(null);
 
-  useEffect(() => { setUsuario(getUsuario()); }, []);
+  useEffect(() => {
+    setUsuario(getUsuario());
+    api("/usuarios/perfil").then(d => setFotoPerfil(d.fotoPerfil)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && localStorage.getItem("finca_suspendida") === "1") {
@@ -240,14 +244,16 @@ export default function AppLayout({ children, title, subtitle }) {
             <button onClick={() => router.push("/perfil")}
               className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:scale-105 transition-all"
               style={{ background: pathname === "/perfil" ? "rgba(45,158,63,0.3)" : "rgba(255,255,255,0.08)", border: pathname === "/perfil" ? "1px solid rgba(45,158,63,0.5)" : "1px solid rgba(255,255,255,0.15)" }}>
-              <div className="w-7 h-7 rounded-full flex items-center justify-center font-black text-sm shrink-0"
+              <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center font-black text-sm shrink-0"
                 style={{
                   background: usuario.role === "ADMIN" ? "linear-gradient(135deg,#1a5c2a,#2d9e3f)"
                     : usuario.role === "SUPER_ADMIN" ? "linear-gradient(135deg,#4a235a,#8e44ad)"
                     : "linear-gradient(135deg,#1a3a6c,#2980b9)",
                   color: "white",
                 }}>
-                {usuario.nombre?.charAt(0).toUpperCase()}
+                {fotoPerfil
+                  ? <img src={fotoPerfil} alt="perfil" className="w-full h-full object-cover" />
+                  : usuario.nombre?.charAt(0).toUpperCase()}
               </div>
               <div className="hidden sm:block">
                 <p className="text-white font-black leading-none" style={{ fontSize: 12 }}>{usuario.nombre}</p>

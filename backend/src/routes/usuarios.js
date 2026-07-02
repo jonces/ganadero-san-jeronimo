@@ -1,7 +1,11 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
+const multer = require("multer");
 const prisma = require("../prisma");
 const { requireAuth, requireRole } = require("../middleware/auth");
+const { uploadMedia } = require("../lib/storage");
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const router = express.Router();
 router.use(requireAuth);
@@ -43,7 +47,7 @@ router.get("/perfil", async (req, res, next) => {
   try {
     const usuario = await prisma.usuario.findUnique({
       where: { id: req.user.sub },
-      select: { id: true, nombre: true, email: true, role: true, createdAt: true },
+      select: { id: true, nombre: true, email: true, role: true, fotoPerfil: true, createdAt: true },
     });
     if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
     res.json(usuario);
@@ -59,6 +63,20 @@ router.patch("/perfil", async (req, res, next) => {
       where: { id: req.user.sub },
       data: { nombre: nombre.trim() },
       select: { id: true, nombre: true, email: true, role: true },
+    });
+    res.json(usuario);
+  } catch (err) { next(err); }
+});
+
+// Subir foto de perfil
+router.patch("/perfil/foto", upload.single("foto"), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No se envió ninguna foto" });
+    const url = await uploadMedia(req.file);
+    const usuario = await prisma.usuario.update({
+      where: { id: req.user.sub },
+      data: { fotoPerfil: url },
+      select: { id: true, nombre: true, email: true, role: true, fotoPerfil: true },
     });
     res.json(usuario);
   } catch (err) { next(err); }

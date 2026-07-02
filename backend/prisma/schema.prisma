@@ -81,6 +81,7 @@ model Usuario {
   finca        Finca    @relation(fields: [fincaId], references: [id])
   resetCodigo  String?
   resetExpira  DateTime?
+  fotoPerfil   String?
   createdAt    DateTime @default(now())
 
   eventos    Evento[]
