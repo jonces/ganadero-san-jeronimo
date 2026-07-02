@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { api, saveToken } from "@/lib/api";
 
@@ -28,8 +28,14 @@ export default function LoginPage() {
   const [showLogin, setShowLogin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const cardRef = useRef(null);
 
   useEffect(() => { setTimeout(() => setLoaded(true), 100); }, []);
+
+  function abrirLogin() {
+    setShowLogin(true);
+    setTimeout(() => cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -89,7 +95,7 @@ export default function LoginPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-white/40 text-xs hidden sm:block">¿Ya tienes cuenta?</span>
-            <button onClick={() => setShowLogin(true)}
+            <button onClick={abrirLogin}
               className="text-white text-sm font-bold px-4 py-2 rounded-xl transition-all hover:scale-105"
               style={{ background: "rgba(45,158,63,0.3)", border: "1px solid rgba(45,158,63,0.5)" }}>
               Iniciar sesión
@@ -145,7 +151,7 @@ export default function LoginPage() {
           </div>
 
           {/* Card derecha */}
-          <div className={`w-full max-w-sm transition-all duration-700 delay-200 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div ref={cardRef} className={`w-full max-w-sm transition-all duration-700 delay-200 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="rounded-3xl p-8 shadow-2xl" style={glass}>
 
               {!showLogin ? (
@@ -160,7 +166,7 @@ export default function LoginPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <button onClick={() => setShowLogin(true)}
+                    <button onClick={abrirLogin}
                       className="w-full py-4 rounded-2xl text-white font-black text-lg shadow-xl hover:scale-[1.02] transition-all active:scale-95"
                       style={{ background: "linear-gradient(135deg,#1a5c2a,#2d9e3f)", border: "1px solid rgba(45,158,63,0.5)", boxShadow: "0 8px 32px rgba(45,158,63,0.4)" }}>
                       🔐 Iniciar Sesión
