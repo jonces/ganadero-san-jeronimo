@@ -62,6 +62,7 @@ export default function AppLayout({ children, title, subtitle }) {
   const isSuperAdmin = pathname?.startsWith("/superadmin");
   const enTablon = pathname === "/anuncios";
   const enActividad = pathname === "/actividad";
+  const enNotificaciones = pathname === "/notificaciones";
   const esTrabajador = usuario?.role === "TRABAJADOR";
   const navItemsBase = isSuperAdmin ? NAV_ITEMS_SUPER : NAV_ITEMS_ADMIN;
   const navItems = esTrabajador ? navItemsBase.filter(i => i.href !== "/equipo" && i.href !== "/actividad" && i.href !== "/reportes") : navItemsBase;
@@ -118,11 +119,11 @@ export default function AppLayout({ children, title, subtitle }) {
   }, [isSuperAdmin]);
 
   useEffect(() => {
-    if (enActividad) {
+    if (enActividad || enNotificaciones) {
       localStorage.setItem("actividad_last_visto", new Date().toISOString());
       setNuevasActividades(0);
     }
-  }, [enActividad]);
+  }, [enActividad, enNotificaciones]);
 
   function handleLogout() { logout(); router.push("/"); }
   function go(href) { router.push(href); setMenuOpen(false); }
@@ -261,8 +262,26 @@ export default function AppLayout({ children, title, subtitle }) {
             </div>
           )}
 
-          {/* Botón menú completo en móvil */}
+          {/* Botón notificaciones */}
           <div className="flex items-center gap-2">
+            {!isSuperAdmin && !esTrabajador && (
+              <button onClick={() => router.push("/notificaciones")}
+                className="relative flex items-center justify-center w-10 h-10 rounded-xl transition-all"
+                style={{
+                  background: enNotificaciones ? "rgba(45,158,63,0.4)" : "rgba(255,255,255,0.08)",
+                  border: enNotificaciones ? "1px solid rgba(45,158,63,0.6)" : "1px solid rgba(255,255,255,0.15)",
+                }}>
+                <span style={{ fontSize: 18 }}>🔔</span>
+                {nuevasActividades > 0 && !enNotificaciones && (
+                  <span className="absolute -top-1 -right-1 flex items-center justify-center text-white font-black rounded-full animate-bounce"
+                    style={{ background: "#e53e3e", fontSize: 8, minWidth: 16, height: 16, padding: "0 2px", boxShadow: "0 0 6px rgba(229,62,62,0.8)" }}>
+                    {nuevasActividades > 9 ? "9+" : nuevasActividades}
+                  </span>
+                )}
+              </button>
+            )}
+
+          {/* Botón menú completo en móvil */}
             <button onClick={() => setMenuOpen(s => !s)}
               className="md:hidden flex flex-col items-center justify-center w-10 h-10 rounded-xl"
               style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
