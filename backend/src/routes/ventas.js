@@ -170,4 +170,16 @@ router.patch("/tipo-cambio", requireRole("ADMIN", "SUPER_ADMIN"), async (req, re
   } catch (err) { next(err); }
 });
 
+// Eliminar venta — solo ADMIN
+router.delete("/:id", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next) => {
+  try {
+    const venta = await prisma.venta.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
+    if (!venta) return res.status(404).json({ error: "Venta no encontrada" });
+    await prisma.media.deleteMany({ where: { ventaId: venta.id } });
+    await prisma.venta.delete({ where: { id: venta.id } });
+    logActividad({ accion: "Eliminó venta", detalle: `C$ ${venta.precioNIO}`, modulo: "Ventas", fincaId: req.user.fincaId, usuarioId: req.user.sub });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

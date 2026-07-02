@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, getUsuario } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
 const METODOS_PAGO = [
@@ -32,6 +32,12 @@ export default function VentasPage() {
   const [showForm, setShowForm] = useState(false);
   const [archivos, setArchivos] = useState([]);
   const [enviando, setEnviando] = useState(false);
+  const [esAdmin, setEsAdmin] = useState(false);
+
+  useEffect(() => {
+    const u = getUsuario();
+    setEsAdmin(u?.role === "ADMIN" || u?.role === "SUPER_ADMIN");
+  }, []);
   const [form, setForm] = useState({
     animalId: "", tipoVenta: "EN_PIE", moneda: "NIO",
     precioOriginal: "", pesoKg: "", unidadPeso: "LB", precioKg: "",
@@ -52,6 +58,14 @@ export default function VentasPage() {
   }
 
   useEffect(() => { load(); }, []);
+
+  async function eliminarVenta(id) {
+    if (!confirm("¿Seguro que quieres eliminar esta venta? Esta acción no se puede deshacer.")) return;
+    try {
+      await api(`/ventas/${id}`, { method: "DELETE" });
+      load();
+    } catch (err) { setError(err.message); }
+  }
 
   // Para POR_PESO: calcular total automáticamente desde libras * precio/lb
   const totalPorPeso = form.tipoVenta === "POR_PESO" ? (Number(form.pesoKg) || 0) * (Number(form.precioKg) || 0) : 0;
@@ -463,6 +477,14 @@ export default function VentasPage() {
                 </div>
 
                 {v.notas && <p className="text-xs text-gray-400 mt-2 border-t pt-2">📝 {v.notas}</p>}
+
+                {esAdmin && (
+                  <button onClick={() => eliminarVenta(v.id)}
+                    className="mt-3 w-full py-2 rounded-xl text-sm font-bold transition-all hover:scale-[1.01]"
+                    style={{ background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.3)", color: "#e53e3e" }}>
+                    🗑️ Eliminar venta
+                  </button>
+                )}
 
                 {v.media?.length > 0 && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
