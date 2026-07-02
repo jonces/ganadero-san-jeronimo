@@ -37,6 +37,10 @@ export default function LoginPage() {
     setTimeout(() => cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
   }
 
+  function scrollACard() {
+    cardRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -95,7 +99,7 @@ export default function LoginPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-white/40 text-xs hidden sm:block">¿Ya tienes cuenta?</span>
-            <button onClick={abrirLogin}
+            <button onClick={scrollACard}
               className="text-white text-sm font-bold px-4 py-2 rounded-xl transition-all hover:scale-105"
               style={{ background: "rgba(45,158,63,0.3)", border: "1px solid rgba(45,158,63,0.5)" }}>
               Iniciar sesión
