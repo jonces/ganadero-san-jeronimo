@@ -33,6 +33,7 @@ export default function VentasPage() {
   const [archivos, setArchivos] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [esAdmin, setEsAdmin] = useState(false);
+  const [modalEliminar, setModalEliminar] = useState(null); // { id, animalId, animalNombre }
 
   useEffect(() => {
     const u = getUsuario();
@@ -62,12 +63,16 @@ export default function VentasPage() {
 
   useEffect(() => { load(); }, []);
 
-  async function eliminarVenta(id) {
-    if (!confirm("¿Seguro que quieres eliminar esta venta? Esta acción no se puede deshacer.")) return;
+  async function confirmarEliminar(revertir) {
+    if (!modalEliminar) return;
     try {
-      await api(`/ventas/${id}`, { method: "DELETE" });
+      await api(`/ventas/${modalEliminar.id}`, { method: "DELETE" });
+      if (revertir && modalEliminar.animalId) {
+        await api(`/animales/${modalEliminar.animalId}`, { method: "PATCH", body: { estado: "ACTIVO" } });
+      }
+      setModalEliminar(null);
       load();
-    } catch (err) { setError(err.message); }
+    } catch (err) { setError(err.message); setModalEliminar(null); }
   }
 
   // Para POR_PESO: calcular total automáticamente desde libras * precio/lb
@@ -458,7 +463,7 @@ export default function VentasPage() {
                     {labelEstado[v.estadoPago]}
                   </span>
                   {esAdmin && (
-                    <button onClick={() => eliminarVenta(v.id)}
+                    <button onClick={() => setModalEliminar({ id: v.id, animalId: v.animalId, animalNombre: v.animal?.nombre || v.animal?.identificador })}
                       className="w-7 h-7 flex items-center justify-center rounded-full transition-all hover:scale-110"
                       style={{ background: "rgba(0,0,0,0.25)" }}
                       title="Eliminar venta">
@@ -514,6 +519,43 @@ export default function VentasPage() {
           </div>
         )}
       </div>
+
+      {/* Modal eliminar venta */}
+      {modalEliminar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}>
+          <div className="w-full max-w-sm rounded-3xl p-6 shadow-2xl" style={{ background: "rgba(5,25,12,0.95)", border: "1px solid rgba(229,62,62,0.4)" }}>
+            <div className="text-center mb-5">
+              <p className="text-4xl mb-3">🗑️</p>
+              <h3 className="text-white font-black text-lg">¿Por qué eliminas esta venta?</h3>
+              {modalEliminar.animalNombre && (
+                <p className="text-white/50 text-sm mt-1">Venta de <span className="text-white font-bold">{modalEliminar.animalNombre}</span></p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <button onClick={() => confirmarEliminar(true)}
+                className="w-full py-4 rounded-2xl text-white font-black text-left px-5 transition-all hover:scale-[1.02]"
+                style={{ background: "rgba(229,62,62,0.2)", border: "1px solid rgba(229,62,62,0.5)" }}>
+                <p className="text-red-300 font-black">⚠️ Fue un error de registro</p>
+                <p className="text-white/50 text-xs font-normal mt-0.5">Se elimina la venta y el animal vuelve a <span className="text-green-400 font-bold">ACTIVO</span> en inventario</p>
+              </button>
+
+              <button onClick={() => confirmarEliminar(false)}
+                className="w-full py-4 rounded-2xl text-white font-black text-left px-5 transition-all hover:scale-[1.02]"
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.15)" }}>
+                <p className="text-white font-black">📋 Otro motivo</p>
+                <p className="text-white/50 text-xs font-normal mt-0.5">Solo se elimina el registro de la venta</p>
+              </button>
+
+              <button onClick={() => setModalEliminar(null)}
+                className="w-full py-3 rounded-2xl text-white/50 font-bold text-sm transition-all hover:text-white"
+                style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }
