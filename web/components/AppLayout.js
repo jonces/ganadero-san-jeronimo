@@ -175,7 +175,6 @@ export default function AppLayout({ children, title, subtitle }) {
       backgroundImage: `url('${FARM_BG}')`,
       backgroundSize: "cover",
       backgroundPosition: "center",
-      backgroundAttachment: "fixed",
     }}>
       <div className="fixed inset-0 pointer-events-none" style={{
         background: "linear-gradient(135deg,rgba(5,30,15,0.55) 0%,rgba(10,40,20,0.4) 100%)"
