@@ -49,11 +49,14 @@ export default function VentasPage() {
 
   async function load() {
     try {
-      const [v, a, s] = await Promise.all([api("/ventas"), api("/animales"), api("/ventas/stats")]);
-      setVentas(v);
-      setAnimales(a.filter((x) => x.estado === "ACTIVO"));
-      setStats(s);
-      setTipoCambio(s.tipoCambio);
+      const [v, a, s] = await Promise.all([
+        api("/ventas"),
+        api("/animales").catch(() => []),
+        api("/ventas/stats").catch(() => null),
+      ]);
+      setVentas(Array.isArray(v) ? v : []);
+      setAnimales(Array.isArray(a) ? a.filter((x) => x.estado === "ACTIVO") : []);
+      if (s) { setStats(s); setTipoCambio(s.tipoCambio); }
     } catch (err) { setError(err.message); }
   }
 
@@ -449,10 +452,20 @@ export default function VentasPage() {
                   <span className="text-white opacity-60 text-xs">·</span>
                   <span className="text-white opacity-80 text-xs">{new Date(v.fecha).toLocaleDateString("es", { dateStyle: "medium" })}</span>
                 </div>
-                <span className="text-white text-xs font-bold px-2 py-1 rounded-full"
-                  style={{ background: colorEstado[v.estadoPago] || "#718096" }}>
-                  {labelEstado[v.estadoPago]}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-white text-xs font-bold px-2 py-1 rounded-full"
+                    style={{ background: colorEstado[v.estadoPago] || "#718096" }}>
+                    {labelEstado[v.estadoPago]}
+                  </span>
+                  {esAdmin && (
+                    <button onClick={() => eliminarVenta(v.id)}
+                      className="w-7 h-7 flex items-center justify-center rounded-full transition-all hover:scale-110"
+                      style={{ background: "rgba(0,0,0,0.25)" }}
+                      title="Eliminar venta">
+                      🗑️
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="p-5">
@@ -478,13 +491,6 @@ export default function VentasPage() {
 
                 {v.notas && <p className="text-xs text-gray-400 mt-2 border-t pt-2">📝 {v.notas}</p>}
 
-                {esAdmin && (
-                  <button onClick={() => eliminarVenta(v.id)}
-                    className="mt-3 w-full py-2 rounded-xl text-sm font-bold transition-all hover:scale-[1.01]"
-                    style={{ background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.3)", color: "#e53e3e" }}>
-                    🗑️ Eliminar venta
-                  </button>
-                )}
 
                 {v.media?.length > 0 && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
