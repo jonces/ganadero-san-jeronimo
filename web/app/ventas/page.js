@@ -171,28 +171,30 @@ export default function VentasPage() {
       )}
 
       <div className="max-w-3xl mx-auto pb-10">
-        {error && <p className="text-red-600 mb-4 bg-red-50 rounded-xl p-3 text-sm">{error}</p>}
+        {error && <p className="text-red-300 mb-4 rounded-xl p-3 text-sm" style={{ background: "rgba(220,38,38,0.15)", border: "1px solid rgba(220,38,38,0.3)" }}>{error}</p>}
 
         {/* Tipo de cambio */}
-        <div className="bg-white rounded-2xl shadow-md px-5 py-4 mb-4 flex items-center justify-between flex-wrap gap-3">
+        <div className="rounded-2xl px-5 py-4 mb-4 flex items-center justify-between flex-wrap gap-3"
+          style={{ background: "rgba(5,25,12,0.70)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.12)" }}>
           <div className="flex items-center gap-3">
             <span className="text-2xl">💱</span>
             <div>
-              <p className="font-bold text-gray-800 text-sm">Tipo de cambio</p>
-              <p className="text-gray-400 text-xs">C$ por USD</p>
+              <p className="font-bold text-white text-sm">Tipo de cambio</p>
+              <p className="text-white/40 text-xs">C$ por USD</p>
             </div>
           </div>
           {editTC ? (
             <div className="flex items-center gap-2">
               <input type="number" value={nuevoTC} onChange={(e) => setNuevoTC(e.target.value)}
-                className="border-2 border-yellow-400 rounded-xl px-3 py-2 w-28 font-bold text-center focus:outline-none" />
+                className="rounded-xl px-3 py-2 w-28 font-bold text-center focus:outline-none text-white"
+                style={{ background: "rgba(255,255,255,0.1)", border: "2px solid #f6d860" }} />
               <button onClick={handleTC} className="text-white px-3 py-2 rounded-xl font-bold text-sm" style={{ background: "#2d9e3f" }}>Guardar</button>
-              <button onClick={() => setEditTC(false)} className="text-gray-500 text-sm">✕</button>
+              <button onClick={() => setEditTC(false)} className="text-white/50 text-sm">✕</button>
             </div>
           ) : (
             <button onClick={() => { setNuevoTC(tipoCambio); setEditTC(true); }}
               className="flex items-center gap-2 rounded-xl px-4 py-2 font-black text-lg hover:opacity-80 transition-opacity"
-              style={{ background: "#fef3c7", color: "#92400e" }}>
+              style={{ background: "rgba(246,216,96,0.15)", color: "#f6d860", border: "1px solid rgba(246,216,96,0.3)" }}>
               C$ {tipoCambio} <span className="text-sm font-normal">✏️</span>
             </button>
           )}
@@ -207,28 +209,30 @@ export default function VentasPage() {
 
         {/* FORMULARIO */}
         {showForm && (
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden">
+          <form onSubmit={handleSubmit} className="rounded-2xl shadow-xl mb-6 overflow-hidden"
+            style={{ background: "rgba(5,25,12,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.12)" }}>
             {/* Header form */}
             <div className="px-6 py-4" style={{ background: "linear-gradient(135deg,#7b4f12,#d69e2e)" }}>
               <h2 className="text-white font-black text-lg">Nueva Transacción de Venta</h2>
               <p className="text-yellow-200 text-xs mt-1">Completa los datos de la venta</p>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-5 space-y-5">
               {/* Sección: Animal y tipo */}
               <section>
-                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <h3 className="text-xs font-black text-white/40 uppercase tracking-widest mb-3 flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-black" style={{ background: "#d69e2e" }}>1</span>
                   Animal y Tipo de Venta
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase">Animal *</label>
-                    <select className="w-full border-2 border-gray-100 rounded-xl p-3 mt-1 focus:border-yellow-400 focus:outline-none bg-gray-50"
+                    <label className="text-xs font-bold text-white/50 uppercase">Animal *</label>
+                    <select className="w-full rounded-xl p-3 mt-1 focus:outline-none text-white"
+                      style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
                       value={form.animalId} onChange={(e) => setForm({ ...form, animalId: e.target.value })} required>
-                      <option value="">— Selecciona el animal —</option>
+                      <option value="" style={{ background: "#0a2010" }}>— Selecciona el animal —</option>
                       {animales.map((a) => (
-                        <option key={a.id} value={a.id}>
+                        <option key={a.id} value={a.id} style={{ background: "#0a2010" }}>
                           {a.nombre ? `${a.nombre} (${a.identificador})` : a.identificador}{a.raza ? ` · ${a.raza}` : ""}{a.pesoActual ? ` · ${a.pesoActual}kg` : ""}
                         </option>
                       ))}
@@ -240,11 +244,11 @@ export default function VentasPage() {
                       { value: "POR_PESO", label: "⚖️ Por Peso", sub: "Destazado", color: "#e53e3e" },
                     ].map((t) => (
                       <button type="button" key={t.value} onClick={() => setForm({ ...form, tipoVenta: t.value })}
-                        className="rounded-xl py-3 px-3 text-sm font-bold text-white transition-all border-2"
+                        className="rounded-xl py-3 px-3 text-sm font-bold transition-all"
                         style={{
-                          background: form.tipoVenta === t.value ? t.color : "#fff",
+                          background: form.tipoVenta === t.value ? t.color : "rgba(255,255,255,0.06)",
                           color: form.tipoVenta === t.value ? "#fff" : t.color,
-                          borderColor: t.color,
+                          border: `2px solid ${t.color}`,
                         }}>
                         <div>{t.label}</div>
                         <div style={{ fontSize: 11, opacity: 0.8 }}>{t.sub}</div>
@@ -256,53 +260,51 @@ export default function VentasPage() {
 
               {/* Sección: Precio */}
               <section>
-                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <h3 className="text-xs font-black text-white/40 uppercase tracking-widest mb-3 flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-black" style={{ background: "#d69e2e" }}>2</span>
                   {form.tipoVenta === "POR_PESO" ? "Peso y Precio por Libra" : "Precio y Moneda"}
                 </h3>
 
                 {form.tipoVenta === "POR_PESO" ? (
-                  /* === VENTA POR PESO: solo libras + precio/lb, total automático === */
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase">Peso (libras) *</label>
+                        <label className="text-xs font-bold text-white/50 uppercase">Peso (libras) *</label>
                         <div className="relative mt-1">
                           <input type="number" step="0.1"
-                            className="w-full border-2 border-gray-100 rounded-xl p-3 pr-10 focus:border-yellow-400 focus:outline-none bg-gray-50 text-lg font-black"
+                            className="w-full rounded-xl p-3 pr-10 focus:outline-none text-white text-lg font-black"
+                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
                             placeholder="Ej: 900" value={form.pesoKg}
                             onChange={(e) => setForm({ ...form, pesoKg: e.target.value })} required />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">lb</span>
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 font-bold text-sm">lb</span>
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase">Precio / libra (C$) *</label>
+                        <label className="text-xs font-bold text-white/50 uppercase">Precio / libra (C$) *</label>
                         <div className="relative mt-1">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-gray-400 text-sm">C$</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-white/40 text-sm">C$</span>
                           <input type="number" step="0.01"
-                            className="w-full border-2 border-gray-100 rounded-xl p-3 pl-9 focus:border-yellow-400 focus:outline-none bg-gray-50 text-lg font-black"
+                            className="w-full rounded-xl p-3 pl-9 focus:outline-none text-white text-lg font-black"
+                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
                             placeholder="Ej: 18" value={form.precioKg}
                             onChange={(e) => setForm({ ...form, precioKg: e.target.value })} required />
                         </div>
                       </div>
                     </div>
-
-                    {/* Total calculado automáticamente */}
-                    <div className="rounded-2xl p-4" style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)" }}>
-                      <p className="text-xs text-yellow-700 font-bold uppercase mb-1">Total calculado automáticamente</p>
-                      <p className="font-black text-yellow-900 text-3xl">
+                    <div className="rounded-2xl p-4" style={{ background: "rgba(246,216,96,0.12)", border: "1px solid rgba(246,216,96,0.3)" }}>
+                      <p className="text-xs text-yellow-400/70 font-bold uppercase mb-1">Total calculado automáticamente</p>
+                      <p className="font-black text-yellow-300 text-3xl">
                         C$ {totalPorPeso > 0 ? totalPorPeso.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"}
                       </p>
                       {totalPorPeso > 0 && (
-                        <p className="text-yellow-700 text-sm mt-1">
+                        <p className="text-yellow-400/60 text-sm mt-1">
                           ≈ $ {(totalPorPeso / tipoCambio).toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                          {form.pesoKg && form.precioKg && <span className="ml-2 opacity-70">· {form.pesoKg} lb × C$ {form.precioKg}/lb</span>}
+                          {form.pesoKg && form.precioKg && <span className="ml-2">· {form.pesoKg} lb × C$ {form.precioKg}/lb</span>}
                         </p>
                       )}
                     </div>
                   </div>
                 ) : (
-                  /* === VENTA EN PIE: precio manual con moneda === */
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-2 mb-1">
                       {[
@@ -310,37 +312,38 @@ export default function VentasPage() {
                         { value: "USD", label: "🇺🇸 Dólar (USD)" },
                       ].map((m) => (
                         <button type="button" key={m.value} onClick={() => setForm({ ...form, moneda: m.value })}
-                          className="rounded-xl py-2 text-sm font-bold transition-all border-2"
+                          className="rounded-xl py-2 text-sm font-bold transition-all"
                           style={{
-                            background: form.moneda === m.value ? "#d69e2e" : "#fff",
-                            color: form.moneda === m.value ? "#fff" : "#92400e",
-                            borderColor: "#d69e2e",
+                            background: form.moneda === m.value ? "#d69e2e" : "rgba(255,255,255,0.06)",
+                            color: form.moneda === m.value ? "#fff" : "#d69e2e",
+                            border: "2px solid #d69e2e",
                           }}>
                           {m.label}
                         </button>
                       ))}
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Precio Total ({form.moneda}) *</label>
+                      <label className="text-xs font-bold text-white/50 uppercase">Precio Total ({form.moneda}) *</label>
                       <div className="relative mt-1">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-gray-400">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 font-black text-white/40">
                           {form.moneda === "NIO" ? "C$" : "$"}
                         </span>
                         <input type="number" step="0.01"
-                          className="w-full border-2 border-gray-100 rounded-xl p-3 pl-10 focus:border-yellow-400 focus:outline-none bg-gray-50 text-xl font-black"
+                          className="w-full rounded-xl p-3 pl-10 focus:outline-none text-white text-xl font-black"
+                          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
                           placeholder="0.00" value={form.precioOriginal}
                           onChange={(e) => setForm({ ...form, precioOriginal: e.target.value })} required />
                       </div>
                       {precioNum > 0 && (
                         <div className="mt-2 rounded-xl p-3 flex items-center justify-between"
-                          style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)" }}>
+                          style={{ background: "rgba(246,216,96,0.12)", border: "1px solid rgba(246,216,96,0.3)" }}>
                           <div>
-                            <p className="text-xs text-yellow-700 font-semibold">Córdoba (NIO)</p>
-                            <p className="font-black text-yellow-900 text-lg">C$ {precioNIO.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-xs text-yellow-400/70 font-semibold">Córdoba (NIO)</p>
+                            <p className="font-black text-yellow-300 text-lg">C$ {precioNIO.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs text-yellow-700 font-semibold">≈ USD</p>
-                            <p className="font-black text-yellow-900 text-lg">$ {precioUSD.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-xs text-yellow-400/70 font-semibold">≈ USD</p>
+                            <p className="font-black text-yellow-300 text-lg">$ {precioUSD.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                           </div>
                         </div>
                       )}
@@ -355,8 +358,9 @@ export default function VentasPage() {
                     { key: "impuestos", label: "Impuestos (C$)", placeholder: "0" },
                   ].map((f) => (
                     <div key={f.key}>
-                      <label className="text-xs font-bold text-gray-500 uppercase">{f.label}</label>
-                      <input type="number" className="w-full border-2 border-gray-100 rounded-xl p-3 mt-1 focus:border-yellow-400 focus:outline-none bg-gray-50"
+                      <label className="text-xs font-bold text-white/50 uppercase">{f.label}</label>
+                      <input type="number" className="w-full rounded-xl p-3 mt-1 focus:outline-none text-white"
+                        style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
                         placeholder={f.placeholder} value={form[f.key]} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />
                     </div>
                   ))}
@@ -365,7 +369,7 @@ export default function VentasPage() {
 
               {/* Sección: Pago */}
               <section>
-                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <h3 className="text-xs font-black text-white/40 uppercase tracking-widest mb-3 flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-black" style={{ background: "#d69e2e" }}>3</span>
                   Método y Estado de Pago
                 </h3>
@@ -373,11 +377,11 @@ export default function VentasPage() {
                   <div className="grid grid-cols-2 gap-2">
                     {METODOS_PAGO.map((m) => (
                       <button type="button" key={m.value} onClick={() => setForm({ ...form, metodoPago: m.value })}
-                        className="rounded-xl py-2 px-3 text-sm font-bold transition-all border-2"
+                        className="rounded-xl py-2 px-3 text-sm font-bold transition-all"
                         style={{
-                          background: form.metodoPago === m.value ? m.color : "#fff",
+                          background: form.metodoPago === m.value ? m.color : "rgba(255,255,255,0.06)",
                           color: form.metodoPago === m.value ? "#fff" : m.color,
-                          borderColor: m.color,
+                          border: `2px solid ${m.color}`,
                         }}>
                         {m.label}
                       </button>
@@ -386,11 +390,11 @@ export default function VentasPage() {
                   <div className="grid grid-cols-3 gap-2">
                     {ESTADOS_PAGO.map((s) => (
                       <button type="button" key={s.value} onClick={() => setForm({ ...form, estadoPago: s.value })}
-                        className="rounded-xl py-2.5 px-2 text-sm font-bold transition-all border-2"
+                        className="rounded-xl py-2.5 px-2 text-sm font-bold transition-all"
                         style={{
-                          background: form.estadoPago === s.value ? s.color : "#fff",
+                          background: form.estadoPago === s.value ? s.color : "rgba(255,255,255,0.06)",
                           color: form.estadoPago === s.value ? "#fff" : s.color,
-                          borderColor: s.color,
+                          border: `2px solid ${s.color}`,
                         }}>
                         {s.label}
                       </button>
@@ -398,13 +402,15 @@ export default function VentasPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Nº de Factura</label>
-                      <input className="w-full border-2 border-gray-100 rounded-xl p-3 mt-1 focus:border-yellow-400 focus:outline-none bg-gray-50"
+                      <label className="text-xs font-bold text-white/50 uppercase">Nº de Factura</label>
+                      <input className="w-full rounded-xl p-3 mt-1 focus:outline-none text-white"
+                        style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
                         placeholder="FAC-001" value={form.numeroFactura} onChange={(e) => setForm({ ...form, numeroFactura: e.target.value })} />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Fecha de Venta</label>
-                      <input type="date" className="w-full border-2 border-gray-100 rounded-xl p-3 mt-1 focus:border-yellow-400 focus:outline-none bg-gray-50"
+                      <label className="text-xs font-bold text-white/50 uppercase">Fecha de Venta</label>
+                      <input type="date" className="w-full rounded-xl p-3 mt-1 focus:outline-none text-white"
+                        style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", colorScheme: "dark" }}
                         value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} />
                     </div>
                   </div>
@@ -413,25 +419,28 @@ export default function VentasPage() {
 
               {/* Sección: Comprador */}
               <section>
-                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <h3 className="text-xs font-black text-white/40 uppercase tracking-widest mb-3 flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-black" style={{ background: "#d69e2e" }}>4</span>
                   Datos del Comprador
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase">Nombre del comprador</label>
-                    <input className="w-full border-2 border-gray-100 rounded-xl p-3 mt-1 focus:border-yellow-400 focus:outline-none bg-gray-50"
+                    <label className="text-xs font-bold text-white/50 uppercase">Nombre del comprador</label>
+                    <input className="w-full rounded-xl p-3 mt-1 focus:outline-none text-white"
+                      style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
                       placeholder="Nombre completo" value={form.comprador} onChange={(e) => setForm({ ...form, comprador: e.target.value })} />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Teléfono</label>
-                      <input className="w-full border-2 border-gray-100 rounded-xl p-3 mt-1 focus:border-yellow-400 focus:outline-none bg-gray-50"
+                      <label className="text-xs font-bold text-white/50 uppercase">Teléfono</label>
+                      <input className="w-full rounded-xl p-3 mt-1 focus:outline-none text-white"
+                        style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
                         placeholder="+505 8888-0000" value={form.telefonoComprador} onChange={(e) => setForm({ ...form, telefonoComprador: e.target.value })} />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-gray-500 uppercase">Dirección</label>
-                      <input className="w-full border-2 border-gray-100 rounded-xl p-3 mt-1 focus:border-yellow-400 focus:outline-none bg-gray-50"
+                      <label className="text-xs font-bold text-white/50 uppercase">Dirección</label>
+                      <input className="w-full rounded-xl p-3 mt-1 focus:outline-none text-white"
+                        style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
                         placeholder="Ciudad, País" value={form.direccionComprador} onChange={(e) => setForm({ ...form, direccionComprador: e.target.value })} />
                     </div>
                   </div>
@@ -440,26 +449,28 @@ export default function VentasPage() {
 
               {/* Sección: Documentos y obs */}
               <section>
-                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <h3 className="text-xs font-black text-white/40 uppercase tracking-widest mb-3 flex items-center gap-2">
                   <span className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-black" style={{ background: "#d69e2e" }}>5</span>
                   Observaciones y Evidencia
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase">Observaciones</label>
-                    <textarea className="w-full border-2 border-gray-100 rounded-xl p-3 mt-1 focus:border-yellow-400 focus:outline-none bg-gray-50 resize-none"
+                    <label className="text-xs font-bold text-white/50 uppercase">Observaciones</label>
+                    <textarea className="w-full rounded-xl p-3 mt-1 focus:outline-none text-white resize-none"
+                      style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
                       placeholder="Notas, condiciones, acuerdos especiales..." rows={3}
                       value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} />
                   </div>
-                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center bg-gray-50">
+                  <div className="rounded-xl p-4 text-center"
+                    style={{ border: "2px dashed rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.04)" }}>
                     <p className="text-2xl mb-1">📎</p>
-                    <p className="text-gray-500 text-sm font-medium">Documentos y fotos de la venta</p>
-                    <p className="text-gray-400 text-xs mb-2">Carta de venta, comprobante, fotos</p>
+                    <p className="text-white/60 text-sm font-medium">Documentos y fotos de la venta</p>
+                    <p className="text-white/30 text-xs mb-2">Carta de venta, comprobante, fotos</p>
                     <input type="file" multiple accept="image/*,.pdf"
                       onChange={(e) => setArchivos(e.target.files)}
-                      className="text-sm text-gray-500" />
+                      className="text-sm text-white/50" />
                     {archivos.length > 0 && (
-                      <p className="text-green-600 text-xs mt-2 font-medium">✓ {archivos.length} archivo(s) seleccionado(s)</p>
+                      <p className="text-green-400 text-xs mt-2 font-medium">✓ {archivos.length} archivo(s) seleccionado(s)</p>
                     )}
                   </div>
                 </div>
@@ -478,14 +489,15 @@ export default function VentasPage() {
         {/* Lista de ventas */}
         <div className="space-y-4">
           {ventas.map((v) => (
-            <div key={v.id} className="bg-white rounded-2xl shadow-md overflow-hidden">
+            <div key={v.id} className="rounded-2xl overflow-hidden shadow-xl"
+              style={{ background: "rgba(5,25,12,0.70)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.12)" }}>
               {/* Header tarjeta */}
-              <div className="px-5 py-3 flex items-center justify-between"
+              <div className="px-4 py-3 flex items-center justify-between"
                 style={{ background: v.tipoVenta === "EN_PIE" ? "linear-gradient(135deg,#1a6b2a,#2d9e3f)" : "linear-gradient(135deg,#9b2626,#e53e3e)" }}>
                 <div className="flex items-center gap-2">
                   <span className="text-white font-black text-sm">{v.tipoVenta === "EN_PIE" ? "🐄 En Pie" : "⚖️ Por Peso"}</span>
-                  <span className="text-white opacity-60 text-xs">·</span>
-                  <span className="text-white opacity-80 text-xs">{new Date(v.fecha).toLocaleDateString("es", { dateStyle: "medium" })}</span>
+                  <span className="text-white/50 text-xs">·</span>
+                  <span className="text-white/80 text-xs">{new Date(v.fecha).toLocaleDateString("es", { dateStyle: "medium" })}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-white text-xs font-bold px-2 py-1 rounded-full"
@@ -496,42 +508,37 @@ export default function VentasPage() {
                     <div className="flex gap-1">
                       <button onClick={() => abrirEditar(v)}
                         className="w-7 h-7 flex items-center justify-center rounded-full transition-all hover:scale-110"
-                        style={{ background: "rgba(0,0,0,0.25)" }} title="Editar venta">
-                        ✏️
-                      </button>
+                        style={{ background: "rgba(0,0,0,0.25)" }} title="Editar venta">✏️</button>
                       <button onClick={() => setModalEliminar({ id: v.id, animalId: v.animalId, animalNombre: v.animal?.nombre || v.animal?.identificador })}
                         className="w-7 h-7 flex items-center justify-center rounded-full transition-all hover:scale-110"
-                        style={{ background: "rgba(0,0,0,0.25)" }} title="Eliminar venta">
-                        🗑️
-                      </button>
+                        style={{ background: "rgba(0,0,0,0.25)" }} title="Eliminar venta">🗑️</button>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="p-5">
+              <div className="p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <p className="font-black text-gray-800 text-xl">{v.animal?.nombre || v.animal?.identificador}</p>
-                    <p className="text-sm text-gray-500">{v.animal?.raza || "Sin raza"} · Arete: {v.animal?.identificador}</p>
+                    <p className="font-black text-white text-lg">{v.animal?.nombre || v.animal?.identificador}</p>
+                    <p className="text-sm text-white/50">{v.animal?.raza || "Sin raza"} · Arete: {v.animal?.identificador}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-black text-2xl" style={{ color: "#d69e2e" }}>C$ {v.precioNIO.toLocaleString("es", { maximumFractionDigits: 0 })}</p>
-                    <p className="text-xs text-gray-400">≈ USD $ {v.precioUSD.toLocaleString("es", { maximumFractionDigits: 0 })}</p>
+                    <p className="font-black text-xl" style={{ color: "#f6d860" }}>C$ {v.precioNIO.toLocaleString("es", { maximumFractionDigits: 0 })}</p>
+                    <p className="text-xs text-white/40">≈ USD $ {v.precioUSD.toLocaleString("es", { maximumFractionDigits: 0 })}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  {v.comprador && <p className="text-gray-600">👤 <span className="font-medium">{v.comprador}</span></p>}
-                  {v.telefonoComprador && <p className="text-gray-600">📞 {v.telefonoComprador}</p>}
-                  {v.pesoKg && <p className="text-gray-600">⚖️ {v.pesoKg} {v.unidadPeso || "lb"}{v.precioKg ? ` · C$${v.precioKg}/${v.unidadPeso === "KG" ? "kg" : "lb"}` : ""}</p>}
-                  {v.numeroFactura && <p className="text-gray-600">🧾 {v.numeroFactura}</p>}
-                  <p className="text-gray-600">💳 {v.metodoPago}</p>
-                  <p className="text-gray-600">💱 TC: C$ {v.tipoCambio}</p>
+                <div className="grid grid-cols-2 gap-1 text-sm">
+                  {v.comprador && <p className="text-white/70">👤 <span className="font-medium">{v.comprador}</span></p>}
+                  {v.telefonoComprador && <p className="text-white/70">📞 {v.telefonoComprador}</p>}
+                  {v.pesoKg && <p className="text-white/70">⚖️ {v.pesoKg} {v.unidadPeso || "lb"}{v.precioKg ? ` · C$${v.precioKg}/${v.unidadPeso === "KG" ? "kg" : "lb"}` : ""}</p>}
+                  {v.numeroFactura && <p className="text-white/70">🧾 {v.numeroFactura}</p>}
+                  <p className="text-white/70">💳 {v.metodoPago}</p>
+                  <p className="text-white/70">💱 TC: C$ {v.tipoCambio}</p>
                 </div>
 
-                {v.notas && <p className="text-xs text-gray-400 mt-2 border-t pt-2">📝 {v.notas}</p>}
-
+                {v.notas && <p className="text-xs text-white/40 mt-2 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>📝 {v.notas}</p>}
 
                 {v.media?.length > 0 && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
@@ -548,10 +555,11 @@ export default function VentasPage() {
         </div>
 
         {ventas.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-7xl mb-4">💰</div>
-            <p className="text-gray-500 text-lg font-bold">Aún no hay ventas registradas</p>
-            <p className="text-gray-400 text-sm mt-1">Registra tu primera venta de ganado</p>
+          <div className="rounded-3xl p-10 text-center mt-4"
+            style={{ background: "rgba(5,25,12,0.60)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <p className="text-6xl mb-4">💰</p>
+            <p className="text-white font-black text-lg">Aún no hay ventas registradas</p>
+            <p className="text-white/40 text-sm mt-1">Toca el botón amarillo de arriba para registrar tu primera venta</p>
           </div>
         )}
       </div>

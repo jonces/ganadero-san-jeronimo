@@ -11,9 +11,7 @@ export default function EquipoPage() {
   const [showForm, setShowForm] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [form, setForm] = useState({ nombre: "", email: "", password: "", role: "TRABAJADOR" });
-
-  const usuario = getUsuario();
-  const esAdmin = usuario?.role === "ADMIN" || usuario?.role === "SUPER_ADMIN";
+  const [esAdmin, setEsAdmin] = useState(false);
 
   async function load() {
     try {
@@ -22,7 +20,11 @@ export default function EquipoPage() {
     } catch (err) { setError(err.message); }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const u = getUsuario();
+    setEsAdmin(u?.role === "ADMIN" || u?.role === "SUPER_ADMIN");
+    load();
+  }, []);
 
   async function handleCreate(e) {
     e.preventDefault();
