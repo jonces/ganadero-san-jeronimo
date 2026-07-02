@@ -235,10 +235,11 @@ export default function AppLayout({ children, title, subtitle }) {
             </div>
           </div>
 
-          {/* Badge usuario — centro en desktop, derecha en móvil */}
+          {/* Badge usuario — clickeable para ir al perfil */}
           {usuario && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
-              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}>
+            <button onClick={() => router.push("/perfil")}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:scale-105 transition-all"
+              style={{ background: pathname === "/perfil" ? "rgba(45,158,63,0.3)" : "rgba(255,255,255,0.08)", border: pathname === "/perfil" ? "1px solid rgba(45,158,63,0.5)" : "1px solid rgba(255,255,255,0.15)" }}>
               <div className="w-7 h-7 rounded-full flex items-center justify-center font-black text-sm shrink-0"
                 style={{
                   background: usuario.role === "ADMIN" ? "linear-gradient(135deg,#1a5c2a,#2d9e3f)"
@@ -259,7 +260,7 @@ export default function AppLayout({ children, title, subtitle }) {
                   {usuario.role === "ADMIN" ? "Admin" : usuario.role === "SUPER_ADMIN" ? "Super Admin" : "Trabajador"}
                 </p>
               </div>
-            </div>
+            </button>
           )}
 
           {/* Botón notificaciones */}
