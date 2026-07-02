@@ -33,7 +33,10 @@ export default function VentasPage() {
   const [archivos, setArchivos] = useState([]);
   const [enviando, setEnviando] = useState(false);
   const [esAdmin, setEsAdmin] = useState(false);
-  const [modalEliminar, setModalEliminar] = useState(null); // { id, animalId, animalNombre }
+  const [modalEliminar, setModalEliminar] = useState(null);
+  const [modalEditar, setModalEditar] = useState(null);
+  const [formEditar, setFormEditar] = useState({});
+  const [guardandoEditar, setGuardandoEditar] = useState(false);
 
   useEffect(() => {
     const u = getUsuario();
@@ -62,6 +65,33 @@ export default function VentasPage() {
   }
 
   useEffect(() => { load(); }, []);
+
+  function abrirEditar(v) {
+    setFormEditar({
+      comprador: v.comprador || "",
+      telefonoComprador: v.telefonoComprador || "",
+      metodoPago: v.metodoPago || "EFECTIVO",
+      estadoPago: v.estadoPago || "PAGADO",
+      notas: v.notas || "",
+      numeroFactura: v.numeroFactura || "",
+      precioOriginal: v.moneda === "USD" ? v.precioUSD : v.precioNIO,
+      pesoKg: v.pesoKg || "",
+      precioKg: v.precioKg || "",
+      fecha: new Date(v.fecha).toISOString().slice(0, 10),
+    });
+    setModalEditar(v);
+  }
+
+  async function guardarEdicion(e) {
+    e.preventDefault();
+    setGuardandoEditar(true);
+    try {
+      await api(`/ventas/${modalEditar.id}`, { method: "PATCH", body: formEditar });
+      setModalEditar(null);
+      load();
+    } catch (err) { setError(err.message); }
+    finally { setGuardandoEditar(false); }
+  }
 
   async function confirmarEliminar(revertir) {
     if (!modalEliminar) return;
@@ -463,12 +493,18 @@ export default function VentasPage() {
                     {labelEstado[v.estadoPago]}
                   </span>
                   {esAdmin && (
-                    <button onClick={() => setModalEliminar({ id: v.id, animalId: v.animalId, animalNombre: v.animal?.nombre || v.animal?.identificador })}
-                      className="w-7 h-7 flex items-center justify-center rounded-full transition-all hover:scale-110"
-                      style={{ background: "rgba(0,0,0,0.25)" }}
-                      title="Eliminar venta">
-                      🗑️
-                    </button>
+                    <div className="flex gap-1">
+                      <button onClick={() => abrirEditar(v)}
+                        className="w-7 h-7 flex items-center justify-center rounded-full transition-all hover:scale-110"
+                        style={{ background: "rgba(0,0,0,0.25)" }} title="Editar venta">
+                        ✏️
+                      </button>
+                      <button onClick={() => setModalEliminar({ id: v.id, animalId: v.animalId, animalNombre: v.animal?.nombre || v.animal?.identificador })}
+                        className="w-7 h-7 flex items-center justify-center rounded-full transition-all hover:scale-110"
+                        style={{ background: "rgba(0,0,0,0.25)" }} title="Eliminar venta">
+                        🗑️
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -519,6 +555,98 @@ export default function VentasPage() {
           </div>
         )}
       </div>
+
+      {/* Modal editar venta */}
+      {modalEditar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto" style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}>
+          <form onSubmit={guardarEdicion} className="w-full max-w-sm rounded-3xl p-6 shadow-2xl my-4" style={{ background: "rgba(5,25,12,0.95)", border: "1px solid rgba(45,158,63,0.4)" }}>
+            <h3 className="text-white font-black text-lg mb-1">✏️ Editar Venta</h3>
+            <p className="text-white/40 text-xs mb-4">{modalEditar.animal?.nombre || modalEditar.animal?.identificador}</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-white/40 text-xs">Precio ({modalEditar.moneda})</label>
+                <input type="number" className="w-full rounded-xl px-3 py-2 text-white text-sm mt-1"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" }}
+                  value={formEditar.precioOriginal} onChange={e => setFormEditar({ ...formEditar, precioOriginal: e.target.value })} />
+              </div>
+              {modalEditar.tipoVenta === "POR_PESO" && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-white/40 text-xs">Peso ({modalEditar.unidadPeso})</label>
+                    <input type="number" className="w-full rounded-xl px-3 py-2 text-white text-sm mt-1"
+                      style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" }}
+                      value={formEditar.pesoKg} onChange={e => setFormEditar({ ...formEditar, pesoKg: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-white/40 text-xs">Precio/{modalEditar.unidadPeso}</label>
+                    <input type="number" className="w-full rounded-xl px-3 py-2 text-white text-sm mt-1"
+                      style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" }}
+                      value={formEditar.precioKg} onChange={e => setFormEditar({ ...formEditar, precioKg: e.target.value })} />
+                  </div>
+                </div>
+              )}
+              <div>
+                <label className="text-white/40 text-xs">Comprador</label>
+                <input className="w-full rounded-xl px-3 py-2 text-white text-sm mt-1"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" }}
+                  value={formEditar.comprador} onChange={e => setFormEditar({ ...formEditar, comprador: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-white/40 text-xs">Teléfono</label>
+                <input className="w-full rounded-xl px-3 py-2 text-white text-sm mt-1"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" }}
+                  value={formEditar.telefonoComprador} onChange={e => setFormEditar({ ...formEditar, telefonoComprador: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-white/40 text-xs">Método de pago</label>
+                  <select className="w-full rounded-xl px-3 py-2 text-white text-sm mt-1"
+                    style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" }}
+                    value={formEditar.metodoPago} onChange={e => setFormEditar({ ...formEditar, metodoPago: e.target.value })}>
+                    {METODOS_PAGO.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-white/40 text-xs">Estado de pago</label>
+                  <select className="w-full rounded-xl px-3 py-2 text-white text-sm mt-1"
+                    style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" }}
+                    value={formEditar.estadoPago} onChange={e => setFormEditar({ ...formEditar, estadoPago: e.target.value })}>
+                    {ESTADOS_PAGO.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-white/40 text-xs">No. Factura</label>
+                <input className="w-full rounded-xl px-3 py-2 text-white text-sm mt-1"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" }}
+                  value={formEditar.numeroFactura} onChange={e => setFormEditar({ ...formEditar, numeroFactura: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-white/40 text-xs">Fecha</label>
+                <input type="date" className="w-full rounded-xl px-3 py-2 text-white text-sm mt-1"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" }}
+                  value={formEditar.fecha} onChange={e => setFormEditar({ ...formEditar, fecha: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-white/40 text-xs">Notas</label>
+                <textarea className="w-full rounded-xl px-3 py-2 text-white text-sm mt-1" rows={2}
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" }}
+                  value={formEditar.notas} onChange={e => setFormEditar({ ...formEditar, notas: e.target.value })} />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={() => setModalEditar(null)}
+                  className="flex-1 py-3 rounded-2xl text-white/50 font-bold text-sm"
+                  style={{ border: "1px solid rgba(255,255,255,0.15)" }}>Cancelar</button>
+                <button type="submit" disabled={guardandoEditar}
+                  className="flex-1 py-3 rounded-2xl text-white font-black text-sm disabled:opacity-50"
+                  style={{ background: "linear-gradient(135deg,#1a6b2a,#2d9e3f)" }}>
+                  {guardandoEditar ? "Guardando..." : "✅ Guardar"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Modal eliminar venta */}
       {modalEliminar && (

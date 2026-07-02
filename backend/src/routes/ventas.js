@@ -170,6 +170,33 @@ router.patch("/tipo-cambio", requireRole("ADMIN", "SUPER_ADMIN"), async (req, re
   } catch (err) { next(err); }
 });
 
+// Editar venta — solo ADMIN
+router.patch("/:id", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next) => {
+  try {
+    const venta = await prisma.venta.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
+    if (!venta) return res.status(404).json({ error: "Venta no encontrada" });
+    const { comprador, telefonoComprador, metodoPago, estadoPago, notas, precioOriginal, pesoKg, precioKg, fecha, numeroFactura } = req.body;
+    const data = {};
+    if (comprador !== undefined) data.comprador = comprador || null;
+    if (telefonoComprador !== undefined) data.telefonoComprador = telefonoComprador || null;
+    if (metodoPago) data.metodoPago = metodoPago;
+    if (estadoPago) data.estadoPago = estadoPago;
+    if (notas !== undefined) data.notas = notas || null;
+    if (numeroFactura !== undefined) data.numeroFactura = numeroFactura || null;
+    if (fecha) data.fecha = new Date(fecha);
+    if (precioOriginal) {
+      const precio = Number(precioOriginal);
+      data.precioNIO = venta.moneda === "USD" ? precio * venta.tipoCambio : precio;
+      data.precioUSD = venta.moneda === "USD" ? precio : precio / venta.tipoCambio;
+    }
+    if (pesoKg !== undefined) data.pesoKg = pesoKg ? Number(pesoKg) : null;
+    if (precioKg !== undefined) data.precioKg = precioKg ? Number(precioKg) : null;
+    const actualizada = await prisma.venta.update({ where: { id: venta.id }, data });
+    logActividad({ accion: "Editó venta", detalle: `C$ ${actualizada.precioNIO}`, modulo: "Ventas", fincaId: req.user.fincaId, usuarioId: req.user.sub });
+    res.json(actualizada);
+  } catch (err) { next(err); }
+});
+
 // Eliminar venta — solo ADMIN
 router.delete("/:id", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next) => {
   try {
