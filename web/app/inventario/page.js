@@ -28,6 +28,7 @@ export default function InventarioPage() {
   const [busqueda, setBusqueda] = useState("");
   const [form, setForm] = useState({ identificador:"",nombre:"",raza:"",fierro:"",sexo:"HEMBRA",pesoActual:"",observacion:"",estadoReproductivo:"",madreId:"" });
   const [formParto, setFormParto] = useState({ identificadorCria:"",nombreCria:"",sexoCria:"HEMBRA",pesoNacimiento:"" });
+  const [archivosParto, setArchivosParto] = useState([]);
 
   async function load() {
     try {
@@ -64,13 +65,21 @@ export default function InventarioPage() {
   async function handleParto(e) {
     e.preventDefault(); setEnviando(true);
     try {
+      const fd = new FormData();
+      fd.append("identificadorCria", formParto.identificadorCria);
+      if(formParto.nombreCria) fd.append("nombreCria", formParto.nombreCria);
+      fd.append("sexoCria", formParto.sexoCria);
+      if(formParto.pesoNacimiento) fd.append("pesoNacimiento", formParto.pesoNacimiento);
+      Array.from(archivosParto).forEach(f => fd.append("archivos", f));
       const res = await fetch(`${API_URL}/animales/${showParto}/parto`,{
-        method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${getToken()}`},
-        body:JSON.stringify(formParto),
+        method:"POST", headers:{Authorization:`Bearer ${getToken()}`}, body:fd,
       });
       const d = await res.json();
       if(!res.ok) throw new Error(d.error||"Error");
-      setShowParto(null); setFormParto({identificadorCria:"",nombreCria:"",sexoCria:"HEMBRA",pesoNacimiento:""}); load();
+      setShowParto(null);
+      setFormParto({identificadorCria:"",nombreCria:"",sexoCria:"HEMBRA",pesoNacimiento:""});
+      setArchivosParto([]);
+      load();
     } catch(err){ setError(err.message); } finally{ setEnviando(false); }
   }
 
@@ -208,7 +217,12 @@ export default function InventarioPage() {
             <div><label className="text-white/50 text-xs">Nombre de la cría</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="Opcional" value={formParto.nombreCria} onChange={e=>setFormParto({...formParto,nombreCria:e.target.value})}/></div>
             <div><label className="text-white/50 text-xs">Sexo *</label><select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={formParto.sexoCria} onChange={e=>setFormParto({...formParto,sexoCria:e.target.value})}><option value="HEMBRA">Hembra</option><option value="MACHO">Macho</option></select></div>
             <div><label className="text-white/50 text-xs">Peso al nacer (kg)</label><input type="number" className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="Opcional" value={formParto.pesoNacimiento} onChange={e=>setFormParto({...formParto,pesoNacimiento:e.target.value})}/></div>
-            <div className="flex gap-3"><button type="button" onClick={()=>setShowParto(null)} className="flex-1 text-white/50 py-2 rounded-xl" style={{border:"1px solid rgba(255,255,255,0.2)"}}>Cancelar</button>
+            <div>
+              <label className="text-white/50 text-xs">📷 Fotos y 🎥 Videos de la cría</label>
+              <input type="file" accept="image/*,video/*" multiple className="w-full mt-1 text-white/70 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-green-900 file:text-white hover:file:bg-green-800" onChange={e=>setArchivosParto(e.target.files)}/>
+              {archivosParto.length>0&&<p className="text-green-400 text-xs mt-1">{archivosParto.length} archivo(s) seleccionado(s)</p>}
+            </div>
+            <div className="flex gap-3"><button type="button" onClick={()=>{setShowParto(null);setArchivosParto([]);}} className="flex-1 text-white/50 py-2 rounded-xl" style={{border:"1px solid rgba(255,255,255,0.2)"}}>Cancelar</button>
             <button type="submit" disabled={enviando} className="flex-1 text-white font-black py-2 rounded-xl disabled:opacity-50" style={{background:"linear-gradient(135deg,#1a6b2a,#2d9e3f)"}}>{enviando?"...":"Registrar"}</button></div>
           </form>
         </div>

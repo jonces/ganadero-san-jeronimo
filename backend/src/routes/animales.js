@@ -129,7 +129,7 @@ router.patch("/:id", async (req, res, next) => {
 });
 
 // Registrar parto — crea cría y actualiza madre automáticamente
-router.post("/:id/parto", async (req, res, next) => {
+router.post("/:id/parto", upload.array("archivos", 10), async (req, res, next) => {
   try {
     const madre = await prisma.animal.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
     if (!madre) return res.status(404).json({ error: "Animal no encontrado" });
@@ -138,7 +138,7 @@ router.post("/:id/parto", async (req, res, next) => {
     const { identificadorCria, nombreCria, sexoCria, pesoNacimiento } = req.body;
     if (!identificadorCria || !sexoCria) return res.status(400).json({ error: "identificadorCria y sexoCria son requeridos" });
 
-    // Actualizar madre: PARIDA → LACTANCIA + fecha de parto
+    // Actualizar madre: LACTANCIA + fecha de parto
     const madreActualizada = await prisma.animal.update({
       where: { id: madre.id },
       data: { estadoReproductivo: "LACTANCIA", fechaParto: new Date() },
@@ -157,6 +157,14 @@ router.post("/:id/parto", async (req, res, next) => {
       },
       include: includeAnimal,
     });
+
+    // Subir fotos/videos de la cría si vienen
+    if (req.files && req.files.length > 0) {
+      await Promise.all(req.files.map(async (file) => {
+        const { url, tipo } = await uploadMediaConTipo(file);
+        return prisma.media.create({ data: { url, tipo, animalId: cria.id } });
+      }));
+    }
 
     logActividad({ accion: "Registró parto", detalle: `Madre: ${madre.identificador} → Cría: ${identificadorCria}`, modulo: "Animales", fincaId: req.user.fincaId, usuarioId: req.user.sub });
     res.status(201).json({ madre: madreActualizada, cria });
