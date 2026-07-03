@@ -42,5 +42,30 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message || "Error interno del servidor" });
 });
 
+// Correccion de integridad: media cuyo tipo no coincide con su URL de
+// Cloudinary (versiones viejas de la app enviaban todo como octet-stream
+// y los videos quedaban marcados como FOTO). Idempotente.
+async function corregirTiposDeMedia() {
+  try {
+    const prisma = require("./prisma");
+    const aVideo = await prisma.media.updateMany({
+      where: { url: { contains: "/video/upload/" }, tipo: "FOTO" },
+      data: { tipo: "VIDEO" },
+    });
+    const aFoto = await prisma.media.updateMany({
+      where: { url: { contains: "/image/upload/" }, tipo: "VIDEO" },
+      data: { tipo: "FOTO" },
+    });
+    if (aVideo.count || aFoto.count) {
+      console.log(`Media corregida: ${aVideo.count} a VIDEO, ${aFoto.count} a FOTO`);
+    }
+  } catch (err) {
+    console.error("Error corrigiendo tipos de media:", err.message);
+  }
+}
+
 const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`Backend escuchando en puerto ${port}`));
+app.listen(port, () => {
+  console.log(`Backend escuchando en puerto ${port}`);
+  corregirTiposDeMedia();
+});

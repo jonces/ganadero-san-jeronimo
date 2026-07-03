@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
@@ -65,11 +66,29 @@ class ApiClient {
     return _handle(res);
   }
 
+  // Tipo MIME segun la extension del archivo — necesario para que el
+  // servidor clasifique bien fotos y videos (sin esto todo llega como
+  // application/octet-stream).
+  static MediaType _mimeDe(String path) {
+    final p = path.toLowerCase();
+    if (p.endsWith('.mp4')) return MediaType('video', 'mp4');
+    if (p.endsWith('.mov')) return MediaType('video', 'quicktime');
+    if (p.endsWith('.3gp')) return MediaType('video', '3gpp');
+    if (p.endsWith('.webm')) return MediaType('video', 'webm');
+    if (p.endsWith('.mkv')) return MediaType('video', 'x-matroska');
+    if (p.endsWith('.avi')) return MediaType('video', 'x-msvideo');
+    if (p.endsWith('.png')) return MediaType('image', 'png');
+    if (p.endsWith('.webp')) return MediaType('image', 'webp');
+    if (p.endsWith('.heic')) return MediaType('image', 'heic');
+    if (p.endsWith('.gif')) return MediaType('image', 'gif');
+    return MediaType('image', 'jpeg');
+  }
+
   static Future<dynamic> patchMultipart(String path, File file, String fieldName) async {
     final token = await _token();
     final request = http.MultipartRequest('PATCH', Uri.parse('$baseUrl$path'));
     if (token != null) request.headers['Authorization'] = 'Bearer $token';
-    request.files.add(await http.MultipartFile.fromPath(fieldName, file.path));
+    request.files.add(await http.MultipartFile.fromPath(fieldName, file.path, contentType: _mimeDe(file.path)));
     final streamed = await request.send();
     final res = await http.Response.fromStream(streamed);
     return _handle(res);
@@ -85,7 +104,7 @@ class ApiClient {
     if (token != null) request.headers['Authorization'] = 'Bearer $token';
     request.fields.addAll(fields);
     for (final path in filePaths) {
-      request.files.add(await http.MultipartFile.fromPath('archivos', path));
+      request.files.add(await http.MultipartFile.fromPath('archivos', path, contentType: _mimeDe(path)));
     }
     final streamed = await request.send();
     final res = await http.Response.fromStream(streamed);

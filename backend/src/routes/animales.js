@@ -2,7 +2,7 @@ const express = require("express");
 const multer = require("multer");
 const prisma = require("../prisma");
 const { requireAuth, requireRole } = require("../middleware/auth");
-const { uploadMedia } = require("../lib/storage");
+const { uploadMedia, uploadMediaConTipo } = require("../lib/storage");
 const logActividad = require("../lib/logActividad");
 
 const router = express.Router();
@@ -188,8 +188,7 @@ router.post("/:id/media", upload.array("archivos", 10), async (req, res, next) =
 
     const creados = await Promise.all(
       req.files.map(async (file) => {
-        const url = await uploadMedia(file);
-        const tipo = file.mimetype.startsWith("video") ? "VIDEO" : "FOTO";
+        const { url, tipo } = await uploadMediaConTipo(file);
         return prisma.media.create({ data: { url, tipo, animalId: animal.id } });
       })
     );

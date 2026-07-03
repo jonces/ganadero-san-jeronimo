@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:video_player/video_player.dart';
 import '../api_client.dart';
 
 const _tipos = ['VACUNACION', 'TRATAMIENTO', 'PESAJE', 'PARTO', 'OBSERVACION', 'MOVIMIENTO'];
@@ -28,6 +29,9 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   final List<XFile> _archivos = [];
   bool _enviando = false;
   bool _showForm = false;
+  int _mediaSel = 0;
+  VideoPlayerController? _videoCtrl;
+  String? _videoUrl;
 
   @override
   void initState() {
@@ -39,6 +43,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _videoCtrl?.dispose();
     _descripcionCtrl.dispose();
     _pesoCtrl.dispose();
     super.dispose();
@@ -104,7 +109,6 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
 
     final eventos = (_animal!['eventos'] as List?) ?? [];
     final media = (_animal!['media'] as List?) ?? [];
-    final fotos = media.where((m) => m['tipo'] == 'FOTO').toList();
     final estadoColor = _estadoColor(_animal!['estado']);
 
     return Scaffold(
@@ -112,14 +116,9 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: fotos.isNotEmpty ? 220 : 0,
             pinned: true,
             backgroundColor: const Color(0xFF020F05),
             foregroundColor: Colors.white,
-            flexibleSpace: fotos.isNotEmpty ? FlexibleSpaceBar(
-              background: CachedNetworkImage(imageUrl: fotos.first['url'], fit: BoxFit.cover,
-                  color: Colors.black.withOpacity(0.3), colorBlendMode: BlendMode.darken),
-            ) : null,
             title: Text(_animal!['nombre'] ?? _animal!['identificador'],
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
             actions: [
@@ -145,6 +144,12 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Galería de fotos y videos (como en la web)
+                  if (media.isNotEmpty) ...[
+                    _visorMedia(media),
+                    const SizedBox(height: 16),
+                  ],
+
                   // Info básica
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -286,6 +291,133 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // ── Galería de media estilo web: visor grande + miniaturas ──
+  Widget _visorMedia(List media) {
+    if (_mediaSel >= media.length) _mediaSel = 0;
+    final m = media[_mediaSel];
+    final esVideo = m['tipo'] == 'VIDEO';
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF051908).withOpacity(0.85),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              height: 230,
+              width: double.infinity,
+              color: Colors.black,
+              child: esVideo
+                  ? _reproductorVideo(m['url'])
+                  : CachedNetworkImage(
+                      imageUrl: m['url'],
+                      fit: BoxFit.contain,
+                      placeholder: (_, __) => const Center(child: CircularProgressIndicator(color: Color(0xFF2D9E3F))),
+                      errorWidget: (_, __, ___) => const Center(child: Icon(Icons.broken_image, color: Colors.white24, size: 40)),
+                    ),
+            ),
+          ),
+          if (media.length > 1) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 62,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: media.length,
+                itemBuilder: (_, i) {
+                  final mi = media[i];
+                  final sel = i == _mediaSel;
+                  return GestureDetector(
+                    onTap: () => _seleccionarMedia(i, media),
+                    child: Container(
+                      width: 62,
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: sel ? const Color(0xFF2D9E3F) : Colors.white.withOpacity(0.12),
+                          width: sel ? 2 : 1,
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: mi['tipo'] == 'FOTO'
+                            ? CachedNetworkImage(imageUrl: mi['url'], fit: BoxFit.cover)
+                            : Container(
+                                color: const Color(0xFF0A2812),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.play_circle_fill, color: Color(0xFF2D9E3F), size: 24),
+                                    Text('VIDEO', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 8, fontWeight: FontWeight.w800)),
+                                  ],
+                                ),
+                              ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _seleccionarMedia(int i, List media) {
+    setState(() => _mediaSel = i);
+    if (media[i]['tipo'] != 'VIDEO') _videoCtrl?.pause();
+  }
+
+  Widget _reproductorVideo(String url) {
+    if (_videoUrl != url) {
+      _videoCtrl?.dispose();
+      _videoUrl = url;
+      _videoCtrl = VideoPlayerController.networkUrl(Uri.parse(url))
+        ..initialize().then((_) { if (mounted) setState(() {}); });
+    }
+    final c = _videoCtrl!;
+    if (!c.value.isInitialized) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF2D9E3F)));
+    }
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Center(child: AspectRatio(aspectRatio: c.value.aspectRatio, child: VideoPlayer(c))),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => setState(() => c.value.isPlaying ? c.pause() : c.play()),
+          child: AnimatedOpacity(
+            opacity: c.value.isPlaying ? 0 : 1,
+            duration: const Duration(milliseconds: 200),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+              child: const Icon(Icons.play_arrow, color: Colors.white, size: 42),
+            ),
+          ),
+        ),
+        Positioned(
+          left: 0, right: 0, bottom: 0,
+          child: VideoProgressIndicator(
+            c,
+            allowScrubbing: true,
+            colors: const VideoProgressColors(
+              playedColor: Color(0xFF2D9E3F),
+              bufferedColor: Colors.white24,
+              backgroundColor: Colors.white10,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

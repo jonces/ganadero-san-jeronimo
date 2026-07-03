@@ -19,4 +19,23 @@ async function uploadMedia(file) {
   });
 }
 
-module.exports = { uploadMedia };
+// Igual que uploadMedia pero devuelve tambien el tipo (FOTO/VIDEO) segun
+// la deteccion de Cloudinary — el mimetype del cliente no es confiable
+// (la app movil puede enviar application/octet-stream).
+async function uploadMediaConTipo(file) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "ganadero-sg", resource_type: "auto" },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve({
+          url: result.secure_url,
+          tipo: result.resource_type === "video" ? "VIDEO" : "FOTO",
+        });
+      }
+    );
+    stream.end(file.buffer);
+  });
+}
+
+module.exports = { uploadMedia, uploadMediaConTipo };
