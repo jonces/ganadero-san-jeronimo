@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { crearSelloFinca } from "@/lib/selloFinca";
 import AppLayout from "@/components/AppLayout";
 
 export default function ReportesPage() {
@@ -62,26 +61,34 @@ export default function ReportesPage() {
       doc.rect(0, 44, 5, H - 52, "F");
 
 
-      // Logo de la finca: toro brahman con nombre arriba y ubicacion en el liston
-      const sello = await crearSelloFinca({ nombre: fincaNombre, ubicacion: fincaUbicacion });
-      doc.addImage(sello, "PNG", 4, 3, 36, 36);
+      // Logo: SVG a imagen en el PDF
+      // Círculo con inicial
+      const inicial = fincaNombre.charAt(0).toUpperCase();
+      doc.setFillColor(255, 255, 255);
+      doc.circle(20, 19, 10, "F");
+      doc.setFillColor(...p.mid);
+      doc.circle(20, 19, 8, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text(inicial, 20, 22, { align: 'center' });
 
       // Nombre de la finca
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(17);
       doc.setFont("helvetica", "bold");
-      doc.text("Finca: " + fincaNombre, 44, 14);
+      doc.text("Finca: " + fincaNombre, 38, 14);
 
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(210, 235, 210);
       let infoY = 23;
       if (fincaUbicacion) {
-        doc.text("Ubicacion: " + fincaUbicacion, 44, infoY);
+        doc.text("Ubicacion: " + fincaUbicacion, 38, infoY);
         infoY += 6;
       }
       if (adminNombre) {
-        doc.text("Administrador: " + adminNombre, 44, infoY);
+        doc.text("Administrador: " + adminNombre, 38, infoY);
       }
 
       doc.setFontSize(7);

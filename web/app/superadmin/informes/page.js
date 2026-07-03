@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
-import { crearSelloFinca } from "@/lib/selloFinca";
 import AppLayout from "@/components/AppLayout";
 
 export default function SuperAdminInformesPage() {
@@ -29,9 +28,6 @@ export default function SuperAdminInformesPage() {
       const adminNombre = finca.usuarios?.[0]?.nombre || "—";
       const adminEmail = finca.usuarios?.[0]?.email || "—";
 
-      // Logo de la finca: toro brahman con nombre arriba y ubicacion en el liston
-      const sello = await crearSelloFinca({ nombre: data.finca.nombre, ubicacion: data.finca.ubicacion });
-
       function drawHeader(titulo, cDark, cMid, cAccent) {
         doc.setFillColor(...cDark);
         doc.rect(0, 0, W, 44, "F");
@@ -40,17 +36,25 @@ export default function SuperAdminInformesPage() {
         doc.setFillColor(...cAccent);
         doc.rect(0, 45, 5, H - 53, "F");
 
-        doc.addImage(sello, "PNG", 4, 3, 36, 36);
+        const inicial = (data.finca.nombre || "F").charAt(0).toUpperCase();
+        doc.setFillColor(255, 255, 255);
+        doc.circle(20, 20, 10, "F");
+        doc.setFillColor(...cMid);
+        doc.circle(20, 20, 8, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont("helvetica", "bold");
+        doc.text(inicial, 20, 24, { align: "center" });
 
         doc.setFontSize(15);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(255, 255, 255);
-        doc.text("Finca: " + data.finca.nombre, 44, 14);
+        doc.text("Finca: " + data.finca.nombre, 36, 14);
         doc.setFontSize(8);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(210, 235, 210);
-        if (data.finca.ubicacion) doc.text("Ubicacion: " + data.finca.ubicacion, 44, 21);
-        doc.text("Administrador: " + adminNombre + "  |  " + adminEmail, 44, 27);
+        if (data.finca.ubicacion) doc.text("Ubicacion: " + data.finca.ubicacion, 36, 21);
+        doc.text("Administrador: " + adminNombre + "  |  " + adminEmail, 36, 27);
         doc.setFontSize(7);
         doc.setTextColor(180, 220, 180);
         doc.text("Generado: " + fecha, W - 10, 10, { align: "right" });
