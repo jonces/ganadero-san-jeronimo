@@ -118,7 +118,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
             foregroundColor: Colors.white,
             flexibleSpace: fotos.isNotEmpty ? FlexibleSpaceBar(
               background: CachedNetworkImage(imageUrl: fotos.first['url'], fit: BoxFit.cover,
-                  colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken)),
+                  color: Colors.black.withOpacity(0.3), colorBlendMode: BlendMode.darken),
             ) : null,
             title: Text(_animal!['nombre'] ?? _animal!['identificador'],
                 style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
