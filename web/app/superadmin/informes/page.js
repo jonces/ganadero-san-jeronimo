@@ -29,7 +29,10 @@ export default function SuperAdminInformesPage() {
       const adminNombre = finca.usuarios?.[0]?.nombre || "—";
       const adminEmail = finca.usuarios?.[0]?.email || "—";
 
-      async function drawHeader(titulo, cDark, cMid, cAccent) {
+      // Logo de la finca: toro brahman con nombre arriba y ubicacion en el liston
+      const sello = await crearSelloFinca({ nombre: data.finca.nombre, ubicacion: data.finca.ubicacion });
+
+      function drawHeader(titulo, cDark, cMid, cAccent) {
         doc.setFillColor(...cDark);
         doc.rect(0, 0, W, 44, "F");
         doc.setFillColor(...cMid);
@@ -37,9 +40,7 @@ export default function SuperAdminInformesPage() {
         doc.setFillColor(...cAccent);
         doc.rect(0, 45, 5, H - 53, "F");
 
-        // Sello de la finca: cabeza de toro con nombre y ubicacion alrededor
-        const sello = await crearSelloFinca({ nombre: data.finca.nombre, ubicacion: data.finca.ubicacion, color: cMid });
-        doc.addImage(sello, "PNG", 5, 4, 34, 34);
+        doc.addImage(sello, "PNG", 4, 3, 36, 36);
 
         doc.setFontSize(15);
         doc.setFont("helvetica", "bold");
@@ -79,7 +80,7 @@ export default function SuperAdminInformesPage() {
       const green = { dark: [15, 74, 30], mid: [34, 139, 60], accent: [52, 168, 83] };
 
       // ── PÁGINA 1: RESUMEN GENERAL ─────────────────────────────
-      await drawHeader("INFORME GENERAL DE FINCA", green.dark, green.mid, green.accent);
+      drawHeader("INFORME GENERAL DE FINCA", green.dark, green.mid, green.accent);
 
       // Tarjetas de resumen
       const cards = [
@@ -179,7 +180,7 @@ export default function SuperAdminInformesPage() {
       // ── PÁGINA 2: VENTAS ─────────────────────────────────────
       if (data.ventas.length > 0) {
         doc.addPage();
-        await drawHeader("REPORTE DE VENTAS", [90, 50, 10], [180, 100, 20], [210, 140, 40]);
+        drawHeader("REPORTE DE VENTAS", [90, 50, 10], [180, 100, 20], [210, 140, 40]);
         autoTable(doc, {
           startY: 68,
           margin: { left: 10, right: 10 },
@@ -201,7 +202,7 @@ export default function SuperAdminInformesPage() {
       // ── PÁGINA 3: GASTOS ─────────────────────────────────────
       if (data.gastos.length > 0) {
         doc.addPage();
-        await drawHeader("REPORTE DE GASTOS", [50, 30, 100], [110, 70, 200], [140, 90, 230]);
+        drawHeader("REPORTE DE GASTOS", [50, 30, 100], [110, 70, 200], [140, 90, 230]);
         autoTable(doc, {
           startY: 68,
           margin: { left: 10, right: 10 },
@@ -220,7 +221,7 @@ export default function SuperAdminInformesPage() {
       // ── PÁGINA 4: EQUIPO E INCIDENTES ─────────────────────────
       if (data.equipo.length > 0 || data.incidentes.length > 0) {
         doc.addPage();
-        await drawHeader("EQUIPO E INCIDENTES", [20, 60, 120], [40, 100, 180], [60, 130, 210]);
+        drawHeader("EQUIPO E INCIDENTES", [20, 60, 120], [40, 100, 180], [60, 130, 210]);
         let py = 68;
         if (data.equipo.length > 0) {
           doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(20, 60, 120);

@@ -62,9 +62,9 @@ export default function ReportesPage() {
       doc.rect(0, 44, 5, H - 52, "F");
 
 
-      // Sello de la finca: cabeza de toro con nombre y ubicacion alrededor
-      const sello = await crearSelloFinca({ nombre: fincaNombre, ubicacion: fincaUbicacion, color: p.mid });
-      doc.addImage(sello, "PNG", 5, 4, 34, 34);
+      // Logo de la finca: toro brahman con nombre arriba y ubicacion en el liston
+      const sello = await crearSelloFinca({ nombre: fincaNombre, ubicacion: fincaUbicacion });
+      doc.addImage(sello, "PNG", 4, 3, 36, 36);
 
       // Nombre de la finca
       doc.setTextColor(255, 255, 255);

@@ -1,6 +1,12 @@
-// Sello circular de la finca para los PDF: cabeza de toro al centro,
-// nombre de la finca curvado arriba y ubicacion curvada abajo.
+// Logo de la finca para los PDF, estilo emblema ganadero:
+// toro brahman negro sobre disco blanco con anillo rojo,
+// nombre de la finca curvado arriba y ubicacion en el liston rojo de abajo.
 // Devuelve un PNG (dataURL) listo para doc.addImage().
+
+const ROJO = "#d93a2b";
+const ROJO_OSCURO = "#b32014";
+const ROJO_SOMBRA = "#8f1a10";
+const NEGRO = "#111111";
 
 function escaparXML(s) {
   return String(s)
@@ -10,49 +16,55 @@ function escaparXML(s) {
     .replace(/"/g, "&quot;");
 }
 
-export function svgSelloFinca({ nombre, ubicacion, color = [34, 139, 60] }) {
+export function svgSelloFinca({ nombre, ubicacion }) {
   const nom = (nombre || "MI FINCA").toUpperCase();
-  const ubi = (ubicacion || "").toUpperCase();
-  const fondo = `rgb(${color[0]},${color[1]},${color[2]})`;
+  const ubi = (ubicacion || "FINCA GANADERA").toUpperCase();
 
-  // Tamano de letra segun largo del texto para que quepa en el arco
-  const fsTop = Math.max(20, Math.min(40, (480 / nom.length - 3) / 0.62));
-  const fsBot = ubi ? Math.max(15, Math.min(26, (500 / ubi.length - 2) / 0.62)) : 0;
+  // Tamano de letra segun largo del texto para que quepa en el arco y el liston
+  const fsNombre = Math.max(18, Math.min(38, (470 / nom.length - 2) / 0.62));
+  const fsUbi = Math.max(13, Math.min(26, (270 / ubi.length - 1) / 0.6));
 
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <path id="arcoTop" d="M 52 256 A 204 204 0 0 1 460 256"/>
-    <path id="arcoBot" d="M 24 256 A 232 232 0 0 0 488 256"/>
+    <path id="arcoNombre" d="M 88 240 A 168 168 0 0 1 424 240"/>
   </defs>
-  <circle cx="256" cy="256" r="252" fill="${fondo}"/>
-  <circle cx="256" cy="256" r="243" fill="none" stroke="#ffffff" stroke-width="7"/>
-  <circle cx="256" cy="256" r="176" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.85"/>
-  <circle cx="38" cy="256" r="6" fill="#ffffff"/>
-  <circle cx="474" cy="256" r="6" fill="#ffffff"/>
-  <text fill="#ffffff" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="${fsTop}" letter-spacing="3">
-    <textPath href="#arcoTop" xlink:href="#arcoTop" startOffset="50%" text-anchor="middle">${escaparXML(nom)}</textPath>
+  <!-- disco blanco con anillo rojo -->
+  <circle cx="256" cy="240" r="136" fill="#ffffff"/>
+  <circle cx="256" cy="240" r="136" fill="none" stroke="${ROJO}" stroke-width="20"/>
+  <!-- nombre de la finca curvado arriba -->
+  <text fill="#ffffff" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="${fsNombre}" letter-spacing="2">
+    <textPath href="#arcoNombre" xlink:href="#arcoNombre" startOffset="50%" text-anchor="middle">${escaparXML(nom)}</textPath>
   </text>
-  ${ubi ? `<text fill="#ffffff" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="${fsBot}" letter-spacing="2">
-    <textPath href="#arcoBot" xlink:href="#arcoBot" startOffset="50%" text-anchor="middle">${escaparXML(ubi)}</textPath>
-  </text>` : ""}
-  <g transform="translate(256 256) scale(0.66) translate(-256 -214)">
-    <g fill="#ffffff">
-      <path d="M 186 172 C 138 164 106 130 102 84 C 140 120 176 138 212 142 C 200 150 190 160 186 172 Z"/>
-      <path d="M 326 172 C 374 164 406 130 410 84 C 372 120 336 138 300 142 C 312 150 322 160 326 172 Z"/>
-      <ellipse cx="168" cy="206" rx="30" ry="17" transform="rotate(-24 168 206)"/>
-      <ellipse cx="344" cy="206" rx="30" ry="17" transform="rotate(24 344 206)"/>
-      <path d="M 256 140 C 300 140 332 166 336 210 C 339 242 324 274 306 300 C 290 322 274 336 256 344 C 238 336 222 322 206 300 C 188 274 173 242 176 210 C 180 166 212 140 256 140 Z"/>
-    </g>
-    <circle cx="224" cy="222" r="10" fill="${fondo}"/>
-    <circle cx="288" cy="222" r="10" fill="${fondo}"/>
-    <ellipse cx="238" cy="302" rx="7" ry="11" fill="${fondo}" transform="rotate(-14 238 302)"/>
-    <ellipse cx="274" cy="302" rx="7" ry="11" fill="${fondo}" transform="rotate(14 274 302)"/>
+  <!-- toro brahman -->
+  <g>
+    <path fill="${NEGRO}" d="M 214 160 C 192 140 184 112 194 84 C 210 102 226 122 246 140 C 234 144 222 151 214 160 Z"/>
+    <path fill="${NEGRO}" d="M 298 160 C 320 140 328 112 318 84 C 302 102 286 122 266 140 C 278 144 290 151 298 160 Z"/>
+    <ellipse cx="172" cy="222" rx="20" ry="52" fill="${NEGRO}" transform="rotate(42 172 222)"/>
+    <ellipse cx="340" cy="222" rx="20" ry="52" fill="${NEGRO}" transform="rotate(-42 340 222)"/>
+    <ellipse cx="174" cy="224" rx="8" ry="34" fill="#ffffff" transform="rotate(42 174 224)"/>
+    <ellipse cx="338" cy="224" rx="8" ry="34" fill="#ffffff" transform="rotate(-42 338 224)"/>
+    <path fill="${NEGRO}" d="M 256 148 C 290 148 312 168 316 198 C 320 230 306 268 292 292 C 280 312 268 322 256 326 C 244 322 232 312 220 292 C 206 268 192 230 196 198 C 200 168 222 148 256 148 Z"/>
+    <path fill="${NEGRO}" d="M 146 348 C 164 306 196 288 220 284 C 232 302 244 314 256 318 C 268 314 280 302 292 284 C 316 288 348 306 366 348 C 332 366 298 374 256 374 C 214 374 180 366 146 348 Z"/>
+    <circle cx="234" cy="206" r="7" fill="#ffffff"/>
+    <circle cx="278" cy="206" r="7" fill="#ffffff"/>
+    <ellipse cx="256" cy="298" rx="27" ry="17" fill="#ffffff"/>
+    <ellipse cx="245" cy="298" rx="5" ry="7" fill="${NEGRO}"/>
+    <ellipse cx="267" cy="298" rx="5" ry="7" fill="${NEGRO}"/>
+  </g>
+  <!-- liston rojo con la ubicacion -->
+  <g>
+    <path fill="${ROJO_OSCURO}" d="M 38 378 L 118 366 L 118 434 L 38 446 L 64 412 Z"/>
+    <path fill="${ROJO_OSCURO}" d="M 474 378 L 394 366 L 394 434 L 474 446 L 448 412 Z"/>
+    <path fill="${ROJO_SOMBRA}" d="M 118 366 L 142 380 L 118 400 Z"/>
+    <path fill="${ROJO_SOMBRA}" d="M 394 366 L 370 380 L 394 400 Z"/>
+    <path fill="${ROJO}" d="M 110 362 C 162 384 350 384 402 362 L 402 428 C 350 450 162 450 110 428 Z"/>
+    <text x="256" y="414" fill="#ffffff" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="${fsUbi}" text-anchor="middle" letter-spacing="1">${escaparXML(ubi)}</text>
   </g>
 </svg>`;
 }
 
-export async function crearSelloFinca({ nombre, ubicacion, color }) {
-  const svg = svgSelloFinca({ nombre, ubicacion, color });
+export async function crearSelloFinca({ nombre, ubicacion }) {
+  const svg = svgSelloFinca({ nombre, ubicacion });
   const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   try {
