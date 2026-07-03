@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiClient {
-  static const String baseUrl = 'http://10.0.2.2:4000/api'; // emulador Android -> localhost del host
+  static const String baseUrl = 'https://ganadero-san-jeronimo-production.up.railway.app/api';
 
   static Future<String?> _token() async {
     final prefs = await SharedPreferences.getInstance();
@@ -39,6 +40,38 @@ class ApiClient {
       },
       body: jsonEncode(body),
     );
+    return _handle(res);
+  }
+
+  static Future<dynamic> patch(String path, Map<String, dynamic> body) async {
+    final token = await _token();
+    final res = await http.patch(
+      Uri.parse('$baseUrl$path'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(body),
+    );
+    return _handle(res);
+  }
+
+  static Future<dynamic> delete(String path) async {
+    final token = await _token();
+    final res = await http.delete(
+      Uri.parse('$baseUrl$path'),
+      headers: {if (token != null) 'Authorization': 'Bearer $token'},
+    );
+    return _handle(res);
+  }
+
+  static Future<dynamic> patchMultipart(String path, File file, String fieldName) async {
+    final token = await _token();
+    final request = http.MultipartRequest('PATCH', Uri.parse('$baseUrl$path'));
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(await http.MultipartFile.fromPath(fieldName, file.path));
+    final streamed = await request.send();
+    final res = await http.Response.fromStream(streamed);
     return _handle(res);
   }
 

@@ -1,5 +1,5 @@
 name: finca_ganadera
-description: App móvil para gestión de ganado en fincas, con fotos y videos en tiempo real.
+description: Software Ganadero Henriquez — gestión profesional de ganado.
 publish_to: "none"
 version: 1.0.0+1
 
@@ -14,11 +14,34 @@ dependencies:
   image_picker: ^1.1.2
   video_player: ^2.9.1
   intl: ^0.19.0
+  cached_network_image: ^3.3.1
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.0
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#051908"
+  adaptive_icon_foreground: "assets/icon/icon_fg.png"
+  min_sdk_android: 21
+
+flutter_native_splash:
+  color: "#051908"
+  image: assets/icon/icon.png
+  android: true
+  ios: false
+  android_gravity: center
+  fullscreen: true
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon/
+    - assets/images/
