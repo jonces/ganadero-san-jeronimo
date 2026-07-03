@@ -67,9 +67,15 @@ class _InventarioScreenState extends State<InventarioScreen> {
     final fierroCtrl = TextEditingController();
     final pesoCtrl = TextEditingController();
     String sexo = 'HEMBRA';
-    final List<XFile> fotos = [];
+    final List<XFile> archivos = [];
     bool guardando = false;
     String? errorForm;
+
+    bool esVideo(XFile f) {
+      final p = f.path.toLowerCase();
+      return p.endsWith('.mp4') || p.endsWith('.mov') || p.endsWith('.3gp') ||
+             p.endsWith('.webm') || p.endsWith('.mkv') || p.endsWith('.avi');
+    }
 
     await showModalBottomSheet(
       context: context,
@@ -93,18 +99,18 @@ class _InventarioScreenState extends State<InventarioScreen> {
                 if (pesoCtrl.text.trim().isNotEmpty) 'pesoActual': double.tryParse(pesoCtrl.text.trim()),
                 'sexo': sexo,
               });
-              if (fotos.isNotEmpty) {
+              if (archivos.isNotEmpty) {
                 await ApiClient.postMultipart(
                   '/animales/${animal['id']}/media',
                   {},
-                  fotos.map((f) => f.path).toList(),
+                  archivos.map((f) => f.path).toList(),
                 );
               }
               if (ctx.mounted) Navigator.pop(ctx);
               _load();
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text(fotos.isEmpty ? '✅ Animal registrado' : '✅ Animal registrado con ${fotos.length} foto(s)'),
+                  content: Text(archivos.isEmpty ? '✅ Animal registrado' : '✅ Animal registrado con ${archivos.length} archivo(s)'),
                   backgroundColor: const Color(0xFF1A6B2A),
                 ));
               }
@@ -116,10 +122,24 @@ class _InventarioScreenState extends State<InventarioScreen> {
             }
           }
 
-          Future<void> agregarFoto(ImageSource origen) async {
+          Future<void> agregarFoto() async {
             try {
-              final f = await ImagePicker().pickImage(source: origen, imageQuality: 80, maxWidth: 1600);
-              if (f != null) setSt(() => fotos.add(f));
+              final f = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 80, maxWidth: 1600);
+              if (f != null) setSt(() => archivos.add(f));
+            } catch (_) {}
+          }
+
+          Future<void> agregarVideo() async {
+            try {
+              final f = await ImagePicker().pickVideo(source: ImageSource.camera);
+              if (f != null) setSt(() => archivos.add(f));
+            } catch (_) {}
+          }
+
+          Future<void> agregarDeGaleria() async {
+            try {
+              final files = await ImagePicker().pickMultipleMedia();
+              if (files.isNotEmpty) setSt(() => archivos.addAll(files));
             } catch (_) {}
           }
 
@@ -202,27 +222,33 @@ class _InventarioScreenState extends State<InventarioScreen> {
                     )).toList(),
                   ),
                   const SizedBox(height: 16),
-                  Text('Fotos del animal', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+                  Text('Fotos y videos del animal', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
                   const SizedBox(height: 8),
-                  if (fotos.isNotEmpty) ...[
+                  if (archivos.isNotEmpty) ...[
                     SizedBox(
                       height: 72,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
-                        itemCount: fotos.length,
+                        itemCount: archivos.length,
                         itemBuilder: (_, i) => Stack(
                           children: [
                             Container(
                               margin: const EdgeInsets.only(right: 8),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: Image.file(File(fotos[i].path), width: 72, height: 72, fit: BoxFit.cover),
+                                child: esVideo(archivos[i])
+                                    ? Container(
+                                        width: 72, height: 72,
+                                        color: Colors.black45,
+                                        child: const Icon(Icons.videocam, color: Color(0xFF2D9E3F), size: 30),
+                                      )
+                                    : Image.file(File(archivos[i].path), width: 72, height: 72, fit: BoxFit.cover),
                               ),
                             ),
                             Positioned(
                               top: 2, right: 10,
                               child: GestureDetector(
-                                onTap: () => setSt(() => fotos.removeAt(i)),
+                                onTap: () => setSt(() => archivos.removeAt(i)),
                                 child: Container(
                                   padding: const EdgeInsets.all(2),
                                   decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
@@ -238,8 +264,9 @@ class _InventarioScreenState extends State<InventarioScreen> {
                   ],
                   Row(
                     children: [
-                      botonFoto(Icons.camera_alt, 'Tomar foto', () => agregarFoto(ImageSource.camera)),
-                      botonFoto(Icons.photo_library, 'Galería', () => agregarFoto(ImageSource.gallery)),
+                      botonFoto(Icons.camera_alt, 'Tomar foto', agregarFoto),
+                      botonFoto(Icons.videocam, 'Grabar video', agregarVideo),
+                      botonFoto(Icons.photo_library, 'Galería', agregarDeGaleria),
                     ],
                   ),
                   if (errorForm != null) ...[
