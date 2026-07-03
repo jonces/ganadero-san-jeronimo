@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
 import '../api_client.dart';
 import '../widgets/glass_card.dart';
 import 'animal_detail_screen.dart';
@@ -62,84 +64,207 @@ class _InventarioScreenState extends State<InventarioScreen> {
     final idCtrl = TextEditingController();
     final nombreCtrl = TextEditingController();
     final razaCtrl = TextEditingController();
+    final fierroCtrl = TextEditingController();
+    final pesoCtrl = TextEditingController();
     String sexo = 'HEMBRA';
-    final ok = await showModalBottomSheet<bool>(
+    final List<XFile> fotos = [];
+    bool guardando = false;
+    String? errorForm;
+
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: const Color(0xFF051908),
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => Padding(
-          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(width: 36, height: 4, margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(2)),
-                  alignment: Alignment.center),
-              const Text('Nuevo Animal', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 20),
-              TextField(controller: idCtrl, style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: 'Identificador / Arete *')),
-              const SizedBox(height: 12),
-              TextField(controller: nombreCtrl, style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: 'Nombre')),
-              const SizedBox(height: 12),
-              TextField(controller: razaCtrl, style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: 'Raza')),
-              const SizedBox(height: 12),
-              Row(
-                children: ['HEMBRA', 'MACHO'].map((s) => Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: GestureDetector(
-                      onTap: () => setSt(() => sexo = s),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        decoration: BoxDecoration(
-                          color: sexo == s ? (s == 'HEMBRA' ? const Color(0xFFD69E2E) : const Color(0xFF3182CE)) : Colors.white.withOpacity(0.07),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: s == 'HEMBRA' ? const Color(0xFFD69E2E) : const Color(0xFF3182CE)),
-                        ),
-                        child: Text(s == 'HEMBRA' ? '🐄 Hembra' : '🐂 Macho',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: sexo == s ? Colors.white : Colors.white.withOpacity(0.6), fontWeight: FontWeight.w700)),
-                      ),
+        builder: (ctx, setSt) {
+          Future<void> guardar() async {
+            if (idCtrl.text.trim().isEmpty) {
+              setSt(() => errorForm = 'El identificador / arete es requerido');
+              return;
+            }
+            setSt(() { guardando = true; errorForm = null; });
+            try {
+              final animal = await ApiClient.post('/animales', {
+                'identificador': idCtrl.text.trim(),
+                if (nombreCtrl.text.trim().isNotEmpty) 'nombre': nombreCtrl.text.trim(),
+                if (razaCtrl.text.trim().isNotEmpty) 'raza': razaCtrl.text.trim(),
+                if (fierroCtrl.text.trim().isNotEmpty) 'fierro': fierroCtrl.text.trim(),
+                if (pesoCtrl.text.trim().isNotEmpty) 'pesoActual': double.tryParse(pesoCtrl.text.trim()),
+                'sexo': sexo,
+              });
+              if (fotos.isNotEmpty) {
+                await ApiClient.postMultipart(
+                  '/animales/${animal['id']}/media',
+                  {},
+                  fotos.map((f) => f.path).toList(),
+                );
+              }
+              if (ctx.mounted) Navigator.pop(ctx);
+              _load();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(fotos.isEmpty ? '✅ Animal registrado' : '✅ Animal registrado con ${fotos.length} foto(s)'),
+                  backgroundColor: const Color(0xFF1A6B2A),
+                ));
+              }
+            } catch (e) {
+              setSt(() {
+                guardando = false;
+                errorForm = e.toString().replaceFirst('Exception: ', '');
+              });
+            }
+          }
+
+          Future<void> agregarFoto(ImageSource origen) async {
+            try {
+              final f = await ImagePicker().pickImage(source: origen, imageQuality: 80, maxWidth: 1600);
+              if (f != null) setSt(() => fotos.add(f));
+            } catch (_) {}
+          }
+
+          Widget botonFoto(IconData icono, String label, VoidCallback onTap) => Expanded(
+                child: GestureDetector(
+                  onTap: guardando ? null : onTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.07),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF2D9E3F).withOpacity(0.5)),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(icono, color: const Color(0xFF2D9E3F), size: 22),
+                        const SizedBox(height: 4),
+                        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11, fontWeight: FontWeight.w600)),
+                      ],
                     ),
                   ),
-                )).toList(),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(ctx, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2D9E3F),
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(48),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-                child: const Text('Guardar', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              );
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('🐄 Nuevo Animal', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 18),
+                  TextField(controller: idCtrl, style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(labelText: 'Identificador / Arete *')),
+                  const SizedBox(height: 12),
+                  TextField(controller: nombreCtrl, style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(labelText: 'Nombre')),
+                  const SizedBox(height: 12),
+                  TextField(controller: razaCtrl, style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(labelText: 'Raza')),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(controller: fierroCtrl, style: const TextStyle(color: Colors.white),
+                            decoration: const InputDecoration(labelText: 'Fierro')),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(controller: pesoCtrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: const TextStyle(color: Colors.white),
+                            decoration: const InputDecoration(labelText: 'Peso (kg)')),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: ['HEMBRA', 'MACHO'].map((s) => Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: GestureDetector(
+                          onTap: () => setSt(() => sexo = s),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: sexo == s ? (s == 'HEMBRA' ? const Color(0xFFD69E2E) : const Color(0xFF3182CE)) : Colors.white.withOpacity(0.07),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: s == 'HEMBRA' ? const Color(0xFFD69E2E) : const Color(0xFF3182CE)),
+                            ),
+                            child: Text(s == 'HEMBRA' ? '🐄 Hembra' : '🐂 Macho',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: sexo == s ? Colors.white : Colors.white.withOpacity(0.6), fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      ),
+                    )).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Fotos del animal', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+                  const SizedBox(height: 8),
+                  if (fotos.isNotEmpty) ...[
+                    SizedBox(
+                      height: 72,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: fotos.length,
+                        itemBuilder: (_, i) => Stack(
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.file(File(fotos[i].path), width: 72, height: 72, fit: BoxFit.cover),
+                              ),
+                            ),
+                            Positioned(
+                              top: 2, right: 10,
+                              child: GestureDetector(
+                                onTap: () => setSt(() => fotos.removeAt(i)),
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                  child: const Icon(Icons.close, color: Colors.white, size: 14),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  Row(
+                    children: [
+                      botonFoto(Icons.camera_alt, 'Tomar foto', () => agregarFoto(ImageSource.camera)),
+                      botonFoto(Icons.photo_library, 'Galería', () => agregarFoto(ImageSource.gallery)),
+                    ],
+                  ),
+                  if (errorForm != null) ...[
+                    const SizedBox(height: 12),
+                    Text(errorForm!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+                  ],
+                  const SizedBox(height: 18),
+                  ElevatedButton(
+                    onPressed: guardando ? null : guardar,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2D9E3F),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(guardando ? 'Guardando...' : 'Guardar animal',
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
-    if (ok == true && idCtrl.text.isNotEmpty) {
-      try {
-        await ApiClient.post('/animales', {
-          'identificador': idCtrl.text.trim(),
-          if (nombreCtrl.text.isNotEmpty) 'nombre': nombreCtrl.text.trim(),
-          if (razaCtrl.text.isNotEmpty) 'raza': razaCtrl.text.trim(),
-          'sexo': sexo,
-        });
-        _load();
-      } catch (e) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')), backgroundColor: Colors.red[800]));
-      }
-    }
   }
 
   Color _estadoColor(String? estado) {
