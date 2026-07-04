@@ -6,16 +6,17 @@ import { logout, api, getUsuario } from "@/lib/api";
 const FARM_BG = "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1920&q=85";
 
 const NAV_ITEMS_ADMIN = [
-  { icon: "🏠", label: "Inicio",     href: "/dashboard" },
-  { icon: "🐄", label: "Animales",   href: "/inventario" },
-  { icon: "💰", label: "Ventas",     href: "/ventas" },
-  { icon: "💸", label: "Gastos",     href: "/gastos" },
-  { icon: "🚨", label: "Incidentes", href: "/incidentes" },
-  { icon: "📄", label: "Docs",       href: "/documentos" },
-  { icon: "👥", label: "Equipo",     href: "/equipo" },
-  { icon: "📢", label: "Tablón",     href: "/anuncios", notif: true },
-  { icon: "📊", label: "Reportes",   href: "/reportes" },
-  { icon: "🕐", label: "Actividad",  href: "/actividad", notifActividad: true },
+  { icon: "🏠", label: "Dashboard",    href: "/dashboard" },
+  { icon: "🐄", label: "Animales",     href: "/inventario" },
+  { icon: "💰", label: "Ventas",       href: "/ventas", badge: "Nuevo" },
+  { icon: "💸", label: "Gastos",       href: "/gastos" },
+  { icon: "🤰", label: "Reproducción", href: "/inventario?filtro=PREÑADA" },
+  { icon: "🚨", label: "Salud",        href: "/incidentes" },
+  { icon: "📄", label: "Documentos",   href: "/documentos" },
+  { icon: "👥", label: "Empleados",    href: "/equipo" },
+  { icon: "📢", label: "Tablón",       href: "/anuncios", notif: true },
+  { icon: "📊", label: "Reportes",     href: "/reportes" },
+  { icon: "🕐", label: "Actividad",    href: "/actividad", notifActividad: true },
 ];
 
 // En móvil solo mostramos los 5 más usados en la barra inferior
@@ -180,51 +181,112 @@ export default function AppLayout({ children, title, subtitle }) {
         background: "linear-gradient(135deg,rgba(5,30,15,0.55) 0%,rgba(10,40,20,0.4) 100%)"
       }} />
 
-      {/* ── SIDEBAR (tablet md+ y desktop) ── */}
-      <aside className="hidden md:flex fixed left-0 top-0 h-full z-20 flex-col items-center py-6 gap-1"
-        style={{ width: 72, borderRight: "1px solid rgba(255,255,255,0.1)", ...glassNav }}>
-        <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-2xl mb-3 shadow-lg"
-          style={{ background: "rgba(45,158,63,0.4)", border: "1px solid rgba(45,158,63,0.6)" }}>🐄</div>
+      {/* ── SIDEBAR DESKTOP (lg+) — ancho con labels ── */}
+      <aside className="hidden lg:flex fixed left-0 top-0 h-full z-20 flex-col py-0 overflow-hidden"
+        style={{ width: 220, borderRight: "1px solid rgba(255,255,255,0.08)", ...glassNav }}>
 
+        {/* Logo */}
+        <div className="px-4 py-5 flex items-center gap-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-lg"
+            style={{ background: "linear-gradient(135deg,#1a5c2a,#2d9e3f)", border: "1px solid rgba(45,158,63,0.6)" }}>🐂</div>
+          <div>
+            <p className="text-white font-black text-sm leading-none tracking-wide">HENRIQUEZ</p>
+            <p className="text-green-400 font-bold leading-none mt-0.5" style={{ fontSize: 9, letterSpacing: 1 }}>CATTLE MANAGEMENT</p>
+          </div>
+        </div>
+
+        {/* Nav items */}
+        <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
+          {navItems.map((item) => {
+            const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href.split("?")[0]));
+            const notifBadge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
+            const badgeCount = item.notifActividad ? nuevasActividades : nuevos;
+            return (
+              <button key={item.href} onClick={() => go(item.href)}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-white/5 text-left group"
+                style={{
+                  background: active ? "rgba(45,158,63,0.25)" : "transparent",
+                  border: active ? "1px solid rgba(45,158,63,0.4)" : "1px solid transparent",
+                }}>
+                <span style={{ fontSize: 18, minWidth: 20 }}>{item.icon}</span>
+                <span className="flex-1 font-semibold" style={{ fontSize: 13, color: active ? "#86efac" : "rgba(255,255,255,0.75)" }}>
+                  {item.label}
+                </span>
+                {item.badge && (
+                  <span className="text-white font-black rounded-full px-1.5 py-0.5" style={{ fontSize: 9, background: "#2d9e3f" }}>{item.badge}</span>
+                )}
+                {notifBadge && (
+                  <span className="text-white font-black rounded-full flex items-center justify-center animate-bounce"
+                    style={{ background: "#e53e3e", fontSize: 9, minWidth: 16, height: 16, padding: "0 2px" }}>
+                    {badgeCount > 9 ? "9+" : badgeCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Usuario en sidebar */}
+        {usuario && (
+          <div className="px-3 py-3" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            <button onClick={() => go("/perfil")}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition-all">
+              <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-black text-sm shrink-0"
+                style={{ background: "linear-gradient(135deg,#1a5c2a,#2d9e3f)", color: "white" }}>
+                {fotoPerfil ? <img src={fotoPerfil} alt="" className="w-full h-full object-cover" /> : usuario.nombre?.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 text-left overflow-hidden">
+                <p className="text-white font-bold text-xs truncate leading-none">{usuario.nombre}</p>
+                <p className="text-green-400 font-semibold mt-0.5" style={{ fontSize: 10 }}>
+                  {usuario.role === "ADMIN" ? "Administrador" : usuario.role === "SUPER_ADMIN" ? "Super Admin" : "Trabajador"}
+                </p>
+              </div>
+            </button>
+            <div className="flex items-center gap-1.5 px-3 mt-1">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-white/40 font-medium" style={{ fontSize: 10 }}>Sincronizado</span>
+            </div>
+            <button onClick={handleLogout}
+              className="w-full mt-2 py-2 rounded-xl text-red-400 font-bold text-xs hover:bg-red-500/10 transition-all"
+              style={{ border: "1px solid rgba(229,62,62,0.2)" }}>
+              🚪 Cerrar sesión
+            </button>
+          </div>
+        )}
+      </aside>
+
+      {/* ── SIDEBAR MEDIO (md, tablet) — iconos solo ── */}
+      <aside className="hidden md:flex lg:hidden fixed left-0 top-0 h-full z-20 flex-col items-center py-4 gap-1"
+        style={{ width: 64, borderRight: "1px solid rgba(255,255,255,0.08)", ...glassNav }}>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-2 shadow-lg"
+          style={{ background: "linear-gradient(135deg,#1a5c2a,#2d9e3f)", border: "1px solid rgba(45,158,63,0.6)" }}>🐂</div>
         {navItems.map((item) => {
-          const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href));
-          const badge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
+          const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href.split("?")[0]));
+          const notifBadge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
           const badgeCount = item.notifActividad ? nuevasActividades : nuevos;
           return (
             <button key={item.href} onClick={() => go(item.href)}
-              className="relative flex flex-col items-center gap-0.5 w-14 py-2 rounded-xl transition-all hover:scale-110"
-              style={{
-                background: active ? "rgba(45,158,63,0.5)" : "transparent",
-                border: active ? "1px solid rgba(45,158,63,0.7)" : "1px solid transparent",
-              }}>
-              <span style={{ fontSize: 19 }}>{item.icon}</span>
-              <span style={{ fontSize: 9, color: active ? "#86efac" : "rgba(255,255,255,0.5)", fontWeight: active ? 700 : 400 }}>
-                {item.label}
-              </span>
-              {badge && (
-                <span className="absolute top-0.5 right-0.5 flex items-center justify-center text-white font-black rounded-full animate-bounce"
-                  style={{ background: "#e53e3e", fontSize: 8, minWidth: 15, height: 15, padding: "0 2px", boxShadow: "0 0 6px rgba(229,62,62,0.8)" }}>
-                  {badgeCount > 9 ? "9+" : badgeCount}
-                </span>
-              )}
+              className="relative flex flex-col items-center gap-0.5 w-12 py-2 rounded-xl transition-all hover:scale-110"
+              style={{ background: active ? "rgba(45,158,63,0.4)" : "transparent", border: active ? "1px solid rgba(45,158,63,0.6)" : "1px solid transparent" }}>
+              <span style={{ fontSize: 17 }}>{item.icon}</span>
+              <span style={{ fontSize: 8, color: active ? "#86efac" : "rgba(255,255,255,0.45)", fontWeight: active ? 700 : 400 }}>{item.label.slice(0,6)}</span>
+              {notifBadge && <span className="absolute top-0.5 right-0.5 bg-red-500 text-white font-black rounded-full flex items-center justify-center" style={{ fontSize: 8, minWidth: 14, height: 14 }}>{badgeCount > 9 ? "9+" : badgeCount}</span>}
             </button>
           );
         })}
-
         <div className="flex-1" />
-        <button onClick={handleLogout}
-          className="flex flex-col items-center gap-0.5 w-14 py-2 rounded-xl hover:scale-110 transition-all">
-          <span style={{ fontSize: 19 }}>🚪</span>
-          <span style={{ fontSize: 9, color: "rgba(255,100,100,0.8)", fontWeight: 600 }}>Salir</span>
+        <button onClick={handleLogout} className="flex flex-col items-center gap-0.5 w-12 py-2 rounded-xl hover:scale-110 transition-all">
+          <span style={{ fontSize: 17 }}>🚪</span>
+          <span style={{ fontSize: 8, color: "rgba(255,100,100,0.8)", fontWeight: 600 }}>Salir</span>
         </button>
       </aside>
 
       {/* ── MAIN CONTENT ── */}
-      <div className="flex-1 flex flex-col min-h-screen relative z-10 md:ml-[72px]">
+      <div className="flex-1 flex flex-col min-h-screen relative z-10 md:ml-[64px] lg:ml-[220px]">
 
         {/* Header */}
-        <header className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 sticky top-0 z-10"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.1)", ...glassNav }}>
+        <header className="flex items-center justify-between px-4 lg:px-6 py-3 sticky top-0 z-10"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", ...glassNav }}>
           <div className="flex items-center gap-2">
             {!isSuperAdmin && (
               <button onClick={() => router.back()}
@@ -234,69 +296,39 @@ export default function AppLayout({ children, title, subtitle }) {
               <p className="text-green-300 font-bold uppercase tracking-widest" style={{ fontSize: 10 }}>
                 {subtitle || "Ganadería San Jerónimo"}
               </p>
-              <h1 className="text-white font-black leading-none text-lg md:text-xl">{title || "Panel"}</h1>
+              <h1 className="text-white font-black leading-none text-lg">{title || "Panel"}</h1>
             </div>
           </div>
 
-          {/* Badge usuario — clickeable para ir al perfil */}
-          {usuario && (
-            <button onClick={() => router.push("/perfil")}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:scale-105 transition-all"
-              style={{ background: pathname === "/perfil" ? "rgba(45,158,63,0.3)" : "rgba(255,255,255,0.08)", border: pathname === "/perfil" ? "1px solid rgba(45,158,63,0.5)" : "1px solid rgba(255,255,255,0.15)" }}>
-              <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center font-black text-sm shrink-0"
-                style={{
-                  background: usuario.role === "ADMIN" ? "linear-gradient(135deg,#1a5c2a,#2d9e3f)"
-                    : usuario.role === "SUPER_ADMIN" ? "linear-gradient(135deg,#4a235a,#8e44ad)"
-                    : "linear-gradient(135deg,#1a3a6c,#2980b9)",
-                  color: "white",
-                }}>
-                {fotoPerfil
-                  ? <img src={fotoPerfil} alt="perfil" className="w-full h-full object-cover" />
-                  : usuario.nombre?.charAt(0).toUpperCase()}
-              </div>
-              <div className="hidden sm:block">
-                <p className="text-white font-black leading-none" style={{ fontSize: 12 }}>{usuario.nombre}</p>
-                <p className="leading-none mt-0.5 font-bold" style={{
-                  fontSize: 9,
-                  color: usuario.role === "ADMIN" ? "#4ade80"
-                    : usuario.role === "SUPER_ADMIN" ? "#c084fc"
-                    : "#60a5fa",
-                }}>
-                  {usuario.role === "ADMIN" ? "Admin" : usuario.role === "SUPER_ADMIN" ? "Super Admin" : "Trabajador"}
-                </p>
-              </div>
-            </button>
-          )}
-
-          {/* Botón notificaciones */}
           <div className="flex items-center gap-2">
             {!isSuperAdmin && !esTrabajador && (
               <button onClick={() => router.push("/notificaciones")}
-                className="relative flex items-center justify-center w-10 h-10 rounded-xl transition-all"
-                style={{
-                  background: enNotificaciones ? "rgba(45,158,63,0.4)" : "rgba(255,255,255,0.08)",
-                  border: enNotificaciones ? "1px solid rgba(45,158,63,0.6)" : "1px solid rgba(255,255,255,0.15)",
-                }}>
-                <span style={{ fontSize: 18 }}>🔔</span>
+                className="relative flex items-center justify-center w-9 h-9 rounded-xl transition-all"
+                style={{ background: enNotificaciones ? "rgba(45,158,63,0.4)" : "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <span style={{ fontSize: 16 }}>🔔</span>
                 {nuevasActividades > 0 && !enNotificaciones && (
-                  <span className="absolute -top-1 -right-1 flex items-center justify-center text-white font-black rounded-full animate-bounce"
-                    style={{ background: "#e53e3e", fontSize: 8, minWidth: 16, height: 16, padding: "0 2px", boxShadow: "0 0 6px rgba(229,62,62,0.8)" }}>
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white font-black rounded-full flex items-center justify-center animate-bounce"
+                    style={{ fontSize: 8, minWidth: 16, height: 16 }}>
                     {nuevasActividades > 9 ? "9+" : nuevasActividades}
                   </span>
                 )}
               </button>
             )}
-
-          {/* Botón menú completo en móvil */}
+            {usuario && (
+              <button onClick={() => router.push("/perfil")}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:scale-105 transition-all lg:hidden"
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center font-black text-sm shrink-0"
+                  style={{ background: "linear-gradient(135deg,#1a5c2a,#2d9e3f)", color: "white" }}>
+                  {fotoPerfil ? <img src={fotoPerfil} alt="" className="w-full h-full object-cover" /> : usuario.nombre?.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-white font-bold hidden sm:block" style={{ fontSize: 12 }}>{usuario.nombre}</span>
+              </button>
+            )}
             <button onClick={() => setMenuOpen(s => !s)}
-              className="md:hidden flex flex-col items-center justify-center w-10 h-10 rounded-xl"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
+              className="md:hidden flex flex-col items-center justify-center w-9 h-9 rounded-xl"
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}>
               <span className="text-white text-lg">{menuOpen ? "✕" : "☰"}</span>
-            </button>
-            <button onClick={handleLogout}
-              className="hidden md:flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:scale-105 transition-all"
-              style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)" }}>
-              🚪 Cerrar sesión
             </button>
           </div>
         </header>
