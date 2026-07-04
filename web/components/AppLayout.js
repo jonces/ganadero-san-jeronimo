@@ -26,7 +26,7 @@ const NAV_ITEMS_SUPER = [
   { icon: "🏡", label: "Fincas", href: "/superadmin" },
 ];
 
-export default function AppLayout({ children, title, subtitle }) {
+export default function AppLayout({ children, title, subtitle, searchBar, rightExtra }) {
   const router = useRouter();
   const pathname = usePathname();
   const [nuevos, setNuevos] = useState(0);
@@ -285,9 +285,9 @@ export default function AppLayout({ children, title, subtitle }) {
       <div className="flex-1 flex flex-col min-h-screen relative z-10 md:ml-[64px] lg:ml-[220px]">
 
         {/* Header */}
-        <header className="flex items-center justify-between px-4 lg:px-6 py-3 sticky top-0 z-10"
+        <header className="flex items-center gap-3 px-4 lg:px-6 py-3 sticky top-0 z-10"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", ...glassNav }}>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {!isSuperAdmin && (
               <button onClick={() => router.back()}
                 className="text-white/60 hover:text-white text-xl mr-1 transition-colors md:hidden">←</button>
@@ -300,7 +300,10 @@ export default function AppLayout({ children, title, subtitle }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Search bar (slot) */}
+          {searchBar && <div className="flex-1">{searchBar}</div>}
+
+          <div className="flex items-center gap-2 ml-auto">
             {!isSuperAdmin && !esTrabajador && (
               <button onClick={() => router.push("/notificaciones")}
                 className="relative flex items-center justify-center w-9 h-9 rounded-xl transition-all"
@@ -325,6 +328,7 @@ export default function AppLayout({ children, title, subtitle }) {
                 <span className="text-white font-bold hidden sm:block" style={{ fontSize: 12 }}>{usuario.nombre}</span>
               </button>
             )}
+            {rightExtra}
             <button onClick={() => setMenuOpen(s => !s)}
               className="md:hidden flex flex-col items-center justify-center w-9 h-9 rounded-xl"
               style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}>
