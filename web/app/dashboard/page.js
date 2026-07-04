@@ -215,7 +215,7 @@ export default function DashboardPage() {
         <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(2,10,5,0.88) 0%,rgba(5,25,12,0.55) 55%,rgba(2,10,5,0.1) 100%)" }} />
         <div className="relative h-full flex items-center px-8">
           <div>
-            <p className="text-green-300 font-semibold text-sm mb-1.5">{saludo} 👋</p>
+            <p className="text-green-300 font-semibold text-sm mb-1.5">{saludo}, <span className="text-white font-black">{usuario?.nombre || "Usuario"}</span> 👋</p>
             <p className="text-white/70 text-base font-medium">Bienvenido a</p>
             <h2 className="text-white font-black leading-none" style={{ fontSize: "clamp(1.8rem,4vw,2.6rem)" }}>Henriquez</h2>
             <h2 className="font-black leading-none mb-2" style={{ fontSize: "clamp(1.8rem,4vw,2.6rem)", background: "linear-gradient(90deg,#4ade80,#86efac)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
