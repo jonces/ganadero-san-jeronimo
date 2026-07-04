@@ -67,6 +67,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
     final fierroCtrl = TextEditingController();
     final pesoCtrl = TextEditingController();
     String sexo = 'HEMBRA';
+    String? estadoReproductivo;
     final List<XFile> archivos = [];
     bool guardando = false;
     String? errorForm;
@@ -98,6 +99,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
                 if (fierroCtrl.text.trim().isNotEmpty) 'fierro': fierroCtrl.text.trim(),
                 if (pesoCtrl.text.trim().isNotEmpty) 'pesoActual': double.tryParse(pesoCtrl.text.trim()),
                 'sexo': sexo,
+                if (estadoReproductivo != null) 'estadoReproductivo': estadoReproductivo,
               });
               if (archivos.isNotEmpty) {
                 await ApiClient.postMultipart(
@@ -220,6 +222,33 @@ class _InventarioScreenState extends State<InventarioScreen> {
                         ),
                       ),
                     )).toList(),
+                  ),
+                  const SizedBox(height: 14),
+                  DropdownButtonFormField<String>(
+                    value: estadoReproductivo,
+                    decoration: InputDecoration(
+                      labelText: 'Estado reproductivo',
+                      labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.white.withOpacity(0.15)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Color(0xFF2D9E3F)),
+                      ),
+                    ),
+                    dropdownColor: const Color(0xFF0A2812),
+                    style: const TextStyle(color: Colors.white),
+                    items: const [
+                      DropdownMenuItem(value: null, child: Text('Sin definir')),
+                      DropdownMenuItem(value: 'PREÑADA', child: Text('🤰 Preñada')),
+                      DropdownMenuItem(value: 'LACTANCIA', child: Text('🍼 Lactancia')),
+                      DropdownMenuItem(value: 'PARIDA', child: Text('🐣 Parida')),
+                      DropdownMenuItem(value: 'SECA', child: Text('🌿 Seca')),
+                      DropdownMenuItem(value: 'VACIA', child: Text('⭕ Vacía')),
+                    ],
+                    onChanged: (v) => setSt(() => estadoReproductivo = v),
                   ),
                   const SizedBox(height: 16),
                   Text('Fotos y videos del animal', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
@@ -418,10 +447,243 @@ class _InventarioScreenState extends State<InventarioScreen> {
     );
   }
 
+  static const _reproConfig = {
+    'PREÑADA':  {'label': 'Preñada',   'emoji': '🤰', 'color': 0xFFE53E3E},
+    'LACTANCIA': {'label': 'Lactancia', 'emoji': '🍼', 'color': 0xFF38A169},
+    'PARIDA':    {'label': 'Parida',    'emoji': '🐣', 'color': 0xFFD69E2E},
+    'SECA':      {'label': 'Seca',      'emoji': '🌿', 'color': 0xFF718096},
+    'VACIA':     {'label': 'Vacía',     'emoji': '⭕', 'color': 0xFF718096},
+  };
+
+  Future<void> _registrarParto(String animalId, String nombreAnimal) async {
+    final idCriaCtrl = TextEditingController();
+    final nombreCriaCtrl = TextEditingController();
+    final pesoCtrl = TextEditingController();
+    String sexoCria = 'HEMBRA';
+    final List<XFile> archivosCria = [];
+    bool guardando = false;
+    String? errorForm;
+
+    bool esVideo(XFile f) {
+      final p = f.path.toLowerCase();
+      return p.endsWith('.mp4') || p.endsWith('.mov') || p.endsWith('.3gp') || p.endsWith('.webm');
+    }
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF051908),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) {
+          Future<void> guardar() async {
+            if (idCriaCtrl.text.trim().isEmpty) {
+              setSt(() => errorForm = 'El identificador de la cría es requerido');
+              return;
+            }
+            setSt(() { guardando = true; errorForm = null; });
+            try {
+              await ApiClient.postMultipart(
+                '/animales/$animalId/parto',
+                {
+                  'identificadorCria': idCriaCtrl.text.trim(),
+                  if (nombreCriaCtrl.text.trim().isNotEmpty) 'nombreCria': nombreCriaCtrl.text.trim(),
+                  'sexoCria': sexoCria,
+                  if (pesoCtrl.text.trim().isNotEmpty) 'pesoNacimiento': pesoCtrl.text.trim(),
+                },
+                archivosCria.map((f) => f.path).toList(),
+              );
+              if (ctx.mounted) Navigator.pop(ctx);
+              _load();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('✅ Parto registrado'),
+                  backgroundColor: Color(0xFF1A6B2A),
+                ));
+              }
+            } catch (e) {
+              setSt(() { guardando = false; errorForm = e.toString().replaceFirst('Exception: ', ''); });
+            }
+          }
+
+          Future<void> agregarFoto() async {
+            try {
+              final f = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 80, maxWidth: 1600);
+              if (f != null) setSt(() => archivosCria.add(f));
+            } catch (_) {}
+          }
+
+          Future<void> agregarVideo() async {
+            try {
+              final f = await ImagePicker().pickVideo(source: ImageSource.camera);
+              if (f != null) setSt(() => archivosCria.add(f));
+            } catch (_) {}
+          }
+
+          Future<void> agregarDeGaleria() async {
+            try {
+              final files = await ImagePicker().pickMultipleMedia();
+              if (files.isNotEmpty) setSt(() => archivosCria.addAll(files));
+            } catch (_) {}
+          }
+
+          Widget botonMedia(IconData icono, String label, VoidCallback onTap) => Expanded(
+            child: GestureDetector(
+              onTap: guardando ? null : onTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.07),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF2D9E3F).withOpacity(0.4)),
+                ),
+                child: Column(
+                  children: [
+                    Icon(icono, color: const Color(0xFF2D9E3F), size: 20),
+                    const SizedBox(height: 3),
+                    Text(label, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ),
+          );
+
+          InputDecoration deco(String label) => InputDecoration(
+            labelText: label,
+            labelStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: Colors.white.withOpacity(0.15))),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF2D9E3F))),
+          );
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('🐣 Registrar Parto — $nombreAnimal',
+                      style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900)),
+                  const SizedBox(height: 4),
+                  Text('La madre pasará a estado Parida automáticamente',
+                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+                  const SizedBox(height: 16),
+                  TextField(controller: idCriaCtrl, style: const TextStyle(color: Colors.white),
+                      decoration: deco('Identificador / Arete de la cría *')),
+                  const SizedBox(height: 12),
+                  TextField(controller: nombreCriaCtrl, style: const TextStyle(color: Colors.white),
+                      decoration: deco('Nombre de la cría')),
+                  const SizedBox(height: 12),
+                  TextField(controller: pesoCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: const TextStyle(color: Colors.white),
+                      decoration: deco('Peso al nacer (kg)')),
+                  const SizedBox(height: 12),
+                  Text('Sexo de la cría', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: ['HEMBRA', 'MACHO'].map((s) => Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: GestureDetector(
+                          onTap: () => setSt(() => sexoCria = s),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: sexoCria == s ? (s == 'HEMBRA' ? const Color(0xFFD69E2E) : const Color(0xFF3182CE)) : Colors.white.withOpacity(0.07),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: s == 'HEMBRA' ? const Color(0xFFD69E2E) : const Color(0xFF3182CE)),
+                            ),
+                            child: Text(s == 'HEMBRA' ? '🐄 Hembra' : '🐂 Macho',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: sexoCria == s ? Colors.white : Colors.white.withOpacity(0.6), fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      ),
+                    )).toList(),
+                  ),
+                  const SizedBox(height: 14),
+                  Text('📷 Fotos y 🎥 Videos de la cría',
+                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+                  const SizedBox(height: 8),
+                  if (archivosCria.isNotEmpty) ...[
+                    SizedBox(
+                      height: 66,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: archivosCria.length,
+                        itemBuilder: (_, i) => Stack(
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: esVideo(archivosCria[i])
+                                    ? Container(width: 66, height: 66, color: Colors.black45,
+                                        child: const Icon(Icons.videocam, color: Color(0xFF2D9E3F), size: 28))
+                                    : Image.file(File(archivosCria[i].path), width: 66, height: 66, fit: BoxFit.cover),
+                              ),
+                            ),
+                            Positioned(
+                              top: 2, right: 10,
+                              child: GestureDetector(
+                                onTap: () => setSt(() => archivosCria.removeAt(i)),
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                  child: const Icon(Icons.close, color: Colors.white, size: 13),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  Row(
+                    children: [
+                      botonMedia(Icons.camera_alt, 'Tomar foto', agregarFoto),
+                      botonMedia(Icons.videocam, 'Grabar video', agregarVideo),
+                      botonMedia(Icons.photo_library, 'Galería', agregarDeGaleria),
+                    ],
+                  ),
+                  if (errorForm != null) ...[
+                    const SizedBox(height: 12),
+                    Text(errorForm!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+                  ],
+                  const SizedBox(height: 18),
+                  ElevatedButton(
+                    onPressed: guardando ? null : guardar,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE53E3E),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size.fromHeight(48),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(guardando ? 'Guardando...' : '🐣 Registrar Parto',
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _animalTile(Map<String, dynamic> a) {
     final media = (a['media'] as List?) ?? [];
-    final foto = media.where((m) => m['tipo'] == 'FOTO').isNotEmpty ? media.first['url'] as String? : null;
+    final fotos = media.where((m) => m['tipo'] == 'FOTO').toList();
+    final foto = fotos.isNotEmpty ? fotos.first['url'] as String? : null;
     final estadoColor = _estadoColor(a['estado']);
+    final repro = a['estadoReproductivo'] as String?;
+    final reproInfo = repro != null ? _reproConfig[repro] : null;
+    final esPrenada = repro == 'PREÑADA' && a['estado'] == 'ACTIVO' && a['sexo'] == 'HEMBRA';
+
     return GestureDetector(
       onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => AnimalDetailScreen(animalId: a['id']))).then((_) => _load()),
       child: Container(
@@ -432,46 +694,82 @@ class _InventarioScreenState extends State<InventarioScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.08)),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: foto != null
-                  ? CachedNetworkImage(imageUrl: foto, width: 56, height: 56, fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => _avatar(a))
-                  : _avatar(a),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(a['nombre'] ?? a['identificador'],
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
-                  Text('${a['raza'] ?? 'Sin raza'} · ${a['identificador']}',
-                      style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 12)),
-                  const SizedBox(height: 4),
-                  Row(
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: foto != null
+                      ? CachedNetworkImage(imageUrl: foto, width: 56, height: 56, fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => _avatar(a))
+                      : _avatar(a),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: estadoColor.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: estadoColor.withOpacity(0.4)),
-                        ),
-                        child: Text(a['estado'] ?? '', style: TextStyle(color: estadoColor, fontSize: 10, fontWeight: FontWeight.w700)),
+                      Text(a['nombre'] ?? a['identificador'],
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                      Text('${a['raza'] ?? 'Sin raza'} · ${a['identificador']}',
+                          style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: estadoColor.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: estadoColor.withOpacity(0.4)),
+                            ),
+                            child: Text(a['estado'] ?? '', style: TextStyle(color: estadoColor, fontSize: 10, fontWeight: FontWeight.w700)),
+                          ),
+                          if (reproInfo != null) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Color(reproInfo['color'] as int).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Color(reproInfo['color'] as int).withOpacity(0.5)),
+                              ),
+                              child: Text('${reproInfo['emoji']} ${reproInfo['label']}',
+                                  style: TextStyle(color: Color(reproInfo['color'] as int), fontSize: 10, fontWeight: FontWeight.w700)),
+                            ),
+                          ],
+                          if (a['pesoActual'] != null) ...[
+                            const SizedBox(width: 6),
+                            Text('⚖️ ${a['pesoActual']} kg', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+                          ],
+                        ],
                       ),
-                      if (a['pesoActual'] != null) ...[
-                        const SizedBox(width: 6),
-                        Text('⚖️ ${a['pesoActual']} kg', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
-                      ],
                     ],
                   ),
-                ],
-              ),
+                ),
+                Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.2)),
+              ],
             ),
-            Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.2)),
+            if (esPrenada) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _registrarParto(a['id'], a['nombre'] ?? a['identificador']),
+                  icon: const Text('🐣', style: TextStyle(fontSize: 14)),
+                  label: const Text('Registrar Parto', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7B1C1C),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

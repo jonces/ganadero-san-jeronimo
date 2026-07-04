@@ -36,7 +36,7 @@ router.get("/stats", async (req, res, next) => {
     const [
       totalAnimales, machos, hembras, activos, vendidos,
       ventasMes, todasVentas, vacunasPendientes, pesoPromedio,
-      finca, ventasHistoricas, gastosHistoricos,
+      finca, ventasHistoricas, gastosHistoricos, gastosMes, prenadas,
     ] = await Promise.all([
       prisma.animal.count({ where: { fincaId } }),
       prisma.animal.count({ where: { fincaId, sexo: "MACHO" } }),
@@ -50,6 +50,8 @@ router.get("/stats", async (req, res, next) => {
       prisma.finca.findUnique({ where: { id: fincaId } }),
       prisma.venta.findMany({ where: { fincaId, fecha: { gte: hace6Meses } }, select: { fecha: true, precioNIO: true } }),
       prisma.gasto.findMany({ where: { fincaId, fecha: { gte: hace6Meses } }, select: { fecha: true, monto: true } }),
+      prisma.gasto.aggregate({ where: { fincaId, fecha: { gte: inicioMes } }, _sum: { monto: true } }),
+      prisma.animal.count({ where: { fincaId, estado: "ACTIVO", estadoReproductivo: "PREÑADA" } }),
     ]);
 
     const totalVentasMesNIO = ventasMes.reduce((s, v) => s + v.precioNIO, 0);
@@ -78,13 +80,14 @@ router.get("/stats", async (req, res, next) => {
     });
 
     res.json({
-      animales: { total: totalAnimales, machos, hembras, activos, vendidos },
+      animales: { total: totalAnimales, machos, hembras, activos, vendidos, prenadas },
       ventas: {
         cantidadMes: ventasMes.length,
         totalMesNIO: totalVentasMesNIO,
         totalMesUSD: totalVentasMesUSD,
         totalHistoricoNIO,
       },
+      gastosMes: gastosMes._sum.monto || 0,
       vacunasMes: vacunasPendientes,
       pesoPromedio: pesoPromedio._avg.pesoActual || 0,
       tipoCambio: finca?.tipoCambio || 36.5,

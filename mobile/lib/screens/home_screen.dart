@@ -3,7 +3,7 @@ import 'dashboard_screen.dart';
 import 'inventario_screen.dart';
 import 'ventas_screen.dart';
 import 'incidentes_screen.dart';
-import 'perfil_screen.dart';
+import 'mas_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
     InventarioScreen(),
     VentasScreen(),
     IncidentesScreen(),
-    PerfilScreen(),
+    MasScreen(),
   ];
 
   @override
@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
             NavigationDestination(icon: Icon(Icons.pets_outlined), selectedIcon: Icon(Icons.pets), label: 'Animales'),
             NavigationDestination(icon: Icon(Icons.monetization_on_outlined), selectedIcon: Icon(Icons.monetization_on), label: 'Ventas'),
             NavigationDestination(icon: Icon(Icons.warning_amber_outlined), selectedIcon: Icon(Icons.warning_amber), label: 'Incidentes'),
-            NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Perfil'),
+            NavigationDestination(icon: Icon(Icons.menu_outlined), selectedIcon: Icon(Icons.menu), label: 'Más'),
           ],
         ),
       ),

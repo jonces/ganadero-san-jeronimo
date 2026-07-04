@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "app.ganaderosg.finca_ganadera"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

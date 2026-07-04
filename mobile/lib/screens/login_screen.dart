@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../api_client.dart';
 import 'home_screen.dart';
+import 'super_admin_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -36,7 +38,20 @@ class _LoginScreenState extends State<LoginScreen> {
       });
       await ApiClient.saveToken(data['token']);
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+      final token = data['token'] as String;
+      final parts = token.split('.');
+      String rol = '';
+      if (parts.length == 3) {
+        try {
+          final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+          rol = payload['rol'] ?? payload['role'] ?? '';
+        } catch (_) {}
+      }
+      if (rol == 'SUPER_ADMIN') {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const SuperAdminScreen()));
+      } else {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+      }
     } catch (e) {
       setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
     } finally {

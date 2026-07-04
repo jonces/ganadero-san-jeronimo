@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
+import 'super_admin_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -36,23 +37,37 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final token = prefs.getString('token');
     if (!mounted) return;
     if (token != null && _isTokenValid(token)) {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+      final rol = _getRol(token);
+      if (rol == 'SUPER_ADMIN') {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const SuperAdminScreen()));
+      } else {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const HomeScreen()));
+      }
     } else {
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
     }
   }
 
-  bool _isTokenValid(String token) {
+  Map<String, dynamic> _decodeToken(String token) {
     try {
       final parts = token.split('.');
-      if (parts.length != 3) return false;
-      final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+      if (parts.length != 3) return {};
+      return jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+    } catch (_) { return {}; }
+  }
+
+  bool _isTokenValid(String token) {
+    try {
+      final payload = _decodeToken(token);
       final exp = payload['exp'] as int?;
       if (exp == null) return false;
       return DateTime.fromMillisecondsSinceEpoch(exp * 1000).isAfter(DateTime.now());
-    } catch (_) {
-      return false;
-    }
+    } catch (_) { return false; }
+  }
+
+  String _getRol(String token) {
+    final payload = _decodeToken(token);
+    return payload['rol'] ?? payload['role'] ?? '';
   }
 
   @override

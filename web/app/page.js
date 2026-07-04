@@ -3,19 +3,26 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { api, saveToken } from "@/lib/api";
 
-const BG = "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1920&q=85";
+const BG_IMAGES = [
+  "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1920&q=85",
+  "https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=1920&q=85",
+  "https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=1920&q=85",
+  "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=1920&q=85",
+];
 
 const FEATURES = [
-  { icon: "🐄", title: "Control de animales", desc: "Registro completo de tu ganado" },
-  { icon: "💰", title: "Ventas y gastos", desc: "Finanzas claras en tiempo real" },
+  { icon: "🐄", title: "Control de animales", desc: "Registro completo con fotos y eventos" },
+  { icon: "💰", title: "Ventas NIO & USD", desc: "Finanzas con tipo de cambio en tiempo real" },
   { icon: "📊", title: "Reportes PDF", desc: "Informes profesionales al instante" },
-  { icon: "👥", title: "Gestión de equipo", desc: "Administra tus trabajadores" },
+  { icon: "🤰", title: "Control reproductivo", desc: "Partos, preñeces y crías" },
+  { icon: "👥", title: "Gestión de equipo", desc: "Admins, trabajadores y permisos" },
+  { icon: "📱", title: "App Android", desc: "Usa la app desde tu celular en el campo" },
 ];
 
 const STATS = [
   { value: "100%", label: "En la nube" },
   { value: "24/7", label: "Disponible" },
-  { value: "∞", label: "Animales" },
+  { value: "NIO+USD", label: "Doble moneda" },
   { value: "🔒", label: "Seguro" },
 ];
 
@@ -28,9 +35,14 @@ export default function LoginPage() {
   const [showLogin, setShowLogin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [bgIdx, setBgIdx] = useState(0);
   const cardRef = useRef(null);
 
-  useEffect(() => { setTimeout(() => setLoaded(true), 100); }, []);
+  useEffect(() => {
+    setTimeout(() => setLoaded(true), 100);
+    const t = setInterval(() => setBgIdx(i => (i + 1) % BG_IMAGES.length), 6000);
+    return () => clearInterval(t);
+  }, []);
 
   function abrirLogin() {
     setShowLogin(true);
@@ -64,24 +76,38 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen relative overflow-hidden flex flex-col">
-      {/* Fondo */}
-      <div className="fixed inset-0 z-0">
-        <img src={BG} alt="" className="w-full h-full object-cover" style={{ filter: "brightness(0.45)" }} />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,rgba(5,40,15,0.7) 0%,rgba(10,25,40,0.6) 100%)" }} />
+      {/* Fondo con slideshow */}
+      <div className="fixed inset-0 z-0 overflow-hidden">
+        {BG_IMAGES.map((src, i) => (
+          <img key={i} src={src} alt="" className="absolute inset-0 w-full h-full object-cover transition-opacity duration-2000"
+            style={{ opacity: i === bgIdx ? 1 : 0, filter: "brightness(0.38) saturate(1.2)", transitionDuration: "2s" }} />
+        ))}
+        {/* Overlay gradiente verde oscuro */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg,rgba(2,15,5,0.75) 0%,rgba(5,30,15,0.65) 50%,rgba(2,10,20,0.75) 100%)" }} />
+        {/* Vignette */}
+        <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,0.6) 100%)" }} />
       </div>
 
-      {/* Partículas decorativas */}
+      {/* Orbs decorativos */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="absolute rounded-full opacity-10"
-            style={{
-              width: [300,200,150,250,180,120][i],
-              height: [300,200,150,250,180,120][i],
-              background: "radial-gradient(circle, #2d9e3f, transparent)",
-              top: ["10%","60%","30%","80%","5%","50%"][i],
-              left: ["5%","70%","85%","15%","50%","40%"][i],
-              filter: "blur(40px)",
-            }} />
+        {[
+          { w:400, top:"5%", left:"2%", c:"#2d9e3f", delay:"0s" },
+          { w:300, top:"60%", left:"65%", c:"#d69e2e", delay:"2s" },
+          { w:200, top:"25%", left:"80%", c:"#2d9e3f", delay:"4s" },
+          { w:250, top:"75%", left:"10%", c:"#3182ce", delay:"1s" },
+        ].map((o, i) => (
+          <div key={i} className="absolute rounded-full"
+            style={{ width: o.w, height: o.w, background: `radial-gradient(circle, ${o.c}22, transparent)`,
+              top: o.top, left: o.left, filter: "blur(60px)", animation: `pulse 6s ease-in-out infinite`, animationDelay: o.delay }} />
+        ))}
+      </div>
+
+      {/* Indicadores de imagen */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+        {BG_IMAGES.map((_, i) => (
+          <button key={i} onClick={() => setBgIdx(i)}
+            className="rounded-full transition-all duration-500"
+            style={{ width: i === bgIdx ? 24 : 8, height: 8, background: i === bgIdx ? "#4ade80" : "rgba(255,255,255,0.3)" }} />
         ))}
       </div>
 
@@ -118,16 +144,17 @@ export default function LoginPage() {
               <span className="text-green-400 text-xs font-bold tracking-wider uppercase">Sistema en línea</span>
             </div>
 
-            <h1 className="text-white font-black leading-tight mb-4" style={{ fontSize: "clamp(2.2rem, 5vw, 3.5rem)" }}>
-              Gestiona tu<br />
-              <span style={{ background: "linear-gradient(135deg,#4ade80,#22c55e,#16a34a)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                ganadería
-              </span><br />
-              desde cualquier lugar
+            <h1 className="text-white font-black leading-tight mb-4" style={{ fontSize: "clamp(2rem, 5vw, 3.5rem)" }}>
+              El software<br />
+              <span style={{ background: "linear-gradient(135deg,#4ade80,#22c55e,#86efac)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                ganadero
+              </span>{" "}
+              más<br />
+              profesional de Latinoamérica
             </h1>
 
-            <p className="text-white/60 text-lg mb-8 max-w-md mx-auto lg:mx-0">
-              Control total de animales, ventas, gastos y equipo. Todo en una plataforma profesional y fácil de usar.
+            <p className="text-white/60 text-base mb-8 max-w-md mx-auto lg:mx-0">
+              Control total de animales, ventas en <strong className="text-white/80">NIO & USD</strong>, gastos, partos y equipo. Diseñado para ganaderos que exigen lo mejor.
             </p>
 
             {/* Stats */}
@@ -141,12 +168,12 @@ export default function LoginPage() {
             </div>
 
             {/* Features */}
-            <div className="grid grid-cols-2 gap-3 max-w-md mx-auto lg:mx-0">
+            <div className="grid grid-cols-2 gap-2 max-w-md mx-auto lg:mx-0">
               {FEATURES.map((f) => (
-                <div key={f.title} className="flex items-center gap-3 rounded-2xl p-3" style={glass}>
-                  <span className="text-2xl">{f.icon}</span>
+                <div key={f.title} className="flex items-center gap-2.5 rounded-2xl p-3 hover:scale-[1.02] transition-transform" style={glass}>
+                  <span className="text-xl">{f.icon}</span>
                   <div>
-                    <p className="text-white font-bold text-sm leading-tight">{f.title}</p>
+                    <p className="text-white font-bold text-xs leading-tight">{f.title}</p>
                     <p className="text-white/40 text-xs">{f.desc}</p>
                   </div>
                 </div>

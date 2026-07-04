@@ -22,6 +22,19 @@ class ApiClient {
     await prefs.remove('token');
   }
 
+  // Datos del usuario actual (rol, id, nombre) desde el token JWT.
+  static Future<Map<String, dynamic>> usuarioActual() async {
+    final t = await _token();
+    if (t == null) return {};
+    final parts = t.split('.');
+    if (parts.length != 3) return {};
+    try {
+      return jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+    } catch (_) {
+      return {};
+    }
+  }
+
   static Future<dynamic> get(String path) async {
     final token = await _token();
     final res = await http.get(
@@ -106,6 +119,28 @@ class ApiClient {
     for (final path in filePaths) {
       request.files.add(await http.MultipartFile.fromPath('archivos', path, contentType: _mimeDe(path)));
     }
+    final streamed = await request.send();
+    final res = await http.Response.fromStream(streamed);
+    return _handle(res);
+  }
+
+  // Multipart con un solo archivo en un campo con nombre propio
+  // (p. ej. documentos usa el campo "archivo").
+  static Future<dynamic> postMultipartCampo(
+    String path,
+    Map<String, String> fields,
+    String fileField,
+    String filePath,
+  ) async {
+    final token = await _token();
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+    request.fields.addAll(fields);
+    final esPdf = filePath.toLowerCase().endsWith('.pdf');
+    request.files.add(await http.MultipartFile.fromPath(
+      fileField, filePath,
+      contentType: esPdf ? MediaType('application', 'pdf') : _mimeDe(filePath),
+    ));
     final streamed = await request.send();
     final res = await http.Response.fromStream(streamed);
     return _handle(res);
