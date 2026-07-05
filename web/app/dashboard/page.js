@@ -118,13 +118,19 @@ export default function DashboardPage() {
   const [saludo, setSaludo] = useState("Buenos días");
   const [ahora, setAhora] = useState("");
 
+  function cargarDatos() {
+    api("/ventas/stats").then(setStats).catch(() => {});
+    api("/animales").then(d => setAnimales(Array.isArray(d) ? d.filter(a => a.estado === "ACTIVO").slice(0, 4) : [])).catch(() => {});
+  }
+
   useEffect(() => {
     setUsuario(getUsuario());
     const h = new Date().getHours();
     setSaludo(h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches");
     setAhora(new Date().toLocaleDateString("es", { weekday: "short", day: "numeric", month: "short" }));
-    api("/ventas/stats").then(setStats).catch(() => {});
-    api("/animales").then(d => setAnimales(Array.isArray(d) ? d.filter(a => a.estado === "ACTIVO").slice(0, 4) : [])).catch(() => {});
+    cargarDatos();
+    const interval = setInterval(cargarDatos, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   function handleBusqueda(e) {
