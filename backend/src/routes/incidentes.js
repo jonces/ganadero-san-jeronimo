@@ -86,11 +86,15 @@ router.patch("/:id/resolver", requireRole("ADMIN", "SUPER_ADMIN"), async (req, r
 router.delete("/:id", async (req, res, next) => {
   try {
     const inc = await prisma.incidente.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
-    if (!inc) return res.status(404).json({ error: "No encontrado" });
-    await prisma.media.deleteMany({ where: { incidenteId: inc.id } });
+    if (!inc) return res.status(404).json({ error: "Incidente no encontrado" });
+    // Borrar media relacionada primero
+    await prisma.media.deleteMany({ where: { incidenteId: inc.id } }).catch(() => {});
     await prisma.incidente.delete({ where: { id: inc.id } });
     res.json({ ok: true });
-  } catch (err) { next(err); }
+  } catch (err) {
+    console.error("Error eliminando incidente:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

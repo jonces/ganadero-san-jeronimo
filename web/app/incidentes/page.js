@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import AppLayout from "@/components/AppLayout";
+import { api } from "@/lib/api";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
 
@@ -75,9 +76,12 @@ export default function IncidentesPage() {
 
   async function eliminar(id) {
     if (!confirm("¿Eliminar este incidente permanentemente? Esta acción no se puede deshacer.")) return;
-    const res = await fetch(`${API_URL}/incidentes/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } });
-    if (res.ok) load();
-    else alert("Error al eliminar el incidente. Intente de nuevo.");
+    try {
+      await api(`/incidentes/${id}`, { method: "DELETE" });
+      load();
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
   }
 
   const activos = incidentes.filter((i) => i.estado === "ACTIVO");
