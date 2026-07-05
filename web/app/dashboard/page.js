@@ -112,6 +112,7 @@ function StatCard({ icon, bg, label, value, delta, deltaPos, spark, sparkColor, 
 export default function DashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState(null);
+  const [todosAnimales, setTodosAnimales] = useState([]);
   const [animales, setAnimales] = useState([]);
   const [usuario, setUsuario] = useState(null);
   const [busqueda, setBusqueda] = useState("");
@@ -127,7 +128,9 @@ export default function DashboardPage() {
         api("/animales"),
       ]);
       setStats(s);
-      setAnimales(Array.isArray(a) ? a.filter(x => x.estado === "ACTIVO").slice(0, 4) : []);
+      const lista = Array.isArray(a) ? a : [];
+      setTodosAnimales(lista);
+      setAnimales(lista.filter(x => x.estado === "ACTIVO").slice(0, 4));
       setUltimaActualizacion(new Date());
     } catch {}
   }
@@ -161,6 +164,18 @@ export default function DashboardPage() {
   const ventasSpark = grafica.map(d => d.ventas);
   const gastosSpark = grafica.map(d => d.gastos);
 
+  // Contar directamente desde los animales traídos (fuente confiable, igual que el inventario)
+  const hoy2 = new Date();
+  const inicioMes = new Date(hoy2.getFullYear(), hoy2.getMonth(), 1);
+  const activosReal = todosAnimales.filter(x => x.estado === "ACTIVO").length;
+  const prenadasReal = todosAnimales.filter(x =>
+    x.sexo === "HEMBRA" && x.estadoReproductivo === "PREÑADA"
+  ).length;
+  const nacimientosReal = todosAnimales.filter(x =>
+    x.fechaNacimiento && new Date(x.fechaNacimiento) >= inicioMes
+  ).length;
+  const muertesReal = todosAnimales.filter(x => x.estado === "MUERTO").length;
+
   const CARDS = stats ? [
     {
       icon: "🐄", bg: "linear-gradient(135deg,#145A32,#1E8449)", label: "Total Animales",
@@ -191,13 +206,13 @@ export default function DashboardPage() {
     },
   ] : [];
 
-  const RESUMEN = stats ? [
-    { icon: "🍼", label: "Nacimientos", value: a.nacimientosMes || 0, delta: `+${a.nacimientosMes || 0}`, pos: true, href: "/inventario" },
-    { icon: "💀", label: "Muertes", value: a.muertesMes || 0, delta: a.muertesMes > 0 ? `-${a.muertesMes}` : "0", pos: false, href: "/inventario" },
+  const RESUMEN = todosAnimales.length > 0 || stats ? [
+    { icon: "🍼", label: "Nacimientos", value: nacimientosReal, delta: `+${nacimientosReal}`, pos: true, href: "/inventario" },
+    { icon: "💀", label: "Muertes", value: muertesReal, delta: muertesReal > 0 ? `-${muertesReal}` : "0", pos: false, href: "/inventario" },
     { icon: "💰", label: "Ventas", value: v.cantidadMes || 0, delta: `+${v.cantidadMes || 0}`, pos: true, href: "/ventas" },
     { icon: "💸", label: "Gastos", value: `C$ ${fmt(gastosMes)}`, delta: gastosMes > 0 ? `C$ ${fmt(gastosMes)}` : "—", pos: false, href: "/gastos" },
-    { icon: "🐄", label: "Activos", value: a.activos || 0, delta: `${fmt(a.activos)}`, pos: true, href: "/inventario" },
-    { icon: "🤰", label: "Preñadas", value: a.prenadas || 0, delta: `${a.prenadas || 0}`, pos: (a.prenadas || 0) > 0, href: "/inventario" },
+    { icon: "🐄", label: "Activos", value: activosReal, delta: `${activosReal}`, pos: true, href: "/inventario" },
+    { icon: "🤰", label: "Preñadas", value: prenadasReal, delta: `${prenadasReal}`, pos: prenadasReal > 0, href: "/inventario?filtro=PREÑADA" },
   ] : [];
 
   const hoy = new Date();
