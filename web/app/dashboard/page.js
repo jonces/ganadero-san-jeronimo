@@ -251,12 +251,13 @@ export default function DashboardPage() {
   // Contar directamente desde los animales traídos (fuente confiable, igual que el inventario)
   const hoy2 = new Date();
   const inicioMes = new Date(hoy2.getFullYear(), hoy2.getMonth(), 1);
-  const activosReal = todosAnimales.filter(x => x.estado === "ACTIVO").length;
-  const prenadasReal = todosAnimales.filter(x =>
-    x.sexo === "HEMBRA" && x.estadoReproductivo === "PREÑADA"
+  const noEliminados = todosAnimales.filter(x => x.estado !== "ELIMINADO");
+  const activosReal = noEliminados.filter(x => x.estado === "ACTIVO").length;
+  const prenadasReal = noEliminados.filter(x =>
+    x.sexo === "HEMBRA" && x.estado === "ACTIVO" && x.estadoReproductivo === "PREÑADA"
   ).length;
-  // Nacimientos: animales con fechaNacimiento este mes, O crías de parto (madreId != null) registradas este mes
-  const nacimientosReal = todosAnimales.filter(x => {
+  // Nacimientos: animales no eliminados con fechaNacimiento este mes, O crías de parto registradas este mes
+  const nacimientosReal = noEliminados.filter(x => {
     if (x.fechaNacimiento && new Date(x.fechaNacimiento) >= inicioMes) return true;
     if (x.madreId && x.createdAt && new Date(x.createdAt) >= inicioMes) return true;
     return false;
