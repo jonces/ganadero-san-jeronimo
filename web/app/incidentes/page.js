@@ -77,7 +77,7 @@ export default function IncidentesPage() {
     if (!confirm("¿Eliminar este incidente permanentemente? Esta acción no se puede deshacer.")) return;
     const res = await fetch(`${API_URL}/incidentes/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } });
     if (res.ok) load();
-    else alert("Error al eliminar. Solo administradores pueden eliminar incidentes.");
+    else alert("Error al eliminar el incidente. Intente de nuevo.");
   }
 
   const activos = incidentes.filter((i) => i.estado === "ACTIVO");

@@ -83,7 +83,7 @@ router.patch("/:id/resolver", requireRole("ADMIN", "SUPER_ADMIN"), async (req, r
   } catch (err) { next(err); }
 });
 
-router.delete("/:id", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next) => {
+router.delete("/:id", async (req, res, next) => {
   try {
     const inc = await prisma.incidente.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
     if (!inc) return res.status(404).json({ error: "No encontrado" });
