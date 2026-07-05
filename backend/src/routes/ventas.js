@@ -52,9 +52,20 @@ router.get("/stats", async (req, res, next) => {
       prisma.venta.findMany({ where: { fincaId, fecha: { gte: hace6Meses } }, select: { fecha: true, precioNIO: true } }),
       prisma.gasto.findMany({ where: { fincaId, fecha: { gte: hace6Meses } }, select: { fecha: true, monto: true } }),
       prisma.gasto.aggregate({ where: { fincaId, fecha: { gte: inicioMes } }, _sum: { monto: true } }),
-      prisma.animal.count({ where: { fincaId, estadoReproductivo: "PREÑADA" } }),
-      prisma.animal.count({ where: { fincaId, createdAt: { gte: inicioMes } } }),
-      prisma.animal.count({ where: { fincaId, estado: "MUERTO", updatedAt: { gte: inicioMes } } }),
+      // Preñadas: acepta PREÑADA o PRENADA (compatibilidad móvil)
+      prisma.animal.count({ where: { fincaId, estadoReproductivo: { in: ["PREÑADA", "PRENADA"] } } }),
+      // Nacimientos: animales nacidos este mes (por fechaNacimiento) o crías de parto registradas este mes
+      prisma.animal.count({
+        where: {
+          fincaId,
+          OR: [
+            { fechaNacimiento: { gte: inicioMes } },
+            { madreId: { not: null }, createdAt: { gte: inicioMes } },
+          ],
+        },
+      }),
+      // Muertes: animales muertos registrados en el sistema este mes
+      prisma.animal.count({ where: { fincaId, estado: "MUERTO", createdAt: { gte: inicioMes } } }),
     ]);
 
     const totalVentasMesNIO = ventasMes.reduce((s, v) => s + v.precioNIO, 0);
