@@ -52,8 +52,8 @@ router.get("/stats", async (req, res, next) => {
       prisma.venta.findMany({ where: { fincaId, fecha: { gte: hace6Meses } }, select: { fecha: true, precioNIO: true } }),
       prisma.gasto.findMany({ where: { fincaId, fecha: { gte: hace6Meses } }, select: { fecha: true, monto: true } }),
       prisma.gasto.aggregate({ where: { fincaId, fecha: { gte: inicioMes } }, _sum: { monto: true } }),
-      // Preñadas: acepta PREÑADA o PRENADA (compatibilidad móvil)
-      prisma.animal.count({ where: { fincaId, estadoReproductivo: { in: ["PREÑADA", "PRENADA"] } } }),
+      // Preñadas: SQL raw para evitar problemas de codificación de Ñ
+      prisma.$queryRaw`SELECT COUNT(*)::int as count FROM "Animal" WHERE "fincaId" = ${fincaId} AND "estadoReproductivo" ILIKE 'pre%ada'`,
       // Nacimientos: animales nacidos este mes (por fechaNacimiento) o crías de parto registradas este mes
       prisma.animal.count({
         where: {
@@ -67,6 +67,17 @@ router.get("/stats", async (req, res, next) => {
       // Muertes: animales muertos registrados en el sistema este mes
       prisma.animal.count({ where: { fincaId, estado: "MUERTO", createdAt: { gte: inicioMes } } }),
     ]);
+
+    // prenadas viene del queryRaw como [{count: N}]
+    const prenadasCount = Number(prenadas[0]?.count ?? 0);
+
+    // Debug: ver qué valores de estadoReproductivo existen en la finca
+    const reproVals = await prisma.$queryRaw`
+      SELECT "estadoReproductivo", COUNT(*)::int as total
+      FROM "Animal" WHERE "fincaId" = ${fincaId}
+      AND "estadoReproductivo" IS NOT NULL
+      GROUP BY "estadoReproductivo"
+    `;
 
     const totalVentasMesNIO = ventasMes.reduce((s, v) => s + v.precioNIO, 0);
     const totalVentasMesUSD = ventasMes.reduce((s, v) => s + v.precioUSD, 0);
@@ -94,7 +105,8 @@ router.get("/stats", async (req, res, next) => {
     });
 
     res.json({
-      animales: { total: totalAnimales, machos, hembras, activos, vendidos, prenadas, nacimientosMes, muertesMes },
+      animales: { total: totalAnimales, machos, hembras, activos, vendidos, prenadas: prenadasCount, nacimientosMes, muertesMes },
+      _debugRepro: reproVals,
       ventas: {
         cantidadMes: ventasMes.length,
         totalMesNIO: totalVentasMesNIO,
