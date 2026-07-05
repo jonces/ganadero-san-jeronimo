@@ -30,6 +30,15 @@ export default function InventarioPage() {
   const [formParto, setFormParto] = useState({ identificadorCria:"",nombreCria:"",sexoCria:"HEMBRA",pesoNacimiento:"" });
   const [archivosParto, setArchivosParto] = useState([]);
 
+  async function archivarAnimal(id, e) {
+    e.stopPropagation();
+    if (!confirm("¿Archivar este animal? Desaparecerá del inventario pero quedará registrado en Incidentes como muerto.")) return;
+    try {
+      await api(`/animales/${id}`, { method: "PATCH", body: JSON.stringify({ estado: "ELIMINADO" }) });
+      load();
+    } catch(err) { alert("Error: " + err.message); }
+  }
+
   async function load() {
     try {
       const data = await api("/animales");
@@ -85,6 +94,7 @@ export default function InventarioPage() {
 
   const activos=animales.filter(a=>a.estado==="ACTIVO");
   const vendidos=animales.filter(a=>a.estado==="VENDIDO");
+  const muertos=animales.filter(a=>a.estado==="MUERTO");
   const visibles=animales.filter(a=>a.estado!=="ELIMINADO");
   const hembras=activos.filter(a=>a.sexo==="HEMBRA");
   const crias=activos.filter(a=>a.madreId);
@@ -99,12 +109,14 @@ export default function InventarioPage() {
     {label:"Activos",valor:activos.length,img:"https://images.unsplash.com/photo-1493962853295-0fd70327578a?w=120&q=70",color:"#2d9e3f",filtroKey:"ACTIVOS"},
     {label:"Total",valor:animales.length,img:"https://images.unsplash.com/photo-1466721591366-2d5fba72006d?w=120&q=70",color:"#553c9a",filtroKey:"TODOS"},
     {label:"Vendidos",valor:vendidos.length,img:"https://images.unsplash.com/photo-1472396961693-142e6e269027?w=120&q=70",color:"#b7791f",filtroKey:"VENDIDOS"},
+    {label:"Muertos",valor:muertos.length,img:"https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=120&q=70",color:"#742a2a",filtroKey:"MUERTOS"},
   ];
 
   const filtrados=visibles.filter(a=>{
     if(filtro==="TODOS") return true;
     if(filtro==="ACTIVOS") return a.estado==="ACTIVO";
     if(filtro==="VENDIDOS") return a.estado==="VENDIDO";
+    if(filtro==="MUERTOS") return a.estado==="MUERTO";
     if(filtro==="SEMENTALES") return a.sexo==="MACHO"&&a.estado==="ACTIVO";
     if(filtro==="CRIAS") return !!a.madreId&&a.estado==="ACTIVO";
     return a.estadoReproductivo===filtro&&a.estado==="ACTIVO";
@@ -240,6 +252,7 @@ export default function InventarioPage() {
               <div key={a.id} className="rounded-2xl overflow-hidden shadow-xl relative cursor-pointer hover:scale-[1.02] transition-all" onClick={()=>router.push(`/inventario/${a.id}`)}>
                 {foto&&<img src={foto.url} className="w-full h-44 object-cover"/>}
                 {a.estado==="VENDIDO"&&<div className="absolute top-3 right-3 text-white text-xs font-black px-3 py-1 rounded-full" style={{background:"#d69e2e"}}>VENDIDO</div>}
+                {a.estado==="MUERTO"&&<div className="absolute top-3 right-3 text-white text-xs font-black px-3 py-1 rounded-full" style={{background:"#742a2a"}}>💀 MUERTO</div>}
                 <div className="p-4" style={{background:"rgba(5,20,10,0.88)",backdropFilter:"blur(8px)"}}>
                   <div className="flex items-start justify-between">
                     <div><p className="text-white font-black text-lg">{a.nombre||a.identificador}</p>
@@ -252,6 +265,11 @@ export default function InventarioPage() {
                   {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
                     <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}} className="mt-2 text-xs px-3 py-1 rounded-lg font-bold w-full" style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
                       Registrar Parto
+                    </button>
+                  )}
+                  {a.estado==="MUERTO"&&(
+                    <button onClick={ev=>archivarAnimal(a.id,ev)} className="mt-2 text-xs px-3 py-1 rounded-lg font-bold w-full" style={{background:"rgba(116,42,42,0.5)",border:"1px solid rgba(229,62,62,0.4)",color:"#fc8181"}}>
+                      🗑️ Archivar — quitar del inventario
                     </button>
                   )}
                 </div>
@@ -291,6 +309,11 @@ export default function InventarioPage() {
                     <span className="text-white font-black px-2 py-0.5 rounded-full text-xs" style={{background:"#d69e2e"}}>💰</span>
                   </div>
                 )}
+                {a.estado==="MUERTO"&&(
+                  <div className="absolute top-2 right-2">
+                    <span className="text-white font-black px-2 py-0.5 rounded-full text-xs" style={{background:"#742a2a"}}>💀</span>
+                  </div>
+                )}
                 {repro&&(
                   <div className="absolute bottom-2 right-2">
                     <span className="text-white font-black px-2 py-0.5 rounded-full text-xs" style={{background:repro.bg,color:repro.color,border:`1px solid ${repro.color}`}}>
@@ -309,6 +332,13 @@ export default function InventarioPage() {
                     className="mt-2 text-xs px-3 py-1.5 rounded-xl font-bold w-full"
                     style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
                     Registrar Parto
+                  </button>
+                )}
+                {a.estado==="MUERTO"&&(
+                  <button onClick={ev=>archivarAnimal(a.id,ev)}
+                    className="mt-2 text-xs px-3 py-1.5 rounded-xl font-bold w-full"
+                    style={{background:"rgba(116,42,42,0.5)",border:"1px solid rgba(229,62,62,0.4)",color:"#fc8181"}}>
+                    🗑️ Archivar
                   </button>
                 )}
               </div>

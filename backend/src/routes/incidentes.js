@@ -50,6 +50,14 @@ router.post("/", upload.array("archivos", 10), async (req, res, next) => {
       }));
     }
 
+    // Si es muerte, marcar el animal como MUERTO automáticamente
+    if (tipo === "MUERTE" && animalId) {
+      await prisma.animal.update({
+        where: { id: animalId },
+        data: { estado: "MUERTO", estadoReproductivo: null },
+      }).catch(() => {});
+    }
+
     logActividad({ accion: `Registró incidente: ${tipo}`, detalle: descripcion, modulo: "Incidentes", fincaId: req.user.fincaId, usuarioId: req.user.sub });
 
     // Notificación urgente al admin siempre que se registre un incidente
