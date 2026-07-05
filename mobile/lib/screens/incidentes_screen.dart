@@ -39,11 +39,21 @@ class _IncidentesScreenState extends State<IncidentesScreen> {
     }
   }
 
+  Color _tipoColor(String t) {
+    switch (t) {
+      case 'MUERTE': return Colors.red[900]!;
+      case 'ACCIDENTE': return Colors.orange[800]!;
+      case 'ENFERMEDAD': return Colors.amber[700]!;
+      default: return Colors.blueGrey;
+    }
+  }
+
   Future<void> _crearIncidente(List<dynamic> animales) async {
     String? animalId;
     String gravedad = 'LEVE';
-    final tituloCtrl = TextEditingController();
+    String tipo = 'ACCIDENTE';
     final descCtrl = TextEditingController();
+    final tratamientoCtrl = TextEditingController();
 
     final ok = await showModalBottomSheet<bool>(
       context: context,
@@ -63,6 +73,47 @@ class _IncidentesScreenState extends State<IncidentesScreen> {
                     alignment: Alignment.center),
                 const Text('Nuevo Incidente', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 16),
+
+                // Tipo de incidente
+                const Text('Tipo de incidente *', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8, runSpacing: 8,
+                  children: [
+                    {'valor': 'ACCIDENTE', 'icono': '🤕'},
+                    {'valor': 'ENFERMEDAD', 'icono': '🤒'},
+                    {'valor': 'MUERTE', 'icono': '💀'},
+                    {'valor': 'OTRO', 'icono': '📋'},
+                  ].map((t) => GestureDetector(
+                    onTap: () => setSt(() => tipo = t['valor']!),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: tipo == t['valor'] ? _tipoColor(t['valor']!) : _tipoColor(t['valor']!).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: _tipoColor(t['valor']!).withOpacity(0.6)),
+                      ),
+                      child: Text('${t['icono']} ${t['valor']}', style: TextStyle(
+                        color: tipo == t['valor'] ? Colors.white : Colors.white70,
+                        fontSize: 12, fontWeight: FontWeight.w700)),
+                    ),
+                  )).toList(),
+                ),
+                if (tipo == 'MUERTE')
+                  Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.red[900]!.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.red.withOpacity(0.4)),
+                    ),
+                    child: const Text('⚠️ Al registrar una muerte, el animal pasará a estado MUERTO automáticamente.',
+                      style: TextStyle(color: Colors.red, fontSize: 11, fontWeight: FontWeight.w600)),
+                  ),
+                const SizedBox(height: 14),
+
+                // Animal afectado
                 DropdownButtonFormField<String>(
                   value: animalId,
                   dropdownColor: const Color(0xFF051908),
@@ -72,18 +123,20 @@ class _IncidentesScreenState extends State<IncidentesScreen> {
                     const DropdownMenuItem(value: null, child: Text('— Sin animal específico —', style: TextStyle(color: Colors.white54))),
                     ...animales.map((a) => DropdownMenuItem(
                       value: a['id'] as String,
-                      child: Text(a['nombre'] ?? a['identificador'], style: const TextStyle(color: Colors.white)),
+                      child: Text('${a['nombre'] ?? a['identificador']} (${a['identificador']})', style: const TextStyle(color: Colors.white, fontSize: 13)),
                     )),
                   ],
                   onChanged: (v) => setSt(() => animalId = v),
                 ),
                 const SizedBox(height: 12),
-                TextField(controller: tituloCtrl, style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(labelText: 'Título del incidente *')),
-                const SizedBox(height: 12),
                 TextField(controller: descCtrl, style: const TextStyle(color: Colors.white), maxLines: 3,
-                    decoration: const InputDecoration(labelText: 'Descripción')),
+                    decoration: const InputDecoration(labelText: 'Descripción *')),
                 const SizedBox(height: 12),
+                TextField(controller: tratamientoCtrl, style: const TextStyle(color: Colors.white), maxLines: 2,
+                    decoration: const InputDecoration(labelText: 'Tratamiento (opcional)')),
+                const SizedBox(height: 12),
+
+                // Gravedad
                 const Text('Gravedad', style: TextStyle(color: Colors.white54, fontSize: 12)),
                 const SizedBox(height: 8),
                 Wrap(
@@ -105,14 +158,18 @@ class _IncidentesScreenState extends State<IncidentesScreen> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx, true),
+                  onPressed: () {
+                    if (descCtrl.text.trim().isEmpty) return;
+                    Navigator.pop(ctx, true);
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[700],
+                    backgroundColor: tipo == 'MUERTE' ? Colors.red[800] : Colors.red[700],
                     foregroundColor: Colors.white,
                     minimumSize: const Size.fromHeight(48),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text('Reportar incidente', style: TextStyle(fontWeight: FontWeight.w800)),
+                  child: Text(tipo == 'MUERTE' ? '💀 Registrar Muerte' : 'Reportar Incidente',
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
                 ),
               ],
             ),
@@ -121,15 +178,19 @@ class _IncidentesScreenState extends State<IncidentesScreen> {
       ),
     );
 
-    if (ok == true && tituloCtrl.text.isNotEmpty) {
+    if (ok == true && descCtrl.text.isNotEmpty) {
       try {
         await ApiClient.post('/incidentes', {
-          'titulo': tituloCtrl.text.trim(),
-          if (descCtrl.text.isNotEmpty) 'descripcion': descCtrl.text.trim(),
+          'tipo': tipo,
+          'descripcion': descCtrl.text.trim(),
           'gravedad': gravedad,
+          if (tratamientoCtrl.text.isNotEmpty) 'tratamiento': tratamientoCtrl.text.trim(),
           if (animalId != null) 'animalId': animalId,
         });
         _load();
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tipo == 'MUERTE' ? '💀 Muerte registrada. Animal marcado como MUERTO.' : '✅ Incidente registrado'),
+            backgroundColor: tipo == 'MUERTE' ? Colors.red[800] : Colors.green[800]));
       } catch (e) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString().replaceFirst('Exception: ', '')), backgroundColor: Colors.red[800]));
@@ -225,7 +286,7 @@ class _IncidentesScreenState extends State<IncidentesScreen> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Center(child: Text(
-              inc['gravedad'] == 'CRITICA' ? '🚨' : inc['gravedad'] == 'GRAVE' ? '⚠️' : 'ℹ️',
+              inc['tipo'] == 'MUERTE' ? '💀' : inc['gravedad'] == 'CRITICA' ? '🚨' : inc['gravedad'] == 'GRAVE' ? '⚠️' : 'ℹ️',
               style: const TextStyle(fontSize: 18),
             )),
           ),
@@ -236,7 +297,7 @@ class _IncidentesScreenState extends State<IncidentesScreen> {
               children: [
                 Row(
                   children: [
-                    Expanded(child: Text(inc['titulo'] ?? 'Sin título',
+                    Expanded(child: Text(inc['tipo'] ?? inc['titulo'] ?? 'Sin tipo',
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14))),
                     if (resuelto)
                       Container(
