@@ -151,6 +151,7 @@ router.post("/:id/parto", upload.array("archivos", 10), async (req, res, next) =
         nombre: nombreCria || null,
         sexo: sexoCria,
         pesoActual: pesoNacimiento ? Number(pesoNacimiento) : null,
+        fechaNacimiento: new Date(),
         madreId: madre.id,
         fincaId: req.user.fincaId,
         estadoReproductivo: sexoCria === "HEMBRA" ? "VACIA" : null,

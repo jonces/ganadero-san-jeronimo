@@ -113,6 +113,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState(null);
   const [todosAnimales, setTodosAnimales] = useState([]);
+  const [todosGastos, setTodosGastos] = useState([]);
   const [animales, setAnimales] = useState([]);
   const [usuario, setUsuario] = useState(null);
   const [busqueda, setBusqueda] = useState("");
@@ -123,13 +124,15 @@ export default function DashboardPage() {
 
   async function cargarDatos() {
     try {
-      const [s, a] = await Promise.all([
-        api("/ventas/stats"),
-        api("/animales"),
+      const [s, a, g] = await Promise.all([
+        api("/ventas/stats").catch(() => null),
+        api("/animales").catch(() => []),
+        api("/gastos").catch(() => []),
       ]);
       setStats(s);
       const lista = Array.isArray(a) ? a : [];
       setTodosAnimales(lista);
+      setTodosGastos(Array.isArray(g) ? g : []);
       setAnimales(lista.filter(x => x.estado === "ACTIVO").slice(0, 4));
       setUltimaActualizacion(new Date());
     } catch {}
@@ -171,10 +174,18 @@ export default function DashboardPage() {
   const prenadasReal = todosAnimales.filter(x =>
     x.sexo === "HEMBRA" && x.estadoReproductivo === "PREÑADA"
   ).length;
-  const nacimientosReal = todosAnimales.filter(x =>
-    x.fechaNacimiento && new Date(x.fechaNacimiento) >= inicioMes
-  ).length;
-  const muertesReal = todosAnimales.filter(x => x.estado === "MUERTO").length;
+  // Nacimientos: animales con fechaNacimiento este mes, O crías de parto (madreId != null) registradas este mes
+  const nacimientosReal = todosAnimales.filter(x => {
+    if (x.fechaNacimiento && new Date(x.fechaNacimiento) >= inicioMes) return true;
+    if (x.madreId && x.createdAt && new Date(x.createdAt) >= inicioMes) return true;
+    return false;
+  }).length;
+  const muertesReal = todosAnimales.filter(x => x.estado === "MUERTO" && x.createdAt && new Date(x.createdAt) >= inicioMes).length;
+  // Gastos del mes desde la lista directa (no depende del stats endpoint)
+  const gastosMesReal = todosGastos.reduce((sum, g) => {
+    if (g.fecha && new Date(g.fecha) >= inicioMes) return sum + (g.monto || 0);
+    return sum;
+  }, 0);
 
   const CARDS = stats ? [
     {
@@ -210,7 +221,7 @@ export default function DashboardPage() {
     { icon: "🍼", label: "Nacimientos", value: nacimientosReal, delta: `+${nacimientosReal}`, pos: true, href: "/inventario" },
     { icon: "💀", label: "Muertes", value: muertesReal, delta: muertesReal > 0 ? `-${muertesReal}` : "0", pos: false, href: "/inventario" },
     { icon: "💰", label: "Ventas", value: v.cantidadMes || 0, delta: `+${v.cantidadMes || 0}`, pos: true, href: "/ventas" },
-    { icon: "💸", label: "Gastos", value: `C$ ${fmt(gastosMes)}`, delta: gastosMes > 0 ? `C$ ${fmt(gastosMes)}` : "—", pos: false, href: "/gastos" },
+    { icon: "💸", label: "Gastos", value: `C$ ${fmt(gastosMesReal)}`, delta: gastosMesReal > 0 ? `C$ ${fmt(gastosMesReal)}` : "—", pos: false, href: "/gastos" },
     { icon: "🐄", label: "Activos", value: activosReal, delta: `${activosReal}`, pos: true, href: "/inventario" },
     { icon: "🤰", label: "Preñadas", value: prenadasReal, delta: `${prenadasReal}`, pos: prenadasReal > 0, href: "/inventario?filtro=PREÑADA" },
   ] : [];
