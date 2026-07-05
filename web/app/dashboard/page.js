@@ -114,6 +114,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState(null);
   const [todosAnimales, setTodosAnimales] = useState([]);
   const [todosGastos, setTodosGastos] = useState([]);
+  const [todosIncidentes, setTodosIncidentes] = useState([]);
   const [animales, setAnimales] = useState([]);
   const [usuario, setUsuario] = useState(null);
   const [busqueda, setBusqueda] = useState("");
@@ -124,15 +125,19 @@ export default function DashboardPage() {
 
   async function cargarDatos() {
     try {
-      const [s, a, g] = await Promise.all([
+      const [s, a, g, inc] = await Promise.all([
         api("/ventas/stats").catch(() => null),
         api("/animales").catch(() => []),
-        api("/gastos").catch(() => []),
+        api("/gastos").catch(() => ({})),
+        api("/incidentes").catch(() => []),
       ]);
       setStats(s);
       const lista = Array.isArray(a) ? a : [];
       setTodosAnimales(lista);
-      setTodosGastos(Array.isArray(g) ? g : []);
+      // /gastos devuelve { gastos: [...], total }
+      setTodosGastos(Array.isArray(g?.gastos) ? g.gastos : []);
+      // /incidentes puede devolver array o { incidentes: [...] }
+      setTodosIncidentes(Array.isArray(inc) ? inc : Array.isArray(inc?.incidentes) ? inc.incidentes : []);
       setAnimales(lista.filter(x => x.estado === "ACTIVO").slice(0, 4));
       setUltimaActualizacion(new Date());
     } catch {}
@@ -180,12 +185,13 @@ export default function DashboardPage() {
     if (x.madreId && x.createdAt && new Date(x.createdAt) >= inicioMes) return true;
     return false;
   }).length;
-  const muertesReal = todosAnimales.filter(x => x.estado === "MUERTO" && x.createdAt && new Date(x.createdAt) >= inicioMes).length;
-  // Gastos del mes desde la lista directa (no depende del stats endpoint)
-  const gastosMesReal = todosGastos.reduce((sum, g) => {
-    if (g.fecha && new Date(g.fecha) >= inicioMes) return sum + (g.monto || 0);
-    return sum;
-  }, 0);
+  // Muertes: incidentes tipo MUERTE registrados este mes
+  const muertesReal = todosIncidentes.filter(x =>
+    x.tipo === "MUERTE" && x.fecha && new Date(x.fecha) >= inicioMes
+  ).length;
+  // Gastos del mes: /gastos devuelve { gastos:[...], total }
+  const gastosMesReal = todosGastos.reduce((sum, g) =>
+    g.fecha && new Date(g.fecha) >= inicioMes ? sum + (g.monto || 0) : sum, 0);
 
   const CARDS = stats ? [
     {
