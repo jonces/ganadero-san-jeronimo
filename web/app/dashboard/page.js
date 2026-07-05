@@ -87,6 +87,82 @@ function LineChart({ datos = [], tipoCambio = 36.5 }) {
   );
 }
 
+/* ── Gráfica crecimiento del hato ── */
+function HatoChart({ animales = [] }) {
+  if (!animales.length) return <div className="h-40 flex items-center justify-center text-sm" style={{ color: C.textLight }}>Sin datos</div>;
+
+  // Calcular los últimos 8 meses
+  const ahora = new Date();
+  const meses = [];
+  for (let i = 7; i >= 0; i--) {
+    const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1);
+    const fin = new Date(ahora.getFullYear(), ahora.getMonth() - i + 1, 1);
+    const label = d.toLocaleDateString("es", { month: "short" });
+    // Animales activos al final de ese mes: registrados antes del fin del mes y no eliminados antes
+    const activos = animales.filter(a => {
+      if (!a.createdAt) return false;
+      const creado = new Date(a.createdAt);
+      if (creado >= fin) return false; // no existía aún
+      if (a.estado === "ELIMINADO" || a.estado === "MUERTO") return false; // excluir eliminados/muertos históricos (simplificado)
+      return true;
+    }).length;
+    const entradas = animales.filter(a => {
+      if (!a.createdAt) return false;
+      const creado = new Date(a.createdAt);
+      return creado >= d && creado < fin;
+    }).length;
+    meses.push({ label, activos, entradas });
+  }
+
+  const maxVal = Math.max(...meses.map(m => m.activos), 1);
+  const W = 520, H = 160, PL = 40, PR = 20, PT = 16, PB = 28;
+  const IW = W - PL - PR, IH = H - PT - PB;
+  const px = i => PL + (i / (meses.length - 1)) * IW;
+  const py = v => PT + IH - (v / maxVal) * IH * 0.85;
+  const pts = meses.map((m, i) => `${px(i)},${py(m.activos)}`).join(" ");
+
+  return (
+    <div>
+      <div className="flex items-center gap-4 mb-2">
+        <span className="flex items-center gap-1.5 text-xs" style={{ color: C.textLight }}>
+          <span className="w-4 h-0.5 rounded-full inline-block" style={{ background: C.primary }} />Total activos
+        </span>
+        <span className="flex items-center gap-1.5 text-xs" style={{ color: C.textLight }}>
+          <span className="w-3 h-3 rounded-full inline-block" style={{ background: "#1E8449" }} />Ingresos del mes
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: H }}>
+        {[0, 0.25, 0.5, 0.75, 1].map((f, fi) => {
+          const y = PT + IH * (1 - f);
+          return (
+            <g key={fi}>
+              <line x1={PL} y1={y} x2={W - PR} y2={y} stroke="#E2E8F0" strokeWidth="1" />
+              <text x={PL - 6} y={y + 4} textAnchor="end" fill="#94A3B8" fontSize="9">{Math.round(maxVal * f)}</text>
+            </g>
+          );
+        })}
+        {/* Barras de entradas del mes */}
+        {meses.map((m, i) => {
+          const bw = Math.max(IW / meses.length * 0.4, 8);
+          const bh = (m.entradas / maxVal) * IH * 0.85;
+          return <rect key={`b${i}`} x={px(i) - bw / 2} y={PT + IH - bh} width={bw} height={bh}
+            fill="#1E8449" opacity="0.25" rx="3" />;
+        })}
+        {/* Línea de activos */}
+        <polygon points={`${pts} ${W - PR},${PT + IH} ${PL},${PT + IH}`} fill="rgba(20,90,50,0.08)" />
+        <polyline points={pts} fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        {meses.map((m, i) => (
+          <g key={`p${i}`}>
+            <circle cx={px(i)} cy={py(m.activos)} r="5" fill={C.primary} stroke={C.white} strokeWidth="2" />
+            <text x={px(i)} y={py(m.activos) - 8} textAnchor="middle" fill={C.primary} fontSize="9" fontWeight="bold">{m.activos}</text>
+            <text x={px(i)} y={H - 4} textAnchor="middle" fill="#94A3B8" fontSize="9">{m.label}</text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+}
+
 /* ── Stat card component ── */
 function StatCard({ icon, bg, label, value, delta, deltaPos, spark, sparkColor, href, onClick }) {
   return (
@@ -195,8 +271,8 @@ export default function DashboardPage() {
 
   const CARDS = stats ? [
     {
-      icon: "🐄", bg: "linear-gradient(135deg,#145A32,#1E8449)", label: "Total Animales",
-      value: fmt(a.total), delta: `+${a.nacimientosMes || 0} este mes`, deltaPos: true,
+      icon: "🐄", bg: "linear-gradient(135deg,#145A32,#1E8449)", label: "Animales Activos",
+      value: fmt(activosReal || a.activos), delta: `+${nacimientosReal} nacimientos este mes`, deltaPos: true,
       spark: ventasSpark, sparkColor: C.primary, href: "/inventario",
     },
     {
@@ -409,6 +485,45 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ── GRÁFICA CRECIMIENTO DEL HATO ── */}
+      {todosAnimales.length > 0 && (
+        <div className="mb-6 rounded-2xl shadow overflow-hidden" style={{ background: C.white, border: `1px solid ${C.border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          <div className="flex items-center justify-between px-5 pt-4 pb-3" style={{ borderBottom: `1px solid ${C.border}` }}>
+            <div>
+              <p className="font-black text-sm" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>📈 Crecimiento del Hato</p>
+              <p className="text-xs mt-0.5" style={{ color: C.textLight }}>Evolución del inventario activo — últimos 8 meses</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="font-black text-lg" style={{ color: C.primary, fontFamily: "var(--font-poppins)" }}>{activosReal}</p>
+                <p className="text-xs" style={{ color: C.textLight }}>activos hoy</p>
+              </div>
+              <button onClick={() => router.push("/inventario")}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg"
+                style={{ background: C.bg, color: C.primary, border: `1px solid ${C.border}` }}>
+                Ver inventario →
+              </button>
+            </div>
+          </div>
+          <div className="px-5 py-4">
+            <HatoChart animales={todosAnimales} />
+          </div>
+          <div className="px-5 pb-4 grid grid-cols-3 gap-3">
+            {[
+              { label: "Activos ahora", value: activosReal, color: C.primary, icon: "🐄" },
+              { label: "Preñadas", value: prenadasReal, color: "#E74C3C", icon: "🤰" },
+              { label: "Nacimientos este mes", value: nacimientosReal, color: C.secondary, icon: "🍼" },
+            ].map((s, i) => (
+              <div key={i} className="rounded-xl p-3 text-center" style={{ background: C.bg, border: `1px solid ${C.border}` }}>
+                <p className="text-lg mb-0.5">{s.icon}</p>
+                <p className="font-black text-xl" style={{ color: s.color, fontFamily: "var(--font-poppins)" }}>{s.value}</p>
+                <p className="text-xs" style={{ color: C.textLight }}>{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── ANIMALES RECIENTES ── */}
       <div className="mb-6">

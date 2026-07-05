@@ -39,9 +39,9 @@ router.get("/stats", async (req, res, next) => {
       finca, ventasHistoricas, gastosHistoricos, gastosMes,
       todasHembras, nacimientosMes, muertesMes,
     ] = await Promise.all([
-      prisma.animal.count({ where: { fincaId } }),
-      prisma.animal.count({ where: { fincaId, sexo: "MACHO" } }),
-      prisma.animal.count({ where: { fincaId, sexo: "HEMBRA" } }),
+      prisma.animal.count({ where: { fincaId, estado: { not: "ELIMINADO" } } }),
+      prisma.animal.count({ where: { fincaId, sexo: "MACHO", estado: { not: "ELIMINADO" } } }),
+      prisma.animal.count({ where: { fincaId, sexo: "HEMBRA", estado: { not: "ELIMINADO" } } }),
       prisma.animal.count({ where: { fincaId, estado: "ACTIVO" } }),
       prisma.animal.count({ where: { fincaId, estado: "VENDIDO" } }),
       prisma.venta.findMany({ where: { fincaId, fecha: { gte: inicioMes } } }),
