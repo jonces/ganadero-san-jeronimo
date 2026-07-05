@@ -117,10 +117,25 @@ export default function DashboardPage() {
   const [busqueda, setBusqueda] = useState("");
   const [saludo, setSaludo] = useState("Buenos días");
   const [ahora, setAhora] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
 
-  function cargarDatos() {
-    api("/ventas/stats").then(setStats).catch(() => {});
-    api("/animales").then(d => setAnimales(Array.isArray(d) ? d.filter(a => a.estado === "ACTIVO").slice(0, 4) : [])).catch(() => {});
+  async function cargarDatos() {
+    try {
+      const [s, a] = await Promise.all([
+        api("/ventas/stats"),
+        api("/animales"),
+      ]);
+      setStats(s);
+      setAnimales(Array.isArray(a) ? a.filter(x => x.estado === "ACTIVO").slice(0, 4) : []);
+      setUltimaActualizacion(new Date());
+    } catch {}
+  }
+
+  async function refrescar() {
+    setRefreshing(true);
+    await cargarDatos();
+    setRefreshing(false);
   }
 
   useEffect(() => {
@@ -129,7 +144,7 @@ export default function DashboardPage() {
     setSaludo(h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches");
     setAhora(new Date().toLocaleDateString("es", { weekday: "short", day: "numeric", month: "short" }));
     cargarDatos();
-    const interval = setInterval(cargarDatos, 30000);
+    const interval = setInterval(cargarDatos, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -266,10 +281,22 @@ export default function DashboardPage() {
         {/* Resumen General */}
         <div className="rounded-2xl shadow overflow-hidden" style={cardStyle}>
           <div className="flex items-center justify-between px-5 pt-4 pb-3" style={{ borderBottom: `1px solid ${C.border}` }}>
-            <p className="font-black text-sm" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>Resumen General</p>
-            <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: C.bg, color: C.textLight, border: `1px solid ${C.border}` }}>
-              Este mes ▾
-            </span>
+            <div>
+              <p className="font-black text-sm" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>Resumen General</p>
+              {ultimaActualizacion && (
+                <p style={{ fontSize: 10, color: C.textLight }}>
+                  Actualizado: {ultimaActualizacion.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={refrescar}
+              disabled={refreshing}
+              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all hover:opacity-80 active:scale-95 disabled:opacity-50"
+              style={{ background: C.primary, color: "#fff" }}>
+              <span style={{ display: "inline-block", transform: refreshing ? "rotate(360deg)" : "none", transition: refreshing ? "transform 0.6s linear" : "none" }}>↻</span>
+              {refreshing ? "..." : "Actualizar"}
+            </button>
           </div>
           <div className="px-3 py-2">
             {RESUMEN.map((r, i) => (
