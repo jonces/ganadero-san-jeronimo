@@ -73,6 +73,13 @@ export default function IncidentesPage() {
     load();
   }
 
+  async function eliminar(id) {
+    if (!confirm("¿Eliminar este incidente permanentemente? Esta acción no se puede deshacer.")) return;
+    const res = await fetch(`${API_URL}/incidentes/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${getToken()}` } });
+    if (res.ok) load();
+    else alert("Error al eliminar. Solo administradores pueden eliminar incidentes.");
+  }
+
   const activos = incidentes.filter((i) => i.estado === "ACTIVO");
   const resueltos = incidentes.filter((i) => i.estado === "RESUELTO");
 
@@ -204,13 +211,20 @@ export default function IncidentesPage() {
                       {inc.media.map((m) => <img key={m.id} src={m.url} className="w-full h-20 object-cover rounded-xl" />)}
                     </div>
                   )}
-                  {inc.estado === "ACTIVO" && (
-                    <button onClick={() => resolver(inc.id)}
-                      className="mt-3 text-white text-sm font-bold px-4 py-2 rounded-xl"
-                      style={{ background: "#2d9e3f" }}>
-                      ✅ Marcar como resuelto
+                  <div className="mt-3 flex gap-2 flex-wrap">
+                    {inc.estado === "ACTIVO" && (
+                      <button onClick={() => resolver(inc.id)}
+                        className="text-white text-sm font-bold px-4 py-2 rounded-xl"
+                        style={{ background: "#2d9e3f" }}>
+                        ✅ Marcar como resuelto
+                      </button>
+                    )}
+                    <button onClick={() => eliminar(inc.id)}
+                      className="text-white text-sm font-bold px-4 py-2 rounded-xl"
+                      style={{ background: "#742a2a" }}>
+                      🗑️ Eliminar
                     </button>
-                  )}
+                  </div>
                 </div>
               </div>
             );
