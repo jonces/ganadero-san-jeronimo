@@ -85,14 +85,16 @@ router.patch("/:id/resolver", requireRole("ADMIN", "SUPER_ADMIN"), async (req, r
 
 router.delete("/:id", async (req, res, next) => {
   try {
-    const inc = await prisma.incidente.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
-    if (!inc) return res.status(404).json({ error: "Incidente no encontrado" });
-    // Borrar media relacionada primero
-    await prisma.media.deleteMany({ where: { incidenteId: inc.id } }).catch(() => {});
-    await prisma.incidente.delete({ where: { id: inc.id } });
+    const id = req.params.id;
+    const fincaId = req.user.fincaId;
+    // Desvincular media antes de borrar (evita FK constraint)
+    await prisma.media.updateMany({ where: { incidenteId: id }, data: { incidenteId: null } }).catch(() => {});
+    // Borrar solo si pertenece a esta finca
+    const del = await prisma.incidente.deleteMany({ where: { id, fincaId } });
+    if (del.count === 0) return res.status(404).json({ error: "No encontrado o sin permiso" });
     res.json({ ok: true });
   } catch (err) {
-    console.error("Error eliminando incidente:", err);
+    console.error("Error eliminando incidente:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
