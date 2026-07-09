@@ -65,7 +65,26 @@ async function corregirTiposDeMedia() {
 }
 
 const port = process.env.PORT || 4000;
+async function limpiarAnimalesEliminados() {
+  try {
+    const prisma = require("./prisma");
+    const eliminados = await prisma.animal.findMany({ where: { estado: "ELIMINADO" }, select: { id: true } });
+    for (const a of eliminados) {
+      await prisma.media.deleteMany({ where: { animalId: a.id } });
+      await prisma.evento.deleteMany({ where: { animalId: a.id } });
+      await prisma.incidente.updateMany({ where: { animalId: a.id }, data: { animalId: null } });
+      await prisma.venta.updateMany({ where: { animalId: a.id }, data: { animalId: null } });
+      await prisma.animal.updateMany({ where: { madreId: a.id }, data: { madreId: null } });
+      await prisma.animal.delete({ where: { id: a.id } });
+    }
+    if (eliminados.length) console.log(`Limpieza: ${eliminados.length} animales ELIMINADO borrados de DB`);
+  } catch (err) {
+    console.error("Error limpiando animales ELIMINADO:", err.message);
+  }
+}
+
 app.listen(port, () => {
   console.log(`Backend escuchando en puerto ${port}`);
   corregirTiposDeMedia();
+  limpiarAnimalesEliminados();
 });
