@@ -29,6 +29,44 @@ export default function InventarioPage() {
   const [form, setForm] = useState({ identificador:"",nombre:"",raza:"",fierro:"",sexo:"HEMBRA",pesoActual:"",observacion:"",estadoReproductivo:"",madreId:"" });
   const [formParto, setFormParto] = useState({ identificadorCria:"",nombreCria:"",sexoCria:"HEMBRA",pesoNacimiento:"" });
   const [archivosParto, setArchivosParto] = useState([]);
+  const [editAnimal, setEditAnimal] = useState(null);
+  const [formEdit, setFormEdit] = useState({});
+  const [enviandoEdit, setEnviandoEdit] = useState(false);
+
+  function abrirEditar(a, e) {
+    e.stopPropagation();
+    setEditAnimal(a);
+    setFormEdit({
+      nombre: a.nombre||"",
+      raza: a.raza||"",
+      fierro: a.fierro||"",
+      pesoActual: a.pesoActual||"",
+      observacion: a.observacion||"",
+      estadoReproductivo: a.estadoReproductivo||"",
+    });
+  }
+
+  async function handleEdit(e) {
+    e.preventDefault(); setEnviandoEdit(true);
+    try {
+      const res = await fetch(`${API_URL}/animales/${editAnimal.id}`, {
+        method:"PATCH",
+        headers:{"Content-Type":"application/json", Authorization:`Bearer ${getToken()}`},
+        body: JSON.stringify({
+          nombre: formEdit.nombre||null,
+          raza: formEdit.raza||null,
+          fierro: formEdit.fierro||null,
+          pesoActual: formEdit.pesoActual||null,
+          observacion: formEdit.observacion||null,
+          ...(editAnimal.sexo==="HEMBRA" ? { estadoReproductivo: formEdit.estadoReproductivo||null } : {}),
+        }),
+      });
+      const d = await res.json();
+      if(!res.ok) throw new Error(d.error||"Error");
+      setEditAnimal(null);
+      load();
+    } catch(err){ alert("Error: "+err.message); } finally{ setEnviandoEdit(false); }
+  }
 
   async function archivarAnimal(id, e) {
     e.stopPropagation();
@@ -240,6 +278,44 @@ export default function InventarioPage() {
         </div>
       )}
 
+      {/* Modal Editar Animal */}
+      {editAnimal&&(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:"rgba(0,0,0,0.8)",backdropFilter:"blur(4px)"}}>
+          <form onSubmit={handleEdit} className="w-full max-w-sm rounded-3xl p-6 space-y-3 shadow-2xl max-h-[90vh] overflow-y-auto" style={glass}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-white font-black text-xl">✏️ Editar Animal</h3>
+              <button type="button" onClick={()=>setEditAnimal(null)} className="text-white/40 text-2xl leading-none">✕</button>
+            </div>
+            <p className="text-white/40 text-xs">Arete: <span className="text-white font-bold">{editAnimal.identificador}</span> · {editAnimal.sexo==="HEMBRA"?"♀ Hembra":"♂ Macho"}</p>
+            <div><label className="text-white/50 text-xs">Nombre</label>
+              <input className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.nombre} onChange={e=>setFormEdit({...formEdit,nombre:e.target.value})} placeholder="Nombre del animal"/></div>
+            <div><label className="text-white/50 text-xs">Raza</label>
+              <input className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.raza} onChange={e=>setFormEdit({...formEdit,raza:e.target.value})} placeholder="Brahman, Holstein..."/></div>
+            <div><label className="text-white/50 text-xs">Fierro</label>
+              <input className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.fierro} onChange={e=>setFormEdit({...formEdit,fierro:e.target.value})} placeholder="M20"/></div>
+            <div><label className="text-white/50 text-xs">Peso actual (kg)</label>
+              <input type="number" className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.pesoActual} onChange={e=>setFormEdit({...formEdit,pesoActual:e.target.value})} placeholder="350"/></div>
+            {editAnimal.sexo==="HEMBRA"&&(
+              <div>
+                <label className="text-white/50 text-xs">Estado Reproductivo</label>
+                <select className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.estadoReproductivo} onChange={e=>setFormEdit({...formEdit,estadoReproductivo:e.target.value})}>
+                  <option value="">Sin definir</option>
+                  {ESTADOS_REPRO.map(s=><option key={s} value={s}>{REPRO_CONFIG[s].icon} {REPRO_CONFIG[s].label}</option>)}
+                </select>
+              </div>
+            )}
+            <div><label className="text-white/50 text-xs">Observación</label>
+              <textarea className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} rows={2} value={formEdit.observacion} onChange={e=>setFormEdit({...formEdit,observacion:e.target.value})} placeholder="Notas adicionales..."/></div>
+            <div className="flex gap-3 pt-1">
+              <button type="button" onClick={()=>setEditAnimal(null)} className="flex-1 text-white/50 py-2.5 rounded-xl text-sm font-bold" style={{border:"1px solid rgba(255,255,255,0.2)"}}>Cancelar</button>
+              <button type="submit" disabled={enviandoEdit} className="flex-1 text-white font-black py-2.5 rounded-xl text-sm disabled:opacity-50" style={{background:"linear-gradient(135deg,#1a6b2a,#2d9e3f)"}}>
+                {enviandoEdit?"Guardando...":"✅ Guardar"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <p className="text-white/30 text-xs mb-3">{METRICAS.find(m=>m.filtroKey===filtro)?.label||"Todos"} — {filtrados.length} registros</p>
 
       {/* Tarjetas grandes */}
@@ -262,16 +338,21 @@ export default function InventarioPage() {
                   {a.fierro&&<p className="text-white/40 text-xs mt-1">Fierro: {a.fierro}</p>}
                   {a.pesoActual&&<p className="text-green-400 text-sm font-bold mt-1">⚖️ {a.pesoActual} kg</p>}
                   {(et||repro)&&<p className="text-xs mt-2 px-2 py-1 rounded-lg font-semibold inline-block" style={{background:repro?.bg||"rgba(255,255,255,0.1)",color:repro?.color||"white"}}>{repro?.icon} {et||repro?.label}</p>}
-                  {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
-                    <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}} className="mt-2 text-xs px-3 py-1 rounded-lg font-bold w-full" style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
-                      Registrar Parto
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={ev=>abrirEditar(a,ev)} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(49,130,206,0.25)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
+                      ✏️ Editar
                     </button>
-                  )}
-                  {a.estado==="MUERTO"&&(
-                    <button onClick={ev=>archivarAnimal(a.id,ev)} className="mt-2 text-xs px-3 py-1 rounded-lg font-bold w-full" style={{background:"rgba(116,42,42,0.5)",border:"1px solid rgba(229,62,62,0.4)",color:"#fc8181"}}>
-                      🗑️ Archivar — quitar del inventario
-                    </button>
-                  )}
+                    {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
+                      <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
+                        🐮 Parto
+                      </button>
+                    )}
+                    {a.estado==="MUERTO"&&(
+                      <button onClick={ev=>archivarAnimal(a.id,ev)} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(116,42,42,0.5)",border:"1px solid rgba(229,62,62,0.4)",color:"#fc8181"}}>
+                        🗑️ Quitar
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -327,20 +408,27 @@ export default function InventarioPage() {
                 <p className="text-white font-black text-sm truncate">{a.nombre||a.identificador}</p>
                 <p className="text-white/40 text-xs truncate">{a.raza||"Sin raza"} · {a.identificador}</p>
                 {a.pesoActual&&<p className="text-green-400 text-xs font-bold mt-1">⚖️ {a.pesoActual} kg</p>}
-                {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
-                  <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}}
-                    className="mt-2 text-xs px-3 py-1.5 rounded-xl font-bold w-full"
-                    style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
-                    Registrar Parto
+                <div className="flex gap-1.5 mt-2">
+                  <button onClick={ev=>abrirEditar(a,ev)}
+                    className="flex-1 text-xs py-1.5 rounded-xl font-bold"
+                    style={{background:"rgba(49,130,206,0.25)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
+                    ✏️ Editar
                   </button>
-                )}
-                {a.estado==="MUERTO"&&(
-                  <button onClick={ev=>archivarAnimal(a.id,ev)}
-                    className="mt-2 text-xs px-3 py-1.5 rounded-xl font-bold w-full"
-                    style={{background:"rgba(116,42,42,0.5)",border:"1px solid rgba(229,62,62,0.4)",color:"#fc8181"}}>
-                    🗑️ Archivar
-                  </button>
-                )}
+                  {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
+                    <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}}
+                      className="flex-1 text-xs py-1.5 rounded-xl font-bold"
+                      style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
+                      🐮 Parto
+                    </button>
+                  )}
+                  {a.estado==="MUERTO"&&(
+                    <button onClick={ev=>archivarAnimal(a.id,ev)}
+                      className="flex-1 text-xs py-1.5 rounded-xl font-bold"
+                      style={{background:"rgba(116,42,42,0.5)",border:"1px solid rgba(229,62,62,0.4)",color:"#fc8181"}}>
+                      🗑️ Quitar
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           );
