@@ -69,6 +69,7 @@ model Finca {
   gastos      Gasto[]
   anuncios      Anuncio[]
   actividadLogs ActividadLog[]
+  tareas        Tarea[]
 }
 
 model Usuario {
@@ -91,6 +92,7 @@ model Usuario {
   anuncios      Anuncio[]
   comentarios   Comentario[]
   actividadLogs ActividadLog[]
+  tareas        Tarea[]
 }
 
 model Animal {
@@ -119,6 +121,7 @@ model Animal {
   media      Media[]
   ventas     Venta[]
   incidentes Incidente[]
+  tareas     TareaAnimal[]
 }
 
 model Evento {
@@ -248,6 +251,28 @@ model Comentario {
   autorId    String
   autor      Usuario  @relation(fields: [autorId], references: [id])
   createdAt  DateTime @default(now())
+}
+
+model Tarea {
+  id          String        @id @default(uuid())
+  tipo        String        // VACUNACION, TRATAMIENTO, DESPARASITACION, PESAJE, INSEMINACION, DESTETE, OTRO
+  descripcion String?
+  fecha       DateTime
+  estado      String        @default("PENDIENTE") // PENDIENTE, COMPLETADA
+  fincaId     String
+  finca       Finca         @relation(fields: [fincaId], references: [id])
+  creadoPor   String
+  creador     Usuario       @relation(fields: [creadoPor], references: [id])
+  animales    TareaAnimal[]
+  createdAt   DateTime      @default(now())
+}
+
+model TareaAnimal {
+  id       String @id @default(uuid())
+  tareaId  String
+  tarea    Tarea  @relation(fields: [tareaId], references: [id], onDelete: Cascade)
+  animalId String
+  animal   Animal @relation(fields: [animalId], references: [id])
 }
 
 model ActividadLog {

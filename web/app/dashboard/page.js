@@ -191,6 +191,7 @@ export default function DashboardPage() {
   const [todosAnimales, setTodosAnimales] = useState([]);
   const [todosGastos, setTodosGastos] = useState([]);
   const [todosIncidentes, setTodosIncidentes] = useState([]);
+  const [tareas, setTareas] = useState([]);
   const [animales, setAnimales] = useState([]);
   const [usuario, setUsuario] = useState(null);
   const [busqueda, setBusqueda] = useState("");
@@ -201,19 +202,19 @@ export default function DashboardPage() {
 
   async function cargarDatos() {
     try {
-      const [s, a, g, inc] = await Promise.all([
+      const [s, a, g, inc, tar] = await Promise.all([
         api("/ventas/stats").catch(() => null),
         api("/animales").catch(() => []),
         api("/gastos").catch(() => ({})),
         api("/incidentes").catch(() => []),
+        api("/tareas").catch(() => []),
       ]);
       setStats(s);
       const lista = Array.isArray(a) ? a : [];
       setTodosAnimales(lista);
-      // /gastos devuelve { gastos: [...], total }
       setTodosGastos(Array.isArray(g?.gastos) ? g.gastos : []);
-      // /incidentes puede devolver array o { incidentes: [...] }
       setTodosIncidentes(Array.isArray(inc) ? inc : Array.isArray(inc?.incidentes) ? inc.incidentes : []);
+      setTareas(Array.isArray(tar) ? tar : []);
       setAnimales(lista.filter(x => x.estado === "ACTIVO").slice(0, 4));
       setUltimaActualizacion(new Date());
     } catch {}
@@ -309,13 +310,22 @@ export default function DashboardPage() {
     { icon: "🤰", label: "Preñadas", value: prenadasReal, delta: `${prenadasReal}`, pos: prenadasReal > 0, href: "/inventario?filtro=PREÑADA" },
   ] : [];
 
-  const hoy = new Date();
-  const EVENTOS = [
-    { icon: "💉", label: "Vacunación", sub: "Múltiple", color: C.primary, fecha: new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 3) },
-    { icon: "🩺", label: "Chequeo Veterinario", sub: "Lote 23", color: "#1565C0", fecha: new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 5) },
-    { icon: "🤰", label: "Inseminación", sub: "Vacas Seleccionadas", color: "#6A1B9A", fecha: new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 8) },
-    { icon: "🐣", label: "Destete", sub: "Terneros Lote 12", color: "#E65100", fecha: new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 12) },
-  ];
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const TIPO_DASH = {
+    VACUNACION: { icon: "💉", color: C.primary }, DESPARASITACION: { icon: "🧪", color: "#B7791F" },
+    TRATAMIENTO: { icon: "🩺", color: "#1565C0" }, PESAJE: { icon: "⚖️", color: "#2D6A4F" },
+    INSEMINACION: { icon: "🤰", color: "#6A1B9A" }, DESTETE: { icon: "🐣", color: "#E65100" },
+    OTRO: { icon: "📋", color: "#718096" },
+  };
+  const proximasTareas = tareas
+    .filter(t => t.estado === "PENDIENTE")
+    .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+    .slice(0, 4)
+    .map(t => {
+      const ti = TIPO_DASH[t.tipo] || TIPO_DASH.OTRO;
+      const labels = { VACUNACION:"Vacunación",DESPARASITACION:"Desparasitación",TRATAMIENTO:"Tratamiento",PESAJE:"Pesaje",INSEMINACION:"Inseminación",DESTETE:"Destete",OTRO:"Otro" };
+      return { icon: ti.icon, label: labels[t.tipo]||t.tipo, sub: t.animales?.length ? `${t.animales.length} animal(es)` : (t.descripcion||""), color: ti.color, fecha: new Date(t.fecha) };
+    });
 
   function edadMeses(fecha) {
     if (!fecha) return null;
@@ -454,13 +464,21 @@ export default function DashboardPage() {
         <div className="rounded-2xl shadow overflow-hidden" style={cardStyle}>
           <div className="flex items-center justify-between px-5 pt-4 pb-3" style={{ borderBottom: `1px solid ${C.border}` }}>
             <p className="font-black text-sm" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>Próximos Eventos</p>
-            <button onClick={() => router.push("/incidentes")} className="text-xs font-bold hover:underline" style={{ color: C.secondary }}>
-              Ver calendario
+            <button onClick={() => router.push("/eventos")} className="text-xs font-bold hover:underline" style={{ color: C.secondary }}>
+              Ver todos
             </button>
           </div>
           <div className="px-3 py-2 space-y-1">
-            {EVENTOS.map((e, i) => (
-              <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-all">
+            {proximasTareas.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-2xl mb-1">📋</p>
+                <p className="text-xs font-bold" style={{ color: C.textLight }}>Sin eventos pendientes</p>
+                <button onClick={() => router.push("/eventos")} className="text-xs mt-1 font-bold hover:underline" style={{ color: C.secondary }}>
+                  + Crear evento
+                </button>
+              </div>
+            ) : proximasTareas.map((e, i) => (
+              <div key={i} onClick={() => router.push("/eventos")} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-all cursor-pointer">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
                   style={{ background: `${e.color}18`, border: `1px solid ${e.color}30` }}>
                   {e.icon}
@@ -478,7 +496,7 @@ export default function DashboardPage() {
             ))}
           </div>
           <div className="px-4 pb-3">
-            <button onClick={() => router.push("/incidentes")}
+            <button onClick={() => router.push("/eventos")}
               className="w-full py-2.5 rounded-xl font-bold text-xs hover:bg-gray-50 transition-all"
               style={{ color: C.textLight, border: `1px solid ${C.border}` }}>
               Ver todos los eventos →

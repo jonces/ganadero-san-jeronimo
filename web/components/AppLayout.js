@@ -24,6 +24,7 @@ const NAV_ITEMS_ADMIN = [
   { icon: "💰", label: "Ventas",       href: "/ventas", badge: "Nuevo" },
   { icon: "💸", label: "Gastos",       href: "/gastos" },
   { icon: "🤰", label: "Reproducción", href: "/inventario?filtro=PREÑADA" },
+  { icon: "📋", label: "Eventos",      href: "/eventos" },
   { icon: "🚨", label: "Salud",        href: "/incidentes" },
   { icon: "📄", label: "Documentos",   href: "/documentos" },
   { icon: "👥", label: "Empleados",    href: "/equipo" },
