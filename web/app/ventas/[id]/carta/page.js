@@ -248,28 +248,40 @@ export default function CartaVentaPage() {
               </div>
             </div>
 
-            {/* Cláusulas */}
+            {/* Cláusulas según estado de pago */}
             <div>
               <h3 className="text-sm font-black uppercase tracking-widest mb-3 font-sans" style={{ color: "#145A32", borderBottom: "2px solid #145A32", paddingBottom: 4 }}>
                 IV. Cláusulas y Condiciones
               </h3>
-              <ol className="space-y-1.5 text-sm text-gray-600 font-sans list-decimal pl-5">
-                <li>El vendedor declara ser el legítimo propietario del animal descrito y que éste se encuentra libre de gravámenes, hipotecas o cualquier otra carga legal.</li>
-                <li>El animal se vende en el estado físico y sanitario en que se encuentra al momento de la firma de este documento.</li>
-                <li>Una vez firmada esta carta de venta, el comprador asume toda responsabilidad sobre el animal, incluyendo enfermedades, accidentes o pérdidas posteriores.</li>
-                <li>El vendedor garantiza que el animal no ha sido reportado como robado ni tiene ningún impedimento legal para su venta y traslado.</li>
-                <li>Este documento tiene plena validez legal como comprobante de transferencia de propiedad entre las partes firmantes.</li>
-                <li>Cualquier disputa derivada de esta transacción se resolverá conforme a las leyes de la República de Nicaragua.</li>
+              <ol className="space-y-2 text-sm text-gray-600 font-sans list-decimal pl-5">
+                <li>El vendedor declara ser el legítimo propietario del animal descrito y que éste se encuentra libre de todo gravamen, hipoteca, embargo o cualquier otra carga legal al momento de la firma del presente documento.</li>
+                <li>El animal se transfiere en el estado físico y sanitario en que se encuentra al momento de la firma. El comprador declara haber inspeccionado el animal y aceptarlo en dicho estado.</li>
+                <li>Una vez suscrita esta carta de venta, el comprador asume plena responsabilidad sobre el animal, incluyendo enfermedades, accidentes, pérdidas o cualquier eventualidad posterior a la entrega.</li>
+                <li>El vendedor garantiza que el animal no ha sido reportado como robado, no se encuentra en litigio, ni tiene ningún impedimento legal que afecte su venta, traslado o registro a nombre del comprador.</li>
+                {venta.estadoPago === "PAGADO" && <>
+                  <li>El comprador ha cancelado la totalidad del monto pactado de <strong>C$ {fmt(venta.precioNIO)} (USD ${fmt(venta.precioUSD)})</strong> mediante {({ EFECTIVO:"pago en efectivo", TRANSFERENCIA:"transferencia bancaria", CHEQUE:"cheque", CREDITO:"crédito" }[venta.metodoPago] || venta.metodoPago)}, del cual el vendedor se da por recibido y satisfecho en su totalidad al momento de la firma. Esta transacción se considera finiquitada y el vendedor renuncia a cualquier reclamo futuro sobre el monto convenido.</li>
+                  <li>Con la cancelación total del precio, la propiedad del animal se transfiere de manera inmediata, irrevocable y sin condición alguna al comprador desde la fecha de firma del presente documento.</li>
+                </>}
+                {venta.estadoPago === "PARCIAL" && <>
+                  <li>El comprador ha realizado un pago parcial de la transacción. El monto total convenido es de <strong>C$ {fmt(venta.precioNIO)} (USD ${fmt(venta.precioUSD)})</strong>. El saldo pendiente deberá ser cancelado en los términos y plazos acordados verbalmente entre las partes o mediante documento complementario. El incumplimiento del pago del saldo dará derecho al vendedor a reclamar el monto adeudado o a revertir la transacción.</li>
+                  <li>El vendedor hace entrega del animal al comprador con la condición expresa de que el saldo restante sea cancelado en su totalidad. En caso de incumplimiento, el vendedor se reserva el derecho de recuperar el animal o exigir el pago mediante las vías legales correspondientes.</li>
+                </>}
+                {venta.estadoPago === "PENDIENTE" && <>
+                  <li>La presente carta de venta se suscribe como constancia del acuerdo comercial entre las partes. El pago total de <strong>C$ {fmt(venta.precioNIO)} (USD ${fmt(venta.precioUSD)})</strong> se encuentra pendiente de cancelación. El comprador se compromete formalmente a realizar el pago completo en los términos convenidos. Este documento tiene validez como promesa de compraventa hasta que se efectúe el pago total.</li>
+                  <li>La transferencia definitiva de propiedad del animal quedará sujeta al pago íntegro del monto pactado. Mientras no se realice dicho pago, el vendedor conserva el derecho legal de propiedad sobre el animal. El incumplimiento faculta al vendedor a recuperar el animal sin responsabilidad legal adicional.</li>
+                </>}
+                <li>Cualquier disputa derivada de la presente transacción será resuelta de buena fe entre las partes. De no llegarse a un acuerdo, se someterá a la jurisdicción y leyes vigentes de la República de Nicaragua, reconociendo ambas partes la competencia de los tribunales del domicilio del vendedor.</li>
+                <li>El presente documento se firma en presencia de la Autoridad Municipal correspondiente, quien actúa como testigo oficial y da fe de la legalidad y voluntariedad del acto, otorgando plena validez legal a esta transacción dentro del territorio.</li>
               </ol>
             </div>
 
             {/* Firmas */}
             <div>
               <h3 className="text-sm font-black uppercase tracking-widest mb-4 font-sans" style={{ color: "#145A32", borderBottom: "2px solid #145A32", paddingBottom: 4 }}>
-                V. Firmas
+                V. Firmas y Certificación
               </h3>
 
-              {/* Firma digital — solo visible en pantalla si no está firmado */}
+              {/* Canvas firma digital — solo en pantalla */}
               {!firmado && (
                 <div className="print:hidden mb-5 p-4 rounded-xl border-2 border-dashed border-green-300 bg-green-50">
                   <p className="text-sm font-bold text-green-800 mb-2 font-sans">✍️ Firma del Vendedor — dibuja tu firma aquí:</p>
@@ -292,26 +304,42 @@ export default function CartaVentaPage() {
                 </div>
               )}
 
+              {/* Fila 1: Vendedor y Comprador */}
               <div className="grid grid-cols-2 gap-10 mt-4">
-                {/* Firma vendedor */}
                 <div className="text-center">
                   <div className="h-20 border-b-2 border-gray-400 flex items-end justify-center pb-1 mb-2 relative">
                     {firmaSrc && <img src={firmaSrc} alt="Firma vendedor" className="h-16 object-contain absolute bottom-1"/>}
                   </div>
                   <p className="font-bold text-sm font-sans text-gray-800">{venta.usuario?.nombre || "___________________"}</p>
-                  <p className="text-xs text-gray-500 font-sans">Vendedor</p>
+                  <p className="text-xs text-gray-500 font-sans font-bold">VENDEDOR</p>
                   <p className="text-xs text-gray-400 font-sans mt-0.5">{venta.finca?.nombre}</p>
                   <p className="text-xs text-gray-400 font-sans mt-0.5">Fecha: {fechaVenta}</p>
                 </div>
-                {/* Firma comprador */}
                 <div className="text-center">
                   <div className="h-20 border-b-2 border-gray-400 mb-2"/>
                   <p className="font-bold text-sm font-sans text-gray-800">{venta.comprador || "___________________"}</p>
-                  <p className="text-xs text-gray-500 font-sans">Comprador</p>
+                  <p className="text-xs text-gray-500 font-sans font-bold">COMPRADOR</p>
                   {venta.telefonoComprador && <p className="text-xs text-gray-400 font-sans mt-0.5">Tel: {venta.telefonoComprador}</p>}
                   <p className="text-xs text-gray-400 font-sans mt-0.5">Fecha: ___________________</p>
                 </div>
               </div>
+
+              {/* Fila 2: Autoridad Municipal — centrada */}
+              <div className="mt-8 flex justify-center">
+                <div className="text-center w-72">
+                  <div className="h-20 border-b-2 border-gray-400 mb-2"/>
+                  <p className="font-bold text-sm font-sans text-gray-800">___________________</p>
+                  <p className="text-xs font-black font-sans mt-0.5" style={{ color: "#145A32" }}>AUTORIDAD MUNICIPAL / TESTIGO OFICIAL</p>
+                  <p className="text-xs text-gray-500 font-sans mt-0.5">Cargo: ___________________</p>
+                  <p className="text-xs text-gray-400 font-sans mt-0.5">Sello:</p>
+                  <div className="mt-1 mx-auto rounded-full border-2 border-dashed border-gray-300" style={{ width: 56, height: 56 }}/>
+                  <p className="text-xs text-gray-400 font-sans mt-1">Fecha: ___________________</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-400 font-sans text-center mt-5 italic">
+                En fe de lo cual, las partes firman el presente documento en el lugar y fecha indicados, en presencia de la Autoridad Municipal quien certifica la legalidad del acto.
+              </p>
             </div>
 
             {/* Pie del documento */}
