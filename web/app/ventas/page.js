@@ -540,6 +540,13 @@ export default function VentasPage() {
 
                 {v.notas && <p className="text-xs text-white/40 mt-2 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>📝 {v.notas}</p>}
 
+                {/* Botón carta de venta */}
+                <button onClick={() => router.push(`/ventas/${v.id}/carta`)}
+                  className="mt-3 w-full py-2 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
+                  style={{ background: "rgba(20,90,50,0.5)", border: "1px solid rgba(45,158,63,0.4)", color: "#86efac" }}>
+                  📄 Ver / Imprimir Carta de Venta
+                </button>
+
                 {v.media?.length > 0 && (
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-3">
                     {v.media.map((m) => (

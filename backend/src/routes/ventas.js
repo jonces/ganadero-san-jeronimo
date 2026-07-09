@@ -118,6 +118,26 @@ router.get("/stats", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.get("/:id", async (req, res, next) => {
+  try {
+    const venta = await prisma.venta.findFirst({
+      where: { id: req.params.id, fincaId: req.user.fincaId },
+      include: {
+        animal: {
+          include: {
+            media: { orderBy: { createdAt: "asc" }, take: 5 },
+          },
+        },
+        usuario: { select: { nombre: true, email: true } },
+        finca: { select: { nombre: true, ubicacion: true } },
+        media: true,
+      },
+    });
+    if (!venta) return res.status(404).json({ error: "Venta no encontrada" });
+    res.json(venta);
+  } catch (err) { next(err); }
+});
+
 router.post("/", upload.array("archivos", 10), async (req, res, next) => {
   try {
     const {
