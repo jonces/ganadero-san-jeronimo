@@ -32,9 +32,9 @@ export default function InventarioPage() {
 
   async function archivarAnimal(id, e) {
     e.stopPropagation();
-    if (!confirm("¿Archivar este animal? Desaparecerá del inventario pero quedará registrado en Incidentes como muerto.")) return;
+    if (!confirm("¿Eliminar este animal del inventario? Se borrará completamente del sistema. El registro en Incidentes se conserva.")) return;
     try {
-      await api(`/animales/${id}`, { method: "PATCH", body: JSON.stringify({ estado: "ELIMINADO" }) });
+      await api(`/animales/${id}`, { method: "DELETE" });
       load();
     } catch(err) { alert("Error: " + err.message); }
   }
