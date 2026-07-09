@@ -20,6 +20,7 @@ export default function CartaVentaPage() {
 
   // Cuestionario para PARCIAL / PENDIENTE
   const [q, setQ] = useState({
+    precioTotal: "",
     montoInicial: "",
     fechaLimite: "",
     formaPagoSaldo: "EFECTIVO",
@@ -112,23 +113,48 @@ export default function CartaVentaPage() {
               Para redactar las cláusulas correctamente según tu situación, responde estas preguntas. La carta quedará redactada de forma profesional y legal.
             </p>
 
-            <div className="space-y-4">
+            {/* Resumen de la venta registrada */}
+            <div className="rounded-xl p-3 mb-2" style={{ background: "rgba(45,158,63,0.12)", border: "1px solid rgba(45,158,63,0.25)" }}>
+              <p className="text-green-400 text-xs font-black mb-1 font-sans">📋 Datos de la venta registrada</p>
+              <div className="grid grid-cols-2 gap-1 text-xs font-sans">
+                <span className="text-white/40">Animal:</span><span className="text-white font-bold">{venta.animal?.nombre || venta.animal?.identificador}</span>
+                <span className="text-white/40">Precio registrado:</span><span className="text-white font-bold">C$ {fmt(venta.precioNIO)}</span>
+                <span className="text-white/40">Método de pago:</span><span className="text-white font-bold">{{ EFECTIVO:"Efectivo", TRANSFERENCIA:"Transferencia", CHEQUE:"Cheque", CREDITO:"Crédito" }[venta.metodoPago]}</span>
+              </div>
+            </div>
+
+            <div className="space-y-4 mt-4">
+
+              <div>
+                <label className="text-white/60 text-xs block mb-1 font-sans">1. ¿Cuál es el precio total acordado por el animal? (C$) *</label>
+                <input type="number" style={gi} placeholder={`Ej: ${fmt(venta.precioNIO).replace(/,/g,'')}`}
+                  value={q.precioTotal} onChange={e => setQ({ ...q, precioTotal: e.target.value })} />
+                <p className="text-white/30 text-xs mt-1 font-sans">Si ya está correcto en el sistema, escribe el mismo valor: C$ {fmt(venta.precioNIO)}</p>
+              </div>
+
               {esParcial && (
                 <div>
-                  <label className="text-white/60 text-xs block mb-1">¿Cuánto pagó de anticipo/inicial? (C$)</label>
+                  <label className="text-white/60 text-xs block mb-1 font-sans">2. ¿Cuánto dinero ya recibiste de abono/inicial? (C$) *</label>
                   <input type="number" style={gi} placeholder="Ej: 5000" value={q.montoInicial}
                     onChange={e => setQ({ ...q, montoInicial: e.target.value })} />
+                  {q.precioTotal && q.montoInicial && (
+                    <div className="mt-2 rounded-lg p-2 font-sans" style={{ background: "rgba(214,158,46,0.15)", border: "1px solid rgba(214,158,46,0.3)" }}>
+                      <p className="text-yellow-300 text-xs font-bold">
+                        Saldo pendiente: C$ {fmt(Number(q.precioTotal) - Number(q.montoInicial))}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
               <div>
-                <label className="text-white/60 text-xs block mb-1">¿Cuál es la fecha límite para cancelar el saldo?</label>
+                <label className="text-white/60 text-xs block mb-1 font-sans">{esParcial ? "3" : "2"}. ¿Cuál es la fecha límite para cancelar {esParcial ? "el saldo" : "el pago total"}? *</label>
                 <input type="date" style={gi} value={q.fechaLimite}
                   onChange={e => setQ({ ...q, fechaLimite: e.target.value })} />
               </div>
 
               <div>
-                <label className="text-white/60 text-xs block mb-1">¿Cómo pagará el saldo restante?</label>
+                <label className="text-white/60 text-xs block mb-1 font-sans">{esParcial ? "4" : "3"}. ¿Cómo pagará {esParcial ? "el saldo restante" : "el monto total"}?</label>
                 <select style={gi} value={q.formaPagoSaldo} onChange={e => setQ({ ...q, formaPagoSaldo: e.target.value })}>
                   <option value="EFECTIVO">💵 Efectivo</option>
                   <option value="TRANSFERENCIA">🏦 Transferencia bancaria</option>
@@ -138,64 +164,73 @@ export default function CartaVentaPage() {
               </div>
 
               <div>
-                <label className="text-white/60 text-xs block mb-1">¿En cuántas cuotas pagará?</label>
+                <label className="text-white/60 text-xs block mb-1 font-sans">{esParcial ? "5" : "4"}. ¿En cuántos pagos cancelará?</label>
                 <select style={gi} value={q.cuotas} onChange={e => setQ({ ...q, cuotas: e.target.value })}>
-                  <option value="1">Pago único (una sola vez)</option>
-                  <option value="2">2 cuotas</option>
-                  <option value="3">3 cuotas</option>
-                  <option value="4">4 cuotas</option>
-                  <option value="6">6 cuotas mensuales</option>
-                  <option value="12">12 cuotas mensuales</option>
+                  <option value="1">Un solo pago</option>
+                  <option value="2">2 pagos</option>
+                  <option value="3">3 pagos</option>
+                  <option value="4">4 pagos</option>
+                  <option value="6">6 pagos mensuales</option>
+                  <option value="12">12 pagos mensuales</option>
                 </select>
               </div>
 
               {q.cuotas !== "1" && (
                 <div>
-                  <label className="text-white/60 text-xs block mb-1">¿Cuánto es cada cuota? (C$)</label>
+                  <label className="text-white/60 text-xs block mb-1 font-sans">¿Cuánto es cada pago? (C$)</label>
                   <input type="number" style={gi} placeholder="Ej: 2500" value={q.montoCuota}
                     onChange={e => setQ({ ...q, montoCuota: e.target.value })} />
                 </div>
               )}
 
               <div>
-                <label className="text-white/60 text-xs block mb-1">Si el comprador no paga, ¿qué sucede?</label>
+                <label className="text-white/60 text-xs block mb-1 font-sans">{esParcial ? "6" : "5"}. Si el comprador no paga en la fecha acordada, ¿qué sucede?</label>
                 <select style={gi} value={q.consecuencia} onChange={e => setQ({ ...q, consecuencia: e.target.value })}>
-                  <option value="RECUPERAR">🐄 El vendedor recupera el animal</option>
-                  <option value="INTERES">💸 Se cobran intereses del 5% mensual</option>
-                  <option value="LEGAL">⚖️ Se toman acciones legales</option>
+                  <option value="RECUPERAR">🐄 El vendedor recupera el animal sin devolver el abono</option>
+                  <option value="INTERES">💸 Se cobran intereses del 5% mensual sobre el saldo</option>
+                  <option value="LEGAL">⚖️ El vendedor toma acciones legales para exigir el pago</option>
                   <option value="ACUERDO">🤝 Se resuelve ante la Autoridad Municipal</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-white/60 text-xs block mb-1">¿En qué municipio/lugar se firma este documento?</label>
+                <label className="text-white/60 text-xs block mb-1 font-sans">{esParcial ? "7" : "6"}. ¿En qué municipio/lugar se firma este documento? *</label>
                 <input style={gi} placeholder="Ej: Municipio de Juigalpa, Chontales" value={q.lugar}
                   onChange={e => setQ({ ...q, lugar: e.target.value })} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-white/60 text-xs block mb-1">Testigo 1 (opcional)</label>
+                  <label className="text-white/60 text-xs block mb-1 font-sans">Testigo 1 (opcional)</label>
                   <input style={gi} placeholder="Nombre completo" value={q.testigo1}
                     onChange={e => setQ({ ...q, testigo1: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-white/60 text-xs block mb-1">Testigo 2 (opcional)</label>
+                  <label className="text-white/60 text-xs block mb-1 font-sans">Testigo 2 (opcional)</label>
                   <input style={gi} placeholder="Nombre completo" value={q.testigo2}
                     onChange={e => setQ({ ...q, testigo2: e.target.value })} />
                 </div>
               </div>
 
               <div>
-                <label className="text-white/60 text-xs block mb-1">¿Alguna condición especial adicional? (opcional)</label>
+                <label className="text-white/60 text-xs block mb-1 font-sans">¿Alguna condición especial adicional? (opcional)</label>
                 <textarea style={{ ...gi, height: 70, resize: "none" }}
-                  placeholder="Ej: El comprador se compromete a no trasladar el animal fuera del municipio hasta cancelar el saldo..."
+                  placeholder="Ej: El comprador no podrá trasladar el animal fuera del municipio hasta cancelar el saldo total..."
                   value={q.observacionExtra} onChange={e => setQ({ ...q, observacionExtra: e.target.value })} />
               </div>
             </div>
 
-            <button onClick={() => setMostrarCarta(true)}
-              className="mt-6 w-full py-3 rounded-2xl font-black text-white text-base flex items-center justify-center gap-2"
+            {/* Validación antes de generar */}
+            {(!q.precioTotal || !q.fechaLimite || (esParcial && !q.montoInicial)) && (
+              <p className="mt-4 text-yellow-400 text-xs font-sans text-center">
+                ⚠️ Completa los campos obligatorios (*) para generar la carta
+              </p>
+            )}
+
+            <button
+              disabled={!q.precioTotal || !q.fechaLimite || (esParcial && !q.montoInicial)}
+              onClick={() => setMostrarCarta(true)}
+              className="mt-4 w-full py-3 rounded-2xl font-black text-white text-base flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ background: "linear-gradient(135deg,#1a6b2a,#2d9e3f)" }}>
               📄 Generar Carta de Venta
             </button>
@@ -214,7 +249,16 @@ export default function CartaVentaPage() {
   const esPagado = venta.estadoPago === "PAGADO";
   const esParcial = venta.estadoPago === "PARCIAL";
   const fechaLimiteStr = q.fechaLimite ? new Date(q.fechaLimite + "T12:00:00").toLocaleDateString("es-NI", { day: "numeric", month: "long", year: "numeric" }) : "___________________";
-  const saldo = esParcial && q.montoInicial ? fmt(Number(venta.precioNIO) - Number(q.montoInicial)) : fmt(venta.precioNIO);
+  // Usar precioTotal del cuestionario si fue ingresado, si no el registrado en el sistema
+  const precioTotalNum = Number(q.precioTotal || venta.precioNIO);
+  const montoInicialNum = Number(q.montoInicial || 0);
+  const saldoNum = precioTotalNum - montoInicialNum;
+  const precioTotalFmt = fmt(precioTotalNum);
+  const montoInicialFmt = fmt(montoInicialNum);
+  const saldoFmt = fmt(saldoNum);
+  // USD aproximado usando tipo de cambio registrado
+  const tc = venta.tipoCambio || 36.5;
+  const precioTotalUSD = fmt(precioTotalNum / tc);
 
   return (
     <>
@@ -285,21 +329,27 @@ export default function CartaVentaPage() {
               {esParcial && (
                 <p>
                   Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
-                  en mi calidad de vendedor, y el señor(a) <strong>{venta.comprador || "___________________"}</strong>,
-                  en calidad de comprador, hacemos constar que hemos acordado la compraventa del animal descrito
-                  a continuación por la suma total de <strong>C$ {fmt(venta.precioNIO)} (USD ${fmt(venta.precioUSD)})</strong>,
-                  habiendo recibido el vendedor un abono inicial de <strong>C$ {fmt(q.montoInicial) || "___"}</strong>,
-                  quedando un saldo pendiente de <strong>C$ {saldo}</strong> a ser cancelado según los términos establecidos en este documento.
+                  en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
+                  y el señor(a) <strong>{venta.comprador || "___________________"}</strong>, en calidad de comprador,
+                  hacemos constar que hemos acordado la venta del referido animal por la suma total de{" "}
+                  <strong>C$ {precioTotalFmt} (equivalente a USD ${precioTotalUSD} al tipo de cambio de C$ {tc} por dólar)</strong>.
+                  El comprador ha entregado al vendedor un abono inicial de <strong>C$ {montoInicialFmt}</strong> en concepto de
+                  anticipo, del cual el vendedor se da por recibido, quedando un saldo pendiente de{" "}
+                  <strong>C$ {saldoFmt}</strong> que deberá ser cancelado a más tardar el día <strong>{fechaLimiteStr}</strong>,
+                  mediante {FORMAS[q.formaPagoSaldo] || "la forma de pago acordada"}{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : ""}.
                 </p>
               )}
               {!esPagado && !esParcial && (
                 <p>
                   Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
-                  en mi calidad de vendedor, y el señor(a) <strong>{venta.comprador || "___________________"}</strong>,
-                  en calidad de comprador, suscribimos la presente promesa de compraventa del animal descrito
-                  a continuación, por la suma acordada de <strong>C$ {fmt(venta.precioNIO)} (USD ${fmt(venta.precioUSD)})</strong>,
-                  monto que el comprador se compromete a cancelar en su totalidad a más tardar el día <strong>{fechaLimiteStr}</strong>,
-                  mediante {FORMAS[q.formaPagoSaldo] || "la forma de pago acordada"}.
+                  en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
+                  y el señor(a) <strong>{venta.comprador || "___________________"}</strong>, en calidad de comprador,
+                  suscribimos la presente promesa de compraventa por la suma total acordada de{" "}
+                  <strong>C$ {precioTotalFmt} (equivalente a USD ${precioTotalUSD} al tipo de cambio de C$ {tc} por dólar)</strong>,
+                  monto que el comprador se compromete a cancelar en su totalidad a más tardar el día{" "}
+                  <strong>{fechaLimiteStr}</strong>, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}
+                  {q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : ""}.
+                  Hasta tanto no se efectúe el pago total, la propiedad legal del animal permanece a nombre del vendedor.
                 </p>
               )}
             </div>
@@ -349,8 +399,9 @@ export default function CartaVentaPage() {
                   ["Tipo de cambio", `C$ ${venta.tipoCambio} por USD`],
                   ["Método de pago", { EFECTIVO:"Efectivo", TRANSFERENCIA:"Transferencia Bancaria", CHEQUE:"Cheque", CREDITO:"Crédito" }[venta.metodoPago] || venta.metodoPago],
                   ["Estado del pago", { PAGADO:"Pagado en su totalidad", PENDIENTE:"Pendiente de pago", PARCIAL:"Pago parcial" }[venta.estadoPago]],
-                  ...(esParcial && q.montoInicial ? [["Abono inicial recibido", `C$ ${fmt(q.montoInicial)}`]] : []),
-                  ...(esParcial && q.montoInicial ? [["Saldo pendiente", `C$ ${saldo}`]] : []),
+                  ["Precio total acordado", `C$ ${precioTotalFmt} (USD $${precioTotalUSD})`],
+                  ...(esParcial ? [["Abono inicial recibido", `C$ ${montoInicialFmt}`]] : []),
+                  ...(esParcial ? [["Saldo pendiente", `C$ ${saldoFmt}`]] : []),
                   ...(q.fechaLimite ? [["Fecha límite de pago", fechaLimiteStr]] : []),
                   ...(q.cuotas !== "1" ? [["Forma de pago del saldo", `${q.cuotas} cuotas de C$ ${fmt(q.montoCuota)} c/u`]] : []),
                   ...(venta.pesoKg ? [["Precio por unidad de peso", `C$ ${fmt(venta.precioKg)} / ${venta.unidadPeso || "KG"}`]] : []),
@@ -412,17 +463,57 @@ export default function CartaVentaPage() {
                 </>}
 
                 {esParcial && <>
-                  <li>El comprador ha entregado al vendedor la suma de <strong>C$ {fmt(q.montoInicial) || "___"}</strong> como abono inicial, quedando un saldo pendiente de <strong>C$ {saldo}</strong>, el cual deberá ser cancelado a más tardar el día <strong>{fechaLimiteStr}</strong> mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}{q.cuotas !== "1" ? `, en ${q.cuotas} cuotas${q.montoCuota ? ` de C$ ${fmt(q.montoCuota)} cada una` : ""}` : ""}.</li>
-                  <li>Mientras el saldo no sea cancelado en su totalidad, la propiedad legal del animal permanece a nombre del vendedor. El comprador podrá hacer uso del animal pero no podrá venderlo, donarlo, pignorar ni trasladarlo fuera del municipio sin autorización expresa y escrita del vendedor.</li>
-                  <li>En caso de que el comprador incumpla con el pago del saldo en la fecha establecida, {CONSECUENCIAS[q.consecuencia]}. El vendedor no estará obligado a devolver el abono inicial recibido salvo acuerdo expreso entre las partes.</li>
-                  <li>Una vez cancelado el saldo total, el vendedor se compromete a extender una nueva carta de venta definitiva a nombre del comprador, sin costo adicional, dentro de los tres días hábiles siguientes al pago.</li>
+                  <li>
+                    El precio total acordado por el animal es de <strong>C$ {precioTotalFmt} (USD ${precioTotalUSD})</strong>.
+                    El comprador ha entregado al vendedor la suma de <strong>C$ {montoInicialFmt}</strong> en concepto de abono inicial,
+                    del cual el vendedor se da por recibido. El saldo pendiente es de <strong>C$ {saldoFmt}</strong>,
+                    el cual deberá ser cancelado a más tardar el día <strong>{fechaLimiteStr}</strong>,
+                    mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}
+                    {q.cuotas !== "1" ? `, dividido en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : " en un solo pago"}.
+                  </li>
+                  <li>
+                    Mientras el saldo de <strong>C$ {saldoFmt}</strong> no sea cancelado en su totalidad,
+                    la propiedad legal del animal permanece a nombre del vendedor. El comprador podrá hacer uso del animal
+                    pero no podrá venderlo, donarlo, pignorar ni trasladarlo fuera del municipio de{" "}
+                    {q.lugar || "___________________"} sin autorización expresa y escrita del vendedor.
+                  </li>
+                  <li>
+                    En caso de que el comprador incumpla con el pago del saldo restante en la fecha establecida,
+                    {" "}{CONSECUENCIAS[q.consecuencia]}. El vendedor no estará obligado a devolver el abono inicial
+                    de <strong>C$ {montoInicialFmt}</strong> ya recibido, salvo acuerdo expreso y por escrito entre ambas partes.
+                  </li>
+                  <li>
+                    Una vez que el comprador cancele la totalidad del saldo de <strong>C$ {saldoFmt}</strong>,
+                    el vendedor se compromete a extender una carta de venta definitiva y transferir la propiedad
+                    plena del animal, sin costo adicional, dentro de los tres días hábiles siguientes al pago.
+                  </li>
                 </>}
 
                 {!esPagado && !esParcial && <>
-                  <li>La presente carta constituye una promesa de compraventa. El comprador se compromete formalmente a cancelar la suma total de <strong>C$ {fmt(venta.precioNIO)} (USD ${fmt(venta.precioUSD)})</strong> a más tardar el día <strong>{fechaLimiteStr}</strong> mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}{q.cuotas !== "1" ? `, en ${q.cuotas} cuotas${q.montoCuota ? ` de C$ ${fmt(q.montoCuota)} cada una` : ""}` : ""}.</li>
-                  <li>Hasta que se efectúe el pago íntegro, la propiedad legal del animal permanece a nombre del vendedor. El comprador no podrá disponer del animal (venderlo, donarlo, trasladarlo o pignorar) sin la autorización previa y por escrito del vendedor.</li>
-                  <li>En caso de que el comprador no realice el pago total en la fecha pactada, {CONSECUENCIAS[q.consecuencia]}. Esta cláusula será exigible sin necesidad de trámite judicial previo si las partes así lo acuerdan ante la Autoridad Municipal.</li>
-                  <li>Una vez recibido el pago completo, el vendedor extenderá de inmediato la carta de venta definitiva y transferirá la propiedad plena del animal al comprador.</li>
+                  <li>
+                    La presente carta constituye una promesa formal de compraventa. El precio total acordado por el animal
+                    es de <strong>C$ {precioTotalFmt} (USD ${precioTotalUSD})</strong>. El comprador se compromete
+                    a cancelar dicho monto en su totalidad a más tardar el día <strong>{fechaLimiteStr}</strong>,
+                    mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}
+                    {q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : " en un solo pago"}.
+                  </li>
+                  <li>
+                    Hasta que se efectúe el pago íntegro de <strong>C$ {precioTotalFmt}</strong>, la propiedad
+                    legal del animal permanece exclusivamente a nombre del vendedor. El comprador no podrá venderlo,
+                    donarlo, trasladarlo fuera del municipio ni pignorar el animal bajo ningún concepto, sin la
+                    autorización previa y por escrito del vendedor.
+                  </li>
+                  <li>
+                    En caso de que el comprador no realice el pago total en la fecha pactada del{" "}
+                    <strong>{fechaLimiteStr}</strong>, {CONSECUENCIAS[q.consecuencia]}.
+                    Esta cláusula será exigible sin necesidad de trámite judicial previo si ambas partes así
+                    lo acuerdan ante la Autoridad Municipal.
+                  </li>
+                  <li>
+                    Una vez recibido el pago completo de <strong>C$ {precioTotalFmt}</strong>, el vendedor
+                    extenderá de inmediato la carta de venta definitiva y transferirá la propiedad plena e
+                    irrevocable del animal al comprador.
+                  </li>
                 </>}
 
                 {q.observacionExtra && (
