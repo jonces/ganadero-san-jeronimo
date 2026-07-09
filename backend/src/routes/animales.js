@@ -47,6 +47,21 @@ router.post("/", async (req, res, next) => {
     const { identificador, nombre, raza, fierro, sexo, fechaNacimiento, pesoActual, observacion, estadoReproductivo, madreId } = req.body;
     if (!identificador || !sexo) return res.status(400).json({ error: "identificador y sexo son requeridos" });
 
+    // Si existe un animal con el mismo identificador en estado no-activo, eliminarlo para permitir reutilizar el arete
+    const existente = await prisma.animal.findFirst({ where: { identificador, fincaId: req.user.fincaId } });
+    if (existente) {
+      if (existente.estado === "ELIMINADO" || existente.estado === "MUERTO") {
+        await prisma.media.deleteMany({ where: { animalId: existente.id } });
+        await prisma.evento.deleteMany({ where: { animalId: existente.id } });
+        await prisma.incidente.updateMany({ where: { animalId: existente.id }, data: { animalId: null } });
+        await prisma.venta.updateMany({ where: { animalId: existente.id }, data: { animalId: null } });
+        await prisma.animal.updateMany({ where: { madreId: existente.id }, data: { madreId: null } });
+        await prisma.animal.delete({ where: { id: existente.id } });
+      } else {
+        return res.status(409).json({ error: `Ya existe un animal activo con el identificador "${identificador}"` });
+      }
+    }
+
     const animal = await prisma.animal.create({
       data: {
         identificador,
