@@ -107,7 +107,7 @@ export default function InventarioPage() {
     {label:"Secas",valor:hembras.filter(a=>a.estadoReproductivo==="SECA").length,img:"https://images.unsplash.com/photo-1596733430284-f7437764b1a9?w=120&q=70",color:"#718096",filtroKey:"SECA"},
     {label:"Sementales",valor:activos.filter(a=>a.sexo==="MACHO").length,img:"https://images.unsplash.com/photo-1527153098-02c5b5b29c9d?w=120&q=70",color:"#3182ce",filtroKey:"SEMENTALES"},
     {label:"Activos",valor:activos.length,img:"https://images.unsplash.com/photo-1493962853295-0fd70327578a?w=120&q=70",color:"#2d9e3f",filtroKey:"ACTIVOS"},
-    {label:"Total",valor:visibles.length,img:"https://images.unsplash.com/photo-1466721591366-2d5fba72006d?w=120&q=70",color:"#553c9a",filtroKey:"TODOS"},
+    {label:"Total",valor:activos.length,img:"https://images.unsplash.com/photo-1466721591366-2d5fba72006d?w=120&q=70",color:"#553c9a",filtroKey:"TODOS"},
     {label:"Vendidos",valor:vendidos.length,img:"https://images.unsplash.com/photo-1472396961693-142e6e269027?w=120&q=70",color:"#b7791f",filtroKey:"VENDIDOS"},
     {label:"Muertos",valor:muertos.length,img:"https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=120&q=70",color:"#742a2a",filtroKey:"MUERTOS"},
   ];
