@@ -73,7 +73,7 @@ async function limpiarAnimalesEliminados() {
       await prisma.media.deleteMany({ where: { animalId: a.id } });
       await prisma.evento.deleteMany({ where: { animalId: a.id } });
       await prisma.incidente.updateMany({ where: { animalId: a.id }, data: { animalId: null } });
-      await prisma.venta.updateMany({ where: { animalId: a.id }, data: { animalId: null } });
+      await prisma.venta.deleteMany({ where: { animalId: a.id } });
       await prisma.animal.updateMany({ where: { madreId: a.id }, data: { madreId: null } });
       await prisma.animal.delete({ where: { id: a.id } });
     }

@@ -54,7 +54,7 @@ router.post("/", async (req, res, next) => {
         await prisma.media.deleteMany({ where: { animalId: existente.id } });
         await prisma.evento.deleteMany({ where: { animalId: existente.id } });
         await prisma.incidente.updateMany({ where: { animalId: existente.id }, data: { animalId: null } });
-        await prisma.venta.updateMany({ where: { animalId: existente.id }, data: { animalId: null } });
+        await prisma.venta.deleteMany({ where: { animalId: existente.id } });
         await prisma.animal.updateMany({ where: { madreId: existente.id }, data: { madreId: null } });
         await prisma.animal.delete({ where: { id: existente.id } });
       } else {
@@ -195,7 +195,7 @@ router.delete("/:id", async (req, res, next) => {
     await prisma.media.deleteMany({ where: { animalId: animal.id } });
     await prisma.evento.deleteMany({ where: { animalId: animal.id } });
     await prisma.incidente.updateMany({ where: { animalId: animal.id }, data: { animalId: null } });
-    await prisma.venta.updateMany({ where: { animalId: animal.id }, data: { animalId: null } });
+    await prisma.venta.deleteMany({ where: { animalId: animal.id } });
     // Desvincular crías
     await prisma.animal.updateMany({ where: { madreId: animal.id }, data: { madreId: null } });
     await prisma.animal.delete({ where: { id: animal.id } });
