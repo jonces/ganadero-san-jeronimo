@@ -287,7 +287,7 @@ export default function CartaVentaPage() {
           <div className="px-10 py-6" style={{ background: "linear-gradient(135deg,#145A32,#1E8449)" }}>
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <img src="/logo-henriquez.gif" alt="Logo" style={{ width: 72, height: 72, objectFit: "contain", borderRadius: 8, background: "rgba(255,255,255,0.12)", padding: 4 }} />
+                <img src="/logo-henriquez.gif" alt="Logo" style={{ width: 80, height: 80, objectFit: "cover", objectPosition: "top", borderRadius: "50%", mixBlendMode: "luminosity", filter: "brightness(1.1) contrast(1.1)" }} />
                 <div>
                   <p className="text-green-200 text-xs font-sans tracking-widest uppercase mb-1">Gestión Ganadera</p>
                   <h1 className="text-white font-black text-3xl font-sans">{venta.finca?.nombre || "Finca Ganadera"}</h1>

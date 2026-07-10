@@ -84,17 +84,22 @@ export default function ReportesPage() {
     } catch { return null; }
   }
 
-  // Carga imagen via canvas para garantizar formato compatible con jsPDF
-  async function cargarLogoJPEG(url) {
+  // Carga el logo recortando solo la parte superior (animales) sin el texto del nombre,
+  // y pone fondo verde del header para que no aparezca cuadro blanco
+  async function cargarLogoJPEG(url, bgColor = "#145A32") {
     try {
       return await new Promise((res) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.onload = () => {
+          const recorte = Math.floor(img.naturalHeight * 0.58); // solo parte superior (sin texto)
           const canvas = document.createElement("canvas");
           canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          canvas.getContext("2d").drawImage(img, 0, 0);
+          canvas.height = recorte;
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = bgColor;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
           res(canvas.toDataURL("image/jpeg", 0.92));
         };
         img.onerror = () => res(null);
