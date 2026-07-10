@@ -84,6 +84,25 @@ export default function ReportesPage() {
     } catch { return null; }
   }
 
+  // Carga imagen via canvas para garantizar formato compatible con jsPDF
+  async function cargarLogoJPEG(url) {
+    try {
+      return await new Promise((res) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          canvas.getContext("2d").drawImage(img, 0, 0);
+          res(canvas.toDataURL("image/jpeg", 0.92));
+        };
+        img.onerror = () => res(null);
+        img.src = url + "?v=" + Date.now();
+      });
+    } catch { return null; }
+  }
+
   async function generarPDF(tipo) {
     setGenerando(tipo);
     try {
@@ -110,7 +129,7 @@ export default function ReportesPage() {
 
       // ── HEADER con foto ──
       const imgB64 = await cargarImagenBase64(FOTO_HEADER);
-      const logoB64 = await cargarImagenBase64(window.location.origin + "/logo-henriquez.png");
+      const logoB64 = await cargarLogoJPEG(window.location.origin + "/logo-henriquez.png");
       if (imgB64) {
         doc.addImage(imgB64, "JPEG", 0, 0, W, 42);
       } else {
@@ -129,7 +148,7 @@ export default function ReportesPage() {
 
       // Logo Henriquez Cattle
       if (logoB64) {
-        doc.addImage(logoB64, "PNG", 6, 7, 28, 28);
+        doc.addImage(logoB64, "JPEG", 6, 7, 28, 28);
       } else {
         doc.setFillColor(255, 255, 255);
         doc.circle(22, 21, 12, "F");
