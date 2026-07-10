@@ -480,8 +480,6 @@ export default function ReportesPage() {
     const totalUSD=ventas.reduce((s,v)=>s+(v.precioUSD||0),0);
     const totalPeso=ventas.reduce((s,v)=>s+(v.pesoKg||0),0);
     const pagadas=ventas.filter(v=>v.estadoPago==="PAGADO");
-    const ganancia=totalNIO*0.2; // estimado
-    const margen=ventas.length?(ganancia/totalNIO*100).toFixed(0)+"%" :"0%";
 
     const metodos={}; ventas.forEach(v=>{const m=v.metodoPago||"EFECTIVO";metodos[m]=(metodos[m]||0)+1;});
     const tipos={}; ventas.forEach(v=>{const t=v.tipoVenta||"OTRO";tipos[t]=(tipos[t]||0)+(v.precioNIO||0);});
@@ -505,7 +503,6 @@ export default function ReportesPage() {
       ["","Total USD",fU(totalUSD),""],
       ["","Peso Total",totalPeso?Math.round(totalPeso)+" kg":"—",""],
       ["","Promedio por kg",totalPeso?fN(totalNIO/totalPeso):"—",""],
-      ["","Margen",margen,"estimado"],
     ];
     const kW=(W-16)/kpis.length, kH=26;
     kpis.forEach((k,i)=>kpiCard(doc,8+i*(kW),y,kW-1,kH,k[0],k[1],k[2],k[3],p));
@@ -571,7 +568,7 @@ export default function ReportesPage() {
     const col3=(W-24)/3;
 
     // Resumen financiero
-    const resRows=[["Total en Córdobas",fN(totalNIO)],["Total en USD",fU(totalUSD)],["Ganancia Total",fN(ganancia)],["Margen Promedio",margen],["Venta Mayor",fN(Math.max(...ventas.map(v=>v.precioNIO||0)))],["Venta Menor",fN(Math.min(...ventas.map(v=>v.precioNIO||0)))]];
+    const resRows=[["Total en Córdobas",fN(totalNIO)],["Total en USD",fU(totalUSD)],["Venta Mayor",fN(Math.max(...ventas.map(v=>v.precioNIO||0)))],["Venta Menor",fN(Math.min(...ventas.map(v=>v.precioNIO||0)))]];
     let ry=y+1;
     resRows.forEach((r,i)=>{
       doc.setFillColor(i%2===0?248:255,i%2===0?248:255,i%2===0?252:255); doc.rect(8,ry,col3-2,8,"F");
