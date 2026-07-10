@@ -129,7 +129,7 @@ export default function ReportesPage() {
 
       // ── HEADER con foto ──
       const imgB64 = await cargarImagenBase64(FOTO_HEADER);
-      const logoB64 = await cargarLogoJPEG(window.location.origin + "/logo-henriquez.png");
+      const logoB64 = await cargarLogoJPEG(window.location.origin + "/logo-henriquez.gif");
       if (imgB64) {
         doc.addImage(imgB64, "JPEG", 0, 0, W, 42);
       } else {
