@@ -504,7 +504,7 @@ export default function ReportesPage() {
     const kpis=[
       ["🛒","Ventas Realizadas",ventas.length,"transacciones"],
       ["💵","Total Córdobas",fN(totalNIO),"moneda local"],
-      ["💲","Total USD",fmtU(totalUSD),"dólares"],
+      ["💲","Total USD",fU(totalUSD),"dólares"],
       ["⚖️","Peso Total",totalPeso?" "+Math.round(totalPeso)+" kg":"—","kg vendidos"],
       ["📊","Promedio por kg",totalPeso?fN(totalNIO/totalPeso):"—","NIO/kg"],
       ["📈","Ganancia Total",fN(ganancia),"estimado"],
@@ -574,7 +574,7 @@ export default function ReportesPage() {
     const col3=(W-24)/3;
 
     // Resumen financiero
-    const resRows=[["Total en Córdobas",fN(totalNIO)],["Total en USD",fmtU(totalUSD)],["Ganancia Total",fN(ganancia)],["Margen Promedio",margen],["Venta Mayor",fN(Math.max(...ventas.map(v=>v.precioNIO||0)))],["Venta Menor",fN(Math.min(...ventas.map(v=>v.precioNIO||0)))]];
+    const resRows=[["Total en Córdobas",fN(totalNIO)],["Total en USD",fU(totalUSD)],["Ganancia Total",fN(ganancia)],["Margen Promedio",margen],["Venta Mayor",fN(Math.max(...ventas.map(v=>v.precioNIO||0)))],["Venta Menor",fN(Math.min(...ventas.map(v=>v.precioNIO||0)))]];
     let ry=y+1;
     resRows.forEach((r,i)=>{
       doc.setFillColor(i%2===0?248:255,i%2===0?248:255,i%2===0?252:255); doc.rect(8,ry,col3-2,8,"F");
