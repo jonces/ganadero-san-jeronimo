@@ -255,9 +255,9 @@ export default function ReportesPage() {
     doc.setFillColor(...p.dark); doc.rect(0,HH,W,0.8,"F");
     doc.setFillColor(...p.dark); doc.rect(0,HH+9.2,W,0.8,"F");
     doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(55,55,55);
-    doc.text(`\u{1F4CD} Finca: ${fincaNombre}`, 8, HH+6.5);
-    doc.text(`\u{1F4CD} Ubicación: ${ubicacion||"Nicaragua"}`, W/3+4, HH+6.5);
-    doc.text(`\u{1F464} Administrador: ${adminNombre}`, 2*W/3+4, HH+6.5);
+    doc.text(`Finca: ${fincaNombre}`, 8, HH+6.5);
+    doc.text(`Ubicacion: ${ubicacion||"Nicaragua"}`, W/3+4, HH+6.5);
+    doc.text(`Administrador: ${adminNombre}`, 2*W/3+4, HH+6.5);
 
     return HH+10+3;
   }
@@ -279,15 +279,13 @@ export default function ReportesPage() {
   }
 
   function kpiCard(doc,x,y,w,h,icon,label,value,sub,p) {
-    doc.setFillColor(235,235,235); doc.roundedRect(x+0.7,y+0.7,w,h,2,2,"F");
-    doc.setFillColor(255,255,255); doc.roundedRect(x,y,w,h,2,2,"F");
-    doc.setFillColor(...p.dark); doc.roundedRect(x,y,2.5,h,1.5,1.5,"F");
-    if(icon){doc.setFontSize(8);doc.setFont("helvetica","normal");doc.setTextColor(...p.dark);doc.text(icon,x+6,y+8);}
-    doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(120,120,120);
-    doc.text(label.toUpperCase(),x+6,y+(icon?14:9));
-    doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(...p.dark);
-    doc.text(String(value),x+6,y+(icon?23:19));
-    if(sub){doc.setFontSize(6);doc.setFont("helvetica","normal");doc.setTextColor(155,155,155);doc.text(String(sub),x+6,y+(icon?29:26));}
+    doc.setFillColor(245,246,250); doc.roundedRect(x,y,w,h,2,2,"F");
+    doc.setFillColor(...p.dark); doc.rect(x,y,w,1.5,"F");
+    doc.setFontSize(5.5); doc.setFont("helvetica","normal"); doc.setTextColor(130,130,130);
+    doc.text(label.toUpperCase(),x+w/2,y+7,{align:"center"});
+    doc.setFontSize(10); doc.setFont("helvetica","bold"); doc.setTextColor(...p.dark);
+    doc.text(String(value),x+w/2,y+16,{align:"center"});
+    if(sub){doc.setFontSize(5.5);doc.setFont("helvetica","normal");doc.setTextColor(160,160,160);doc.text(String(sub),x+w/2,y+22,{align:"center"});}
   }
 
   function statBlock(doc,x,y,titulo,rows,p,colW) {
@@ -344,15 +342,15 @@ export default function ReportesPage() {
     // KPIs (una fila horizontal)
     y=secTitle(doc,8,y,"RESUMEN EJECUTIVO",p,W);
     const kpis=[
-      ["🐄","Total Animales",animales.length,"en sistema"],
-      ["✅","Activos",activos.length,`${((activos.length/Math.max(animales.length,1))*100).toFixed(0)}% del hato`],
-      ["♀","Hembras",hembras.length,""],
-      ["♂","Machos",machos.length,""],
-      ["🤰","Preñadas",prenadas,"gestantes"],
-      ["⚖️","Peso Promedio",pesoP+" kg",`${conPeso.length} con peso`],
-      ["💰","Valor Est. Hato",fN(valorHato),"precio ref."],
+      ["","Total Animales",animales.length,"registros"],
+      ["","Activos",activos.length,`${((activos.length/Math.max(animales.length,1))*100).toFixed(0)}% del hato`],
+      ["","Hembras",hembras.length,""],
+      ["","Machos",machos.length,""],
+      ["","Prenadas",prenadas,"gestantes"],
+      ["","Peso Promedio",pesoP+" kg",`${conPeso.length} con peso`],
+      ["","Valor Est.",fN(valorHato),"ref."],
     ];
-    const kW=(W-16)/kpis.length, kH=34;
+    const kW=(W-16)/kpis.length, kH=26;
     kpis.forEach((k,i)=>kpiCard(doc,8+i*(kW+0),y,kW-1,kH,k[0],k[1],k[2],k[3],p));
     y+=kH+6;
 
@@ -388,7 +386,7 @@ export default function ReportesPage() {
       a.identificador,
       a.nombre||"—",
       a.raza||"—",
-      a.sexo==="HEMBRA"?"♀ Hembra":"♂ Macho",
+      a.sexo==="HEMBRA"?"Hembra":"Macho",
       age(a.fechaNacimiento),
       a.pesoActual?(a.pesoActual+" kg"):"—",
       a.estado,
@@ -502,15 +500,14 @@ export default function ReportesPage() {
     let y=makeHeader(doc,{logo,fincaNombre,adminNombre,ubicacion:finca?.ubicacion,fecha,hora,numReporte,p,W});
     y=secTitle(doc,8,y,"RESUMEN EJECUTIVO",p,W);
     const kpis=[
-      ["🛒","Ventas Realizadas",ventas.length,"transacciones"],
-      ["💵","Total Córdobas",fN(totalNIO),"moneda local"],
-      ["💲","Total USD",fU(totalUSD),"dólares"],
-      ["⚖️","Peso Total",totalPeso?" "+Math.round(totalPeso)+" kg":"—","kg vendidos"],
-      ["📊","Promedio por kg",totalPeso?fN(totalNIO/totalPeso):"—","NIO/kg"],
-      ["📈","Ganancia Total",fN(ganancia),"estimado"],
-      ["%","Margen Promedio",margen,"de las ventas"],
+      ["","Ventas Realizadas",ventas.length,"transacciones"],
+      ["","Total Cordobas",fN(totalNIO),""],
+      ["","Total USD",fU(totalUSD),""],
+      ["","Peso Total",totalPeso?Math.round(totalPeso)+" kg":"—",""],
+      ["","Promedio por kg",totalPeso?fN(totalNIO/totalPeso):"—",""],
+      ["","Margen",margen,"estimado"],
     ];
-    const kW=(W-16)/kpis.length, kH=34;
+    const kW=(W-16)/kpis.length, kH=26;
     kpis.forEach((k,i)=>kpiCard(doc,8+i*(kW),y,kW-1,kH,k[0],k[1],k[2],k[3],p));
     y+=kH+6;
 
@@ -646,14 +643,14 @@ export default function ReportesPage() {
     let y=makeHeader(doc,{logo,fincaNombre,adminNombre,ubicacion:finca?.ubicacion,fecha,hora,numReporte,p,W});
     y=secTitle(doc,8,y,"RESUMEN EJECUTIVO",p,W);
     const kpis=[
-      ["📊","Gasto Total",fN(total),"acumulado"],
-      ["🛍️","Compras Realizadas",gastos.length,"registros"],
-      ["📐","Gasto Promedio",fN(promedio),"por registro"],
-      ["🏷️","Categoría Principal",(topCats[0]?.[0]||"—").slice(0,10),fN(topCats[0]?.[1]||0)],
-      ["🏢","Proveedor Principal",(topProvs[0]?.[0]||"—").slice(0,10),fN(topProvs[0]?.[1]||0)],
-      [varPct<0?"📉":"📈","vs Mes Anterior",(varPct>=0?"+":"")+varPct+"%","variación"],
+      ["","Gasto Total",fN(total),"acumulado"],
+      ["","Compras Realizadas",gastos.length,"registros"],
+      ["","Gasto Promedio",fN(promedio),"por registro"],
+      ["","Categoria Principal",(topCats[0]?.[0]||"—").slice(0,12),""],
+      ["","Proveedor Principal",(topProvs[0]?.[0]||"—").slice(0,12),""],
+      ["","vs Mes Anterior",(varPct>=0?"+":"")+varPct+"%","variacion"],
     ];
-    const kW=(W-16)/kpis.length, kH=34;
+    const kW=(W-16)/kpis.length, kH=26;
     kpis.forEach((k,i)=>kpiCard(doc,8+i*(kW),y,kW-1,kH,k[0],k[1],k[2],k[3],p));
     y+=kH+6;
 
