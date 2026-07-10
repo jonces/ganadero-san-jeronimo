@@ -7,13 +7,17 @@ import AppLayout from "@/components/AppLayout";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
 
-const ESTADOS_REPRO = ["PREÑADA", "LACTANCIA", "PARIDA", "SECA", "VACIA"];
+const ESTADOS_REPRO = ["PREÑADA", "LACTANCIA", "PARIDA", "SECA", "VACIA", "TERNERA", "TERNERO", "TORETE", "SEMENTAL"];
 const REPRO_CONFIG = {
   PREÑADA:   { label: "Preñada",   color: "#e53e3e", bg: "rgba(229,62,62,0.2)",   icon: "🤰" },
   LACTANCIA: { label: "Lactancia", color: "#38a169", bg: "rgba(56,161,105,0.2)",  icon: "🍼" },
   PARIDA:    { label: "Parida",    color: "#d69e2e", bg: "rgba(214,158,46,0.2)",  icon: "🐮" },
   SECA:      { label: "Seca",      color: "#718096", bg: "rgba(113,128,150,0.2)", icon: "🌵" },
   VACIA:     { label: "Vacía",     color: "#805ad5", bg: "rgba(128,90,213,0.2)",  icon: "⬜" },
+  TERNERA:   { label: "Ternera",   color: "#ed8936", bg: "rgba(237,137,54,0.2)",  icon: "🐄" },
+  TERNERO:   { label: "Ternero",   color: "#ed8936", bg: "rgba(237,137,54,0.2)",  icon: "🐂" },
+  TORETE:    { label: "Torete",    color: "#3182ce", bg: "rgba(49,130,206,0.2)",  icon: "🐃" },
+  SEMENTAL:  { label: "Semental",  color: "#2c7a7b", bg: "rgba(44,122,123,0.2)",  icon: "💪" },
 };
 
 export default function InventarioPage() {
@@ -58,7 +62,7 @@ export default function InventarioPage() {
           fierro: formEdit.fierro||null,
           pesoActual: formEdit.pesoActual||null,
           observacion: formEdit.observacion||null,
-          ...(editAnimal.sexo==="HEMBRA" ? { estadoReproductivo: formEdit.estadoReproductivo||null } : {}),
+          estadoReproductivo: formEdit.estadoReproductivo||null,
         }),
       });
       const d = await res.json();
@@ -240,7 +244,7 @@ export default function InventarioPage() {
             <div><label className="text-white/50 text-xs">Raza</label><input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="Brahman" value={form.raza} onChange={e=>setForm({...form,raza:e.target.value})}/></div>
             <div><label className="text-white/50 text-xs">Fierro</label><input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="M20" value={form.fierro} onChange={e=>setForm({...form,fierro:e.target.value})}/></div>
             <div><label className="text-white/50 text-xs">Peso (kg)</label><input type="number" className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="350" value={form.pesoActual} onChange={e=>setForm({...form,pesoActual:e.target.value})}/></div>
-            {form.sexo==="HEMBRA"&&<div className="sm:col-span-2"><label className="text-white/50 text-xs">Estado reproductivo</label><select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.estadoReproductivo} onChange={e=>setForm({...form,estadoReproductivo:e.target.value})}><option value="">Sin definir</option>{ESTADOS_REPRO.map(e=><option key={e} value={e}>{REPRO_CONFIG[e].icon} {REPRO_CONFIG[e].label}</option>)}</select></div>}
+            <div className="sm:col-span-2"><label className="text-white/50 text-xs">Categoría / Estado</label><select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.estadoReproductivo} onChange={e=>setForm({...form,estadoReproductivo:e.target.value})}><option value="">Sin definir</option>{ESTADOS_REPRO.map(e=><option key={e} value={e}>{REPRO_CONFIG[e].icon} {REPRO_CONFIG[e].label}</option>)}</select></div>
             <div className="sm:col-span-2"><label className="text-white/50 text-xs">Madre (si es cría)</label><select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.madreId} onChange={e=>setForm({...form,madreId:e.target.value})}><option value="">Sin madre</option>{hembrasActivas.map(h=><option key={h.id} value={h.id}>{h.nombre||h.identificador}</option>)}</select></div>
           </div>
           <textarea className="w-full rounded-xl px-3 py-2 text-sm" style={gi} placeholder="Observación..." rows={2} value={form.observacion} onChange={e=>setForm({...form,observacion:e.target.value})}/>
@@ -295,15 +299,13 @@ export default function InventarioPage() {
               <input className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.fierro} onChange={e=>setFormEdit({...formEdit,fierro:e.target.value})} placeholder="M20"/></div>
             <div><label className="text-white/50 text-xs">Peso actual (kg)</label>
               <input type="number" className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.pesoActual} onChange={e=>setFormEdit({...formEdit,pesoActual:e.target.value})} placeholder="350"/></div>
-            {editAnimal.sexo==="HEMBRA"&&(
-              <div>
-                <label className="text-white/50 text-xs">Estado Reproductivo</label>
-                <select className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.estadoReproductivo} onChange={e=>setFormEdit({...formEdit,estadoReproductivo:e.target.value})}>
-                  <option value="">Sin definir</option>
-                  {ESTADOS_REPRO.map(s=><option key={s} value={s}>{REPRO_CONFIG[s].icon} {REPRO_CONFIG[s].label}</option>)}
-                </select>
-              </div>
-            )}
+            <div>
+              <label className="text-white/50 text-xs">Categoría / Estado</label>
+              <select className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.estadoReproductivo} onChange={e=>setFormEdit({...formEdit,estadoReproductivo:e.target.value})}>
+                <option value="">Sin definir</option>
+                {ESTADOS_REPRO.map(s=><option key={s} value={s}>{REPRO_CONFIG[s].icon} {REPRO_CONFIG[s].label}</option>)}
+              </select>
+            </div>
             <div><label className="text-white/50 text-xs">Observación</label>
               <textarea className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} rows={2} value={formEdit.observacion} onChange={e=>setFormEdit({...formEdit,observacion:e.target.value})} placeholder="Notas adicionales..."/></div>
             <div className="flex gap-3 pt-1">

@@ -116,17 +116,18 @@ router.patch("/:id", async (req, res, next) => {
     if (fechaParto !== undefined) data.fechaParto = fechaParto ? new Date(fechaParto) : null;
     if (fechaSecado !== undefined) data.fechaSecado = fechaSecado ? new Date(fechaSecado) : null;
 
-    // Transición de estado reproductivo con lógica automática
-    if (estadoReproductivo !== undefined && estadoReproductivo !== null && animal.sexo === "HEMBRA") {
+    // Actualizar categoría/estado (aplica a machos y hembras)
+    if (estadoReproductivo !== undefined && estadoReproductivo !== null) {
       data.estadoReproductivo = estadoReproductivo;
-      // Si pasa a PARIDA, registrar fecha de parto
-      if (estadoReproductivo === "PARIDA" && !animal.fechaParto) {
-        data.fechaParto = new Date();
-        // Auto-transicionar a LACTANCIA
-        data.estadoReproductivo = "LACTANCIA";
-      }
-      if (estadoReproductivo === "SECA") {
-        data.fechaSecado = new Date();
+      // Lógica automática solo para hembras
+      if (animal.sexo === "HEMBRA") {
+        if (estadoReproductivo === "PARIDA" && !animal.fechaParto) {
+          data.fechaParto = new Date();
+          data.estadoReproductivo = "LACTANCIA";
+        }
+        if (estadoReproductivo === "SECA") {
+          data.fechaSecado = new Date();
+        }
       }
     }
 
