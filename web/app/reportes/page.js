@@ -84,20 +84,21 @@ export default function ReportesPage() {
     } catch { return null; }
   }
 
-  // Carga el logo recortando solo la parte superior (animales) sin el texto del nombre,
-  // y pone fondo verde del header para que no aparezca cuadro blanco
-  async function cargarLogoJPEG(url, bgColor = "#145A32") {
+  // Carga el logo recortando solo la parte del toro (sin el texto "Cattle Company")
+  // La franja blanca con el nombre de la finca se escribe dinámicamente en el PDF
+  async function cargarLogoJPEG(url) {
     try {
       return await new Promise((res) => {
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.onload = () => {
-          const recorte = Math.floor(img.naturalHeight * 0.58); // solo parte superior (sin texto)
+          // Recortar solo el 52% superior (toro + círculo), sin la franja blanca ni el escudo
+          const recorte = Math.floor(img.naturalHeight * 0.52);
           const canvas = document.createElement("canvas");
           canvas.width = img.naturalWidth;
           canvas.height = recorte;
           const ctx = canvas.getContext("2d");
-          ctx.fillStyle = bgColor;
+          ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(img, 0, 0);
           res(canvas.toDataURL("image/jpeg", 0.92));
@@ -132,58 +133,57 @@ export default function ReportesPage() {
       };
       const p = PALETA[tipo];
 
-      // ── HEADER con foto ──
-      const imgB64 = await cargarImagenBase64(FOTO_HEADER);
-      const logoB64 = await cargarLogoJPEG(window.location.origin + "/logo-henriquez.gif");
-      if (imgB64) {
-        doc.addImage(imgB64, "JPEG", 0, 0, W, 42);
-      } else {
-        doc.setFillColor(...p.dark);
-        doc.rect(0, 0, W, 42, "F");
-      }
-      // Overlay oscuro sobre la foto
-      doc.setFillColor(0, 0, 0);
-      doc.setGState && doc.setGState(doc.GState({ opacity: 0.55 }));
-      doc.rect(0, 0, W, 42, "F");
-      doc.setGState && doc.setGState(doc.GState({ opacity: 1 }));
+      // ── HEADER: fondo blanco limpio con logo + nombre finca ──
+      const logoB64 = await cargarLogoJPEG(window.location.origin + "/logo-base.jpg");
 
-      // Banda de color debajo del header
+      // Fondo blanco del header
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, W, 56, "F");
+
+      // Línea superior del color del reporte
       doc.setFillColor(...p.dark);
-      doc.rect(0, 42, W, 14, "F");
+      doc.rect(0, 0, W, 3, "F");
 
-      // Logo Henriquez Cattle
+      // Logo del toro (parte superior recortada) centrado-izquierda
+      const logoSize = 44;
+      const logoX = 10;
+      const logoY = 4;
       if (logoB64) {
-        doc.addImage(logoB64, "JPEG", 6, 7, 28, 28);
-      } else {
-        doc.setFillColor(255, 255, 255);
-        doc.circle(22, 21, 12, "F");
-        doc.setFillColor(...p.mid);
-        doc.circle(22, 21, 10, "F");
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(18);
-        doc.setFont("helvetica", "bold");
-        doc.text(fincaNombre.charAt(0).toUpperCase(), 22, 25, { align: "center" });
+        doc.addImage(logoB64, "JPEG", logoX, logoY, logoSize, logoSize * 0.52);
       }
 
-      // Nombre de la finca
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      doc.text(fincaNombre, 40, 16);
+      // Franja blanca con el nombre de la finca — a la derecha del logo
+      const franjaX = logoX + logoSize + 4;
+      // Líneas decorativas a los lados del nombre (simula la franja del logo)
+      doc.setDrawColor(...p.dark);
+      doc.setLineWidth(0.5);
+      doc.line(franjaX, 18, franjaX + 10, 18);
+      doc.line(franjaX + (W - franjaX - 15) - 10, 18, franjaX + (W - franjaX - 15), 18);
 
-      doc.setFontSize(9);
+      // Nombre de la finca en la franja
+      doc.setTextColor(...p.dark);
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text(fincaNombre.toUpperCase(), franjaX + (W - franjaX - 15) / 2 + franjaX - franjaX, 21, { align: "center", maxWidth: W - franjaX - 15 });
+
+      // Ubicación y admin debajo
+      doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(210, 240, 210);
-      if (fincaUbicacion) doc.text("Ubicación: " + fincaUbicacion, 40, 24);
-      if (adminNombre) doc.text("Administrador: " + adminNombre, 40, 30);
+      doc.setTextColor(80, 80, 80);
+      if (fincaUbicacion) doc.text(fincaUbicacion, W / 2 + 20, 28, { align: "center" });
+      if (adminNombre) doc.text("Adm: " + adminNombre, W / 2 + 20, 34, { align: "center" });
 
       // Fecha arriba derecha
-      doc.setFontSize(8);
-      doc.setTextColor(200, 230, 200);
-      doc.text("Generado: " + fecha, W - 10, 10, { align: "right" });
+      doc.setFontSize(7);
+      doc.setTextColor(120, 120, 120);
+      doc.text("Generado: " + fecha, W - 8, 8, { align: "right" });
 
-      // QR (esquina derecha del header)
-      drawQR(doc, W - 32, 3, 28);
+      // QR esquina derecha
+      drawQR(doc, W - 32, 10, 24);
+
+      // Línea inferior del header
+      doc.setFillColor(...p.dark);
+      doc.rect(0, 53, W, 3, "F");
 
       // Banda verde: título del reporte
       const titulos = {
