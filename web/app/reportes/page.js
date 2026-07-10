@@ -110,6 +110,7 @@ export default function ReportesPage() {
 
       // ── HEADER con foto ──
       const imgB64 = await cargarImagenBase64(FOTO_HEADER);
+      const logoB64 = await cargarImagenBase64(window.location.origin + "/logo-henriquez.png");
       if (imgB64) {
         doc.addImage(imgB64, "JPEG", 0, 0, W, 42);
       } else {
@@ -126,16 +127,19 @@ export default function ReportesPage() {
       doc.setFillColor(...p.dark);
       doc.rect(0, 42, W, 14, "F");
 
-      // Logo circular
-      doc.setFillColor(255, 255, 255);
-      doc.circle(22, 21, 12, "F");
-      doc.setFillColor(...p.mid);
-      doc.circle(22, 21, 10, "F");
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(18);
-      doc.setFont("helvetica", "bold");
-      const inicial = fincaNombre.charAt(0).toUpperCase();
-      doc.text(inicial, 22, 25, { align: "center" });
+      // Logo Henriquez Cattle
+      if (logoB64) {
+        doc.addImage(logoB64, "PNG", 6, 7, 28, 28);
+      } else {
+        doc.setFillColor(255, 255, 255);
+        doc.circle(22, 21, 12, "F");
+        doc.setFillColor(...p.mid);
+        doc.circle(22, 21, 10, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(18);
+        doc.setFont("helvetica", "bold");
+        doc.text(fincaNombre.charAt(0).toUpperCase(), 22, 25, { align: "center" });
+      }
 
       // Nombre de la finca
       doc.setTextColor(255, 255, 255);

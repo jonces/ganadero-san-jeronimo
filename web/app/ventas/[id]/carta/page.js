@@ -285,11 +285,14 @@ export default function CartaVentaPage() {
 
           {/* Encabezado */}
           <div className="px-10 py-6" style={{ background: "linear-gradient(135deg,#145A32,#1E8449)" }}>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-green-200 text-xs font-sans tracking-widest uppercase mb-1">Gestión Ganadera</p>
-                <h1 className="text-white font-black text-3xl font-sans">{venta.finca?.nombre || "Finca Ganadera"}</h1>
-                {venta.finca?.ubicacion && <p className="text-green-300 text-sm mt-1 font-sans">{venta.finca.ubicacion}</p>}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <img src="/logo-henriquez.png" alt="Logo" style={{ width: 72, height: 72, objectFit: "contain", borderRadius: 8, background: "rgba(255,255,255,0.12)", padding: 4 }} />
+                <div>
+                  <p className="text-green-200 text-xs font-sans tracking-widest uppercase mb-1">Gestión Ganadera</p>
+                  <h1 className="text-white font-black text-3xl font-sans">{venta.finca?.nombre || "Finca Ganadera"}</h1>
+                  {venta.finca?.ubicacion && <p className="text-green-300 text-sm mt-1 font-sans">{venta.finca.ubicacion}</p>}
+                </div>
               </div>
               <div className="text-right">
                 <p className="text-green-200 text-xs font-sans">No. de Carta</p>
