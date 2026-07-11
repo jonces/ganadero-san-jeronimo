@@ -283,6 +283,12 @@ export default function DashboardPage() {
       spark: ventasSpark, sparkColor: "#1E88E5", href: "/ventas",
     },
     {
+      icon: "💸", bg: "linear-gradient(135deg,#B71C1C,#E53935)", label: "Gastos del mes",
+      value: `C$ ${fmt(gastosMesReal)}`,
+      delta: gastosMesReal > 0 ? `${fmt(gastosMesReal)} en gastos` : "Sin gastos este mes", deltaPos: false,
+      spark: gastosSpark, sparkColor: "#E53935", href: "/gastos",
+    },
+    {
       icon: "📈", bg: "linear-gradient(135deg,#6A1B9A,#8E24AA)", label: "Ganancias",
       value: `C$ ${fmt(Math.abs(balance))}`,
       delta: balance >= 0 ? `+${fmt((balance / Math.max(v.totalMesNIO || 1, 1) * 100), 0)}% margen` : "Revisar gastos",
