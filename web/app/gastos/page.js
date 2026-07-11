@@ -766,10 +766,10 @@ export default function GastosPage() {
         )}
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 pb-10">
+      <div className="max-w-2xl mx-auto px-4 pb-28">
         {error && <p className="text-red-600 mb-4 bg-red-50 rounded-xl p-3 text-sm">{error}</p>}
 
-        <button onClick={() => { setShowForm(s => !s); setEditando(null); }}
+        <button onClick={() => { setShowForm(s => !s); setEditando(null); setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),50); }}
           className="w-full text-white rounded-2xl py-4 font-black text-lg mb-5 shadow-lg"
           style={{ background: showForm ? "#718096" : "#805ad5" }}>
           {showForm ? "✕ Cancelar" : "+ Registrar Gasto"}
