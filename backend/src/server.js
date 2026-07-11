@@ -87,6 +87,15 @@ async function limpiarAnimalesEliminados() {
 
 app.listen(port, () => {
   console.log(`Backend escuchando en puerto ${port}`);
+  // Migraciones DESPUÉS de que el servidor ya responde al healthcheck
+  const { execSync } = require("child_process");
+  try {
+    console.log("Corriendo migraciones Prisma...");
+    execSync("npx prisma migrate deploy", { stdio: "inherit" });
+    console.log("Migraciones completadas.");
+  } catch (e) {
+    console.error("Error en migraciones:", e.message);
+  }
   corregirTiposDeMedia();
   limpiarAnimalesEliminados();
 });
