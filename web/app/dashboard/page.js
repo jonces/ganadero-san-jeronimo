@@ -167,18 +167,18 @@ function HatoChart({ animales = [] }) {
 function StatCard({ icon, bg, label, value, delta, deltaPos, spark, sparkColor, href, onClick }) {
   return (
     <button onClick={onClick}
-      className="rounded-2xl p-5 text-left transition-all hover:shadow-lg active:scale-95 relative overflow-hidden"
+      className="rounded-2xl p-3 text-left transition-all hover:shadow-lg active:scale-95 relative overflow-hidden"
       style={{ background: C.white, border: `1px solid ${C.border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shadow-md"
+      <div className="flex items-start justify-between mb-2">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shadow-md"
           style={{ background: bg }}>
           {icon}
         </div>
       </div>
-      <p className="font-black text-xl leading-none mb-1" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>{value}</p>
-      <p className="font-semibold text-xs mb-3" style={{ color: C.textLight }}>{label}</p>
-      <div className="mb-2" style={{ height: 36 }}>
-        {spark?.length >= 2 ? <Spark data={spark} color={sparkColor} /> : <div style={{ height: 36 }} />}
+      <p className="font-black text-lg leading-none mb-0.5" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>{value}</p>
+      <p className="font-semibold text-xs mb-2" style={{ color: C.textLight }}>{label}</p>
+      <div className="mb-1" style={{ height: 28 }}>
+        {spark?.length >= 2 ? <Spark data={spark} color={sparkColor} /> : <div style={{ height: 28 }} />}
       </div>
       <p className={`text-xs font-bold`} style={{ color: deltaPos ? C.secondary : "#E74C3C" }}>{delta}</p>
     </button>
@@ -393,7 +393,7 @@ export default function DashboardPage() {
 
       {/* ── STAT CARDS ── */}
       {stats && (
-        <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
           {CARDS.map((c) => (
             <StatCard key={c.label} {...c} onClick={() => router.push(c.href)} />
           ))}
