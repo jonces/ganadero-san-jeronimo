@@ -62,6 +62,26 @@ router.post("/", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.patch("/:id", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next) => {
+  try {
+    const g = await prisma.gasto.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
+    if (!g) return res.status(404).json({ error: "No encontrado" });
+    const { descripcion, categoria, monto, fecha, periodicidad, notas } = req.body;
+    const updated = await prisma.gasto.update({
+      where: { id: g.id },
+      data: {
+        ...(descripcion !== undefined && { descripcion }),
+        ...(categoria   !== undefined && { categoria }),
+        ...(monto       !== undefined && { monto: parseFloat(monto) }),
+        ...(fecha       !== undefined && { fecha: new Date(fecha) }),
+        ...(periodicidad!== undefined && { periodicidad }),
+        ...(notas       !== undefined && { notas }),
+      },
+    });
+    res.json(updated);
+  } catch (err) { next(err); }
+});
+
 router.delete("/:id", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next) => {
   try {
     const g = await prisma.gasto.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
