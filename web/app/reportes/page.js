@@ -4,7 +4,7 @@ import { api } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
 const PAL = {
-  animales: { dark:[20,83,45],   mid:[21,128,61],  light:[236,253,245], title:"INVENTARIO ANIMAL", pre:"INV", hex:"#14532D" },
+  animales: { dark:[20,83,45],   mid:[21,128,61],  light:[236,253,245], title:"INVENTARIO", pre:"INV", hex:"#14532D" },
   ventas:   { dark:[30,64,175],  mid:[37,99,235],  light:[239,246,255], title:"VENTAS",            pre:"VEN", hex:"#1E40AF" },
   gastos:   { dark:[107,33,168], mid:[126,34,206], light:[250,240,255], title:"GASTOS",            pre:"GAS", hex:"#6B21A8" },
 };
@@ -228,8 +228,6 @@ export default function ReportesPage() {
     const titleSz = p.title.length > 16 ? 14 : 18;
     doc.setFontSize(titleSz); doc.setFont("helvetica","bold"); doc.setTextColor(...titleColor);
     doc.text(p.title,118,28,{maxWidth:W-160});
-    // Acento de color bajo el título
-    doc.setFillColor(...p.dark); doc.rect(118,31,Math.min(doc.getTextWidth(p.title)+1,W-162),1.2,"F");
 
     // Panel de metadata (derecha) — fecha y número sin QR
     const RX=W-38;
