@@ -451,9 +451,10 @@ export default function GastosPage() {
         ["FINCA",         finca?.nombre||"—"],
         ["CATEGORIA",     cat.value],
         ["PERIODICIDAD",  g.periodicidad],
+        ...(g.notas?[["NOTA / OBSERVACIONES", g.notas]]:[]),
       ];
       let fy=y+8;
-      filasDet.slice(0,6).forEach(([lbl,val])=>{
+      filasDet.slice(0,7).forEach(([lbl,val])=>{
         doc.setFillColor(...PL); doc.circle(colL+6,fy,3.5,"F");
         doc.setFontSize(5); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
         doc.text(lbl,colL+12,fy-2.5);
@@ -490,25 +491,6 @@ export default function GastosPage() {
         ry2+=13;
       });
       y+=detH+6;
-
-      // ── NOTA / OBSERVACIONES ───────────────────────────────────────────────
-      if(g.notas){
-        const notaTxt = String(g.notas);
-        doc.setFontSize(7.5);
-        const lineas = doc.splitTextToSize(notaTxt, W-36);
-        const notaH  = Math.max(20, lineas.length*4.5+10);
-        doc.setFillColor(245,240,255); doc.setDrawColor(...PM); doc.setLineWidth(0.4);
-        doc.roundedRect(8,y,W-16,notaH,3,3,"FD");
-        // Header de la caja
-        doc.setFillColor(...PD); doc.roundedRect(8,y,W-16,8,3,3,"F");
-        doc.rect(8,y+4,W-16,4,"F");
-        doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-        doc.text("NOTA / OBSERVACIONES",W/2,y+5.5,{align:"center"});
-        // Texto de la nota
-        doc.setFontSize(7.5); doc.setFont("helvetica","normal"); doc.setTextColor(40,20,70);
-        doc.text(lineas, 16, y+13);
-        y+=notaH+6;
-      }
 
       // ── FIRMAS ─────────────────────────────────────────────────────────────
       doc.setFillColor(...PL); doc.roundedRect(8,y,W-16,62,4,4,"F");
