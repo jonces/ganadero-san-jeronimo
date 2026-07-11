@@ -246,23 +246,45 @@ export default function GastosPage() {
           {/* Responsable */}
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase">Responsable del pago</label>
-            <div className="flex gap-2 mt-1">
-              <select
-                className="flex-1 border-2 border-gray-200 rounded-xl p-3 focus:border-purple-400 focus:outline-none bg-gray-50 text-gray-700"
-                value={values.responsable}
-                onChange={(e) => onChange({ ...values, responsable: e.target.value })}>
-                <option value="">— Seleccionar persona —</option>
-                {usuarios.map(u => (
-                  <option key={u.id} value={u.nombre}>{u.nombre} ({u.role})</option>
-                ))}
-                <option value="__otro__">Otro (escribir manualmente)</option>
-              </select>
+            <div className="mt-2 space-y-2">
+              {/* Opciones predefinidas como tarjetas */}
+              {[
+                ...usuarios.map(u => ({
+                  valor: `${u.nombre} — ${u.role === "ADMIN" ? "Administrador" : u.role === "TRABAJADOR" ? "Trabajador" : u.role} de ${finca?.nombre || "la Finca"}`,
+                  etiqueta: u.nombre,
+                  sub: `${u.role === "ADMIN" ? "Administrador" : u.role === "TRABAJADOR" ? "Trabajador" : u.role} · ${finca?.nombre || ""}`,
+                  initials: u.nombre.split(" ").map(n=>n[0]).slice(0,2).join("").toUpperCase(),
+                })),
+                { valor: "__otro__", etiqueta: "Otro", sub: "Escribir nombre manualmente", initials: "+" },
+              ].map((op) => {
+                const seleccionado = values.responsable === op.valor || (op.valor === "__otro__" && values.responsable && !usuarios.find(u=>`${u.nombre} — ${u.role === "ADMIN" ? "Administrador" : u.role === "TRABAJADOR" ? "Trabajador" : u.role} de ${finca?.nombre || "la Finca"}` === values.responsable));
+                return (
+                  <button type="button" key={op.valor}
+                    onClick={() => onChange({ ...values, responsable: op.valor === "__otro__" ? "" : op.valor })}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left"
+                    style={{
+                      borderColor: seleccionado ? "#805ad5" : "#e5e7eb",
+                      background: seleccionado ? "#f5f0ff" : "#fff",
+                    }}>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0"
+                      style={{ background: seleccionado ? "#805ad5" : "#e5e7eb", color: seleccionado ? "#fff" : "#6b7280" }}>
+                      {op.initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm" style={{ color: seleccionado ? "#553c9a" : "#374151" }}>{op.etiqueta}</p>
+                      <p className="text-xs" style={{ color: seleccionado ? "#805ad5" : "#9ca3af" }}>{op.sub}</p>
+                    </div>
+                    {seleccionado && <span className="ml-auto text-purple-600">✓</span>}
+                  </button>
+                );
+              })}
             </div>
-            {(values.responsable === "__otro__" || (!usuarios.find(u=>u.nombre===values.responsable) && values.responsable && values.responsable !== "__otro__")) && (
+            {/* Campo manual si no coincide con ninguna opción predefinida */}
+            {values.responsable !== "" && !usuarios.find(u=>`${u.nombre} — ${u.role === "ADMIN" ? "Administrador" : u.role === "TRABAJADOR" ? "Trabajador" : u.role} de ${finca?.nombre || "la Finca"}` === values.responsable) && (
               <input
                 className="w-full border-2 border-purple-300 rounded-xl p-3 mt-2 focus:border-purple-400 focus:outline-none bg-gray-50"
                 placeholder="Nombre del responsable..."
-                value={values.responsable === "__otro__" ? "" : values.responsable}
+                value={values.responsable}
                 onChange={(e) => onChange({ ...values, responsable: e.target.value })}
               />
             )}
