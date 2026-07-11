@@ -181,6 +181,7 @@ model Gasto {
   fecha        DateTime @default(now())
   notas        String?
   responsable  String?  // nombre libre del que paga o registra
+  receptor     String?  // nombre completo de quien recibe el pago (firma en comprobante)
   fincaId      String
   finca        Finca    @relation(fields: [fincaId], references: [id])
   usuarioId    String

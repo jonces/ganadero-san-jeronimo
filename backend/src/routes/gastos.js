@@ -50,7 +50,7 @@ router.get("/usuarios-finca", requireRole("ADMIN", "SUPER_ADMIN"), async (req, r
 
 router.post("/", async (req, res, next) => {
   try {
-    const { descripcion, categoria, monto, moneda, periodicidad, fecha, notas, responsable } = req.body;
+    const { descripcion, categoria, monto, moneda, periodicidad, fecha, notas, responsable, receptor } = req.body;
     if (!descripcion || !monto || !periodicidad) {
       return res.status(400).json({ error: "descripcion, monto y periodicidad son requeridos" });
     }
@@ -65,6 +65,7 @@ router.post("/", async (req, res, next) => {
         fecha: fecha ? new Date(fecha) : undefined,
         notas: notas || null,
         responsable: responsable || null,
+        receptor: receptor || null,
         fincaId: req.user.fincaId,
         usuarioId: req.user.sub,
       },
@@ -79,7 +80,7 @@ router.patch("/:id", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next)
   try {
     const g = await prisma.gasto.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
     if (!g) return res.status(404).json({ error: "No encontrado" });
-    const { descripcion, categoria, monto, fecha, periodicidad, notas, responsable } = req.body;
+    const { descripcion, categoria, monto, fecha, periodicidad, notas, responsable, receptor } = req.body;
     const updated = await prisma.gasto.update({
       where: { id: g.id },
       data: {
@@ -90,6 +91,7 @@ router.patch("/:id", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next)
         ...(periodicidad !== undefined && { periodicidad }),
         ...(notas        !== undefined && { notas }),
         ...(responsable  !== undefined && { responsable }),
+        ...(receptor     !== undefined && { receptor }),
       },
       include: { usuario: { select: { nombre: true } }, finca: { select: { nombre: true, ubicacion: true } } },
     });

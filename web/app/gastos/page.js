@@ -32,8 +32,24 @@ const FORM_VACIO = {
   descripcion: "", categoria: "ALIMENTACION", monto: "",
   moneda: "NIO", periodicidad: "UNICO",
   fecha: new Date().toISOString().slice(0, 10),
-  notas: "", responsable: "",
+  notas: "", responsable: "", receptor: "",
 };
+
+function numToWords(n) {
+  n = Math.round(n || 0);
+  if (!n) return "CERO CORDOBAS NETOS";
+  const ones = ["","UNO","DOS","TRES","CUATRO","CINCO","SEIS","SIETE","OCHO","NUEVE",
+    "DIEZ","ONCE","DOCE","TRECE","CATORCE","QUINCE","DIECISEIS","DIECISIETE","DIECIOCHO","DIECINUEVE"];
+  const tens = ["","DIEZ","VEINTE","TREINTA","CUARENTA","CINCUENTA","SESENTA","SETENTA","OCHENTA","NOVENTA"];
+  const hundreds = ["","CIENTO","DOSCIENTOS","TRESCIENTOS","CUATROCIENTOS","QUINIENTOS",
+    "SEISCIENTOS","SETECIENTOS","OCHOCIENTOS","NOVECIENTOS"];
+  function t2(n){if(n<20)return ones[n];const d=Math.floor(n/10),u=n%10;return tens[d]+(u?" Y "+ones[u]:"");}
+  function t3(n){if(n===100)return "CIEN";const c=Math.floor(n/100),r=n%100;return(c?hundreds[c]+(r?" ":""):""+(r?t2(r):""));}
+  let r="";
+  if(n>=1000){const m=Math.floor(n/1000);r+=(m===1?"MIL":t3(m)+" MIL");n=n%1000;if(n)r+=" ";}
+  if(n>0)r+=t3(n);
+  return r+" CORDOBAS NETOS";
+}
 
 export default function GastosPage() {
   const [data,     setData]     = useState({ gastos: [], total: 0 });
@@ -88,6 +104,7 @@ export default function GastosPage() {
       fecha:        g.fecha ? g.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
       notas:        g.notas        || "",
       responsable:  g.responsable  || "",
+      receptor:     g.receptor     || "",
     });
     setEditando(g);
   }
@@ -112,105 +129,253 @@ export default function GastosPage() {
   async function generarComprobante(g) {
     try {
       const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [148, 210] }); // A5
-      const W = doc.internal.pageSize.getWidth();
-      const H = doc.internal.pageSize.getHeight();
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const W = 210, H = 297;
+      const PD = [107,33,168], PM = [126,34,206], PL = [245,240,255];
       const cat = CATEGORIAS.find(c => c.value === g.categoria) || CATEGORIAS[5];
       const per = PERIODICIDADES.find(p => p.value === g.periodicidad);
-      const num = `COMP-${new Date(g.fecha||g.createdAt).getFullYear()}-${String(Math.floor(Math.random()*9000)+1000).padStart(5,"0")}`;
-      const fecha = new Date(g.fecha||g.createdAt).toLocaleDateString("es",{dateStyle:"long"});
+      const yr  = new Date(g.fecha||g.createdAt).getFullYear();
+      const num = `COMP-${yr}-${String(Math.floor(Math.random()*90000)+10000)}`;
+      const fechaLarga = new Date(g.fecha||g.createdAt).toLocaleDateString("es",{day:"numeric",month:"long",year:"numeric"});
+      const adminNombre = user?.nombre || "Administrador";
+      const fincaNombre = (finca?.nombre||"Mi Finca").toUpperCase();
+      const responsable = g.responsable || adminNombre;
+      const receptor    = g.receptor    || "";
+      const monto = Math.round(g.monto||0);
 
-      // Encabezado
-      doc.setFillColor(107,33,168); doc.rect(0,0,W,38,"F");
-      // Logo (si disponible)
+      // ── Logo ──────────────────────────────────────────────────────────────────
+      let logoB64 = null;
       try {
-        const logoB64 = await new Promise(res=>{
+        logoB64 = await new Promise(res=>{
           const img=new Image(); img.crossOrigin="anonymous";
           img.onload=()=>{
-            const rh=Math.floor(img.naturalHeight*0.52);
-            const c=document.createElement("canvas"); c.width=img.naturalWidth; c.height=rh;
-            const ctx=c.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,c.width,rh); ctx.drawImage(img,0,0);
-            res(c.toDataURL("image/jpeg",0.88));
+            const c=document.createElement("canvas"); c.width=img.naturalWidth; c.height=img.naturalHeight;
+            const ctx=c.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,c.width,c.height); ctx.drawImage(img,0,0);
+            res(c.toDataURL("image/jpeg",0.9));
           };
           img.onerror=()=>res(null);
           img.src="/logo-base.jpg?r="+Math.random();
         });
-        if(logoB64) doc.addImage(logoB64,"JPEG",5,4,18,18*0.52);
       } catch(_){}
 
-      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(220,180,255);
-      doc.text("GANADERÍA", 27, 11);
-      doc.setFontSize(12); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-      doc.text((finca?.nombre||"Mi Finca").toUpperCase(), 27, 19);
-      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(200,160,255);
-      doc.text("CATTLE MANAGEMENT", 27, 25);
+      // ── ENCABEZADO ───────────────────────────────────────────────────────────
+      doc.setFillColor(...PD); doc.rect(0,0,W,58,"F");
+      // Marca de agua tenue (círculos)
+      doc.setFillColor(126,34,206); doc.setGState && doc.setGState(doc.GState({opacity:0.15}));
+      for(let i=0;i<4;i++){doc.circle(W-18+i*2,30+i*8,18,"F");}
+      try{ doc.setGState(doc.GState({opacity:1})); }catch(_){}
 
-      doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(255,220,255);
-      doc.text("COMPROBANTE DE PAGO", W-6, 12, {align:"right"});
-      doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-      doc.text(num, W-6, 20, {align:"right"});
-      doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(200,160,255);
-      doc.text(fecha, W-6, 27, {align:"right"});
+      // Logo (círculo blanco + imagen)
+      doc.setFillColor(255,255,255); doc.circle(20,28,16,"F");
+      if(logoB64) doc.addImage(logoB64,"JPEG",6,14,28,28);
 
-      // Franja categoría
-      doc.setFillColor(245,240,255); doc.rect(0,38,W,10,"F");
-      doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(107,33,168);
-      doc.text(cat.label.replace(/[^\x00-\x7F]/g,"").trim() || cat.value, 8, 45);
-      doc.setFont("helvetica","normal"); doc.setFontSize(7); doc.setTextColor(126,34,206);
-      doc.text(per?.label.replace(/[^\x00-\x7F]/g,"").trim() || g.periodicidad, W-6, 45, {align:"right"});
+      // Badge nombre finca bajo logo
+      doc.setFillColor(...PM); doc.roundedRect(5,46,30,8,2,2,"F");
+      doc.setFontSize(5.5); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text(fincaNombre.slice(0,12),20,51,{align:"center"});
+      doc.setFontSize(4.5); doc.setFont("helvetica","normal");
+      doc.text("CATTLE MANAGEMENT",20,54.5,{align:"center"});
 
-      let y = 56;
+      // Nombre finca grande
+      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(220,180,255);
+      doc.text("GANADERIA",42,16);
+      doc.setFontSize(22); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text(fincaNombre.slice(0,16),42,30);
+      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(200,160,255);
+      doc.text("CATTLE MANAGEMENT",42,37);
 
-      // Monto grande
-      doc.setFillColor(240,235,255); doc.roundedRect(6,y,W-12,22,3,3,"F");
-      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(130,100,180);
-      doc.text("MONTO TOTAL", W/2, y+7, {align:"center"});
-      doc.setFontSize(22); doc.setFont("helvetica","bold"); doc.setTextColor(107,33,168);
-      doc.text(`C$ ${Math.round(g.monto).toLocaleString("es-NI")}`, W/2, y+18, {align:"center"});
-      y += 27;
+      // Línea divisoria vertical
+      doc.setDrawColor(126,34,206); doc.setLineWidth(0.5);
+      doc.line(100,6,100,52);
 
-      // Detalle en filas
-      const filas = [
-        ["Descripcion", g.descripcion],
-        ["Responsable", g.responsable || g.usuario?.nombre || "—"],
-        ["Registrado por", g.usuario?.nombre || "—"],
-        ["Finca", finca?.nombre || "—"],
-        ["Categoria", cat.value],
-        ["Periodicidad", g.periodicidad],
-        ...(g.notas ? [["Notas", g.notas]] : []),
+      // Título comprobante
+      doc.setFontSize(16); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text("COMPROBANTE DE PAGO",106,18);
+      // Badge número
+      doc.setFillColor(255,255,255); doc.roundedRect(106,21,66,8,3,3,"F");
+      doc.setFontSize(9); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
+      doc.text(num,139,26.5,{align:"center"});
+      // Fecha
+      doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(220,200,255);
+      doc.text("  "+fechaLarga,106,37);
+
+      // QR (simulado)
+      const qrX=W-24, qrY=8, qrS=18;
+      doc.setFillColor(255,255,255); doc.rect(qrX-1,qrY-1,qrS+2,qrS+2,"F");
+      const qCell=qrS/12;
+      const qPat=[[1,1,1,1,1,0,1,1,0,1,1,1],[1,0,1,0,1,0,0,0,0,1,0,1],[1,0,1,0,1,0,1,1,0,1,0,1],[1,0,1,0,1,0,0,1,0,1,0,1],[1,1,1,1,1,0,1,0,0,1,1,1],[0,0,0,0,0,0,1,1,0,0,0,0],[1,0,1,1,0,1,0,1,1,0,1,1],[0,1,0,0,1,0,1,0,0,1,0,0],[1,1,1,0,1,0,1,1,0,1,1,0],[1,0,1,1,1,0,0,1,0,1,0,1],[0,0,1,0,0,0,1,0,1,0,1,1],[1,1,1,1,1,0,0,1,0,1,1,1]];
+      qPat.forEach((row,ri)=>row.forEach((v,ci)=>{if(v){doc.setFillColor(...PD);doc.rect(qrX+ci*qCell,qrY+ri*qCell,qCell,qCell,"F");}}));
+      doc.setFontSize(4); doc.setFont("helvetica","normal"); doc.setTextColor(200,160,255);
+      doc.text("Verificar documento",qrX+qrS/2,qrY+qrS+4,{align:"center"});
+
+      // ── BARRA INFO ─────────────────────────────────────────────────────────
+      doc.setFillColor(240,235,255); doc.rect(0,58,W,18,"F");
+      doc.setDrawColor(...PD); doc.setLineWidth(0.8); doc.line(0,58,W,58);
+      const infoItems=[
+        ["FINCA",fincaNombre.slice(0,16),"house"],
+        ["UBICACION",(finca?.ubicacion||"Nicaragua").slice(0,20),"pin"],
+        ["ADMINISTRADOR",adminNombre.slice(0,20),"person"],
       ];
-
-      filas.forEach((f, i) => {
-        if(i%2===0){doc.setFillColor(248,245,255);}else{doc.setFillColor(255,255,255);}
-        doc.rect(6, y, W-12, 9, "F");
-        doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(120,100,150);
-        doc.text(f[0].toUpperCase(), 10, y+6);
-        doc.setFont("helvetica","bold"); doc.setTextColor(40,20,70);
-        const val = String(f[1]||"—").slice(0,40);
-        doc.text(val, W-8, y+6, {align:"right"});
-        y += 9;
+      infoItems.forEach(([label,val,icon],i)=>{
+        const ix=14+i*(W/3);
+        // Icono círculo
+        doc.setFillColor(...PL); doc.circle(ix,67,5,"F");
+        doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
+        doc.text(icon==="house"?"H":icon==="pin"?"P":"A",ix,69,{align:"center"});
+        doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
+        doc.text(label,ix+8,64);
+        doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(30,10,60);
+        doc.text(val,ix+8,70);
       });
 
-      y += 8;
+      // ── MONTO TOTAL ────────────────────────────────────────────────────────
+      let y=82;
+      doc.setFillColor(255,255,255); doc.setDrawColor(...PL); doc.setLineWidth(1.5);
+      doc.roundedRect(8,y,W-16,36,4,4,"FD");
+      // Puntos decorativos
+      for(let r=0;r<6;r++) for(let c=0;c<4;c++){doc.setFillColor(...PL);doc.circle(13+c*4,y+4+r*5.5,0.8,"F");}
+      // Sello PAGADO
+      doc.setFillColor(255,255,255); doc.setDrawColor(...PD); doc.setLineWidth(1.2);
+      doc.circle(W-20,y+18,12,"FD");
+      doc.setFillColor(...PD); doc.circle(W-20,y+18,9,"F");
+      doc.setFontSize(5.5); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text("PAGADO",W-20,y+16,{align:"center"});
+      doc.setFontSize(9); doc.text("OK",W-20,y+21,{align:"center"});
+      // Texto monto
+      doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...PM);
+      doc.text("MONTO TOTAL",W/2-10,y+9,{align:"center"});
+      doc.setFontSize(28); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
+      doc.text(`C$ ${monto.toLocaleString("es-NI")}`,W/2-10,y+24,{align:"center"});
+      doc.setDrawColor(...PL); doc.setLineWidth(0.5); doc.line(30,y+27,W-38,y+27);
+      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...PM);
+      doc.text(numToWords(monto),W/2-10,y+33,{align:"center"});
+      y+=42;
 
-      // Línea de firma
-      doc.setDrawColor(200,180,230); doc.setLineWidth(0.3);
-      doc.line(10, y, W/2-4, y);
-      doc.line(W/2+4, y, W-10, y);
-      doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(150,120,190);
-      doc.text("Firma del Responsable", W/4, y+5, {align:"center"});
-      doc.text("Firma del Administrador", 3*W/4, y+5, {align:"center"});
-      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(107,33,168);
-      doc.text(g.responsable||g.usuario?.nombre||"_______________", W/4, y+11, {align:"center"});
-      doc.text(user?.nombre||"_______________", 3*W/4, y+11, {align:"center"});
+      // ── DOS COLUMNAS: DETALLE GASTO | DETALLE DE PAGO ─────────────────────
+      const colL=8, colR=W/2+4, colW=(W-16)/2-2;
+      const detH=80;
 
-      // Footer
-      doc.setFillColor(107,33,168); doc.rect(0,H-8,W,8,"F");
-      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(200,160,255);
-      doc.text("Henriquez Cattle Management ERP  •  Documento Oficial", W/2, H-3, {align:"center"});
+      // Columna izquierda
+      doc.setFillColor(255,255,255); doc.setDrawColor(230,220,245); doc.setLineWidth(0.3);
+      doc.roundedRect(colL,y,colW,detH,3,3,"FD");
+      const filasDet=[
+        ["DESCRIPCION",   g.descripcion||"—"],
+        ["RESPONSABLE",   responsable.split(" — ")[0]||"—"],
+        ["REGISTRADO POR",g.usuario?.nombre||"—"],
+        ["FINCA",         finca?.nombre||"—"],
+        ["CATEGORIA",     cat.value],
+        ["PERIODICIDAD",  g.periodicidad],
+        ...(g.notas?[["NOTAS",g.notas]]:[] ),
+      ];
+      let fy=y+8;
+      filasDet.slice(0,7).forEach(([lbl,val])=>{
+        doc.setFillColor(...PL); doc.circle(colL+6,fy,3.5,"F");
+        doc.setFontSize(5); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
+        doc.text(lbl,colL+12,fy-2.5);
+        doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(25,10,50);
+        doc.text(String(val||"—").slice(0,28),colL+12,fy+3);
+        fy+=11;
+      });
+
+      // Columna derecha "DETALLE DE PAGO"
+      doc.setFillColor(255,255,255); doc.roundedRect(colR,y,colW,detH,3,3,"FD");
+      doc.setFillColor(...PD); doc.roundedRect(colR,y,colW,9,3,3,"F");
+      doc.rect(colR,y+4,colW,5,"F");
+      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text("DETALLE DE PAGO",colR+colW/2,y+6.5,{align:"center"});
+      let ry2=y+15;
+      [
+        ["METODO DE PAGO","EFECTIVO"],
+        ["FECHA DE PAGO",  fechaLarga],
+        ["REFERENCIA",     g.id?.slice(0,8).toUpperCase()||"N/A"],
+        ["ESTADO",         "PAGADO"],
+      ].forEach(([lbl,val])=>{
+        doc.setFillColor(...PL); doc.circle(colR+6,ry2,3.5,"F");
+        doc.setFontSize(5); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
+        doc.text(lbl,colR+12,ry2-2.5);
+        if(val==="PAGADO"){
+          doc.setFillColor(220,252,231); doc.setDrawColor(21,128,61); doc.setLineWidth(0.3);
+          doc.roundedRect(colR+12,ry2+0.5,18,5,2,2,"FD");
+          doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(21,128,61);
+          doc.text("PAGADO",colR+21,ry2+4,{align:"center"});
+        } else {
+          doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(25,10,50);
+          doc.text(String(val).slice(0,26),colR+12,ry2+3);
+        }
+        ry2+=13;
+      });
+      y+=detH+6;
+
+      // ── FIRMAS ─────────────────────────────────────────────────────────────
+      doc.setFillColor(...PL); doc.roundedRect(8,y,W-16,62,4,4,"F");
+      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
+      doc.text("FIRMAS Y AUTORIZACIONES",16,y+8);
+      doc.setDrawColor(...PM); doc.setLineWidth(0.4); doc.line(16,y+10,W-16,y+10);
+
+      const firmas=[
+        ["FIRMA DEL RESPONSABLE", responsable.split(" — ")[0]||adminNombre],
+        ["FIRMA DEL TRABAJADOR",  receptor||"_______________"],
+        ["FIRMA DEL ADMINISTRADOR",adminNombre],
+      ];
+      const fW3=(W-32)/4;
+      firmas.forEach(([titulo,nombre],i)=>{
+        const fx=12+i*(fW3+2);
+        doc.setFontSize(5.5); doc.setFont("helvetica","bold"); doc.setTextColor(...PM);
+        doc.text(titulo,fx+fW3/2,y+16,{align:"center"});
+        // Zona firma
+        doc.setFillColor(255,255,255); doc.roundedRect(fx,y+18,fW3,20,2,2,"F");
+        // Nombre en cursiva simulada
+        doc.setFontSize(10); doc.setFont("helvetica","bolditalic"); doc.setTextColor(50,20,100);
+        doc.text(nombre.split(" ").slice(0,2).join(" "),fx+fW3/2,y+32,{align:"center"});
+        // Línea bajo firma
+        doc.setDrawColor(180,160,220); doc.setLineWidth(0.4);
+        doc.line(fx+3,y+40,fx+fW3-3,y+40);
+        doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(30,10,60);
+        doc.text(nombre.slice(0,20),fx+fW3/2,y+45,{align:"center"});
+        doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(150,130,180);
+        doc.text("C.I: ___________",fx+fW3/2,y+51,{align:"center"});
+      });
+      // Caja "DOCUMENTO OFICIAL"
+      const ox=12+3*(fW3+2);
+      doc.setFillColor(255,255,255); doc.setDrawColor(...PD); doc.setLineWidth(0.5);
+      doc.roundedRect(ox,y+14,fW3,46,3,3,"FD");
+      // Escudo
+      doc.setFillColor(...PL); doc.setDrawColor(...PD); doc.setLineWidth(0.5);
+      doc.roundedRect(ox+fW3/2-6,y+18,12,12,2,2,"FD");
+      doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
+      doc.text("OK",ox+fW3/2,y+26,{align:"center"});
+      doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
+      doc.text("DOCUMENTO OFICIAL",ox+fW3/2,y+35,{align:"center"});
+      doc.setFontSize(5.5); doc.setFont("helvetica","normal"); doc.setTextColor(100,80,140);
+      doc.text("Este comprobante es un",ox+fW3/2,y+42,{align:"center"});
+      doc.text("documento oficial de la",ox+fW3/2,y+47,{align:"center"});
+      doc.text("empresa y tiene validez",ox+fW3/2,y+52,{align:"center"});
+      doc.text("legal y contable.",ox+fW3/2,y+57,{align:"center"});
+      y+=68;
+
+      // ── FOOTER ─────────────────────────────────────────────────────────────
+      doc.setFillColor(...PD); doc.rect(0,H-16,W,16,"F");
+      doc.setDrawColor(...PM); doc.setLineWidth(0.6); doc.line(0,H-16,W,H-16);
+      // Secciones footer
+      const footItems=[
+        {icon:"S",label:"Documento generado por",val:"Henriquez Cattle Management ERP",x:12},
+        {icon:"V",label:"VERSION",val:"2.0",x:W*0.38},
+        {icon:"D",label:"DOCUMENTO",val:"OFICIAL",x:W*0.54},
+        {icon:"P",label:"PAGINA",val:"1 de 1",x:W*0.68},
+        {icon:"B",label:"",val:"Gracias por su compromiso con la excelencia ganadera!",x:W*0.80},
+      ];
+      footItems.forEach(({icon,label,val,x})=>{
+        doc.setFillColor(...PM); doc.circle(x,H-9,3,"F");
+        doc.setFontSize(5); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+        doc.text(icon,x,H-8,{align:"center"});
+        doc.setFontSize(5); doc.setFont("helvetica","bold"); doc.setTextColor(200,160,255);
+        if(label) doc.text(label,x+5,H-12);
+        doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+        doc.text(val.slice(0,24),x+5,H-6);
+      });
 
       doc.save(`${num}.pdf`);
-    } catch(e) { setError("Error generando comprobante: "+e.message); }
+    } catch(e) { setError("Error generando comprobante: "+e.message); console.error(e); }
   }
 
   const esAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
@@ -327,6 +492,20 @@ export default function GastosPage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Receptor del pago */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">
+              Nombre completo de quien recibe el pago
+            </label>
+            <p className="text-xs text-gray-400 mb-1">Esta persona colocará su firma en el comprobante</p>
+            <input
+              className="w-full border-2 border-purple-200 rounded-xl p-3 focus:border-purple-400 focus:outline-none bg-gray-50 font-semibold text-gray-800"
+              placeholder="Ej: Juan Carlos Pérez García"
+              value={values.receptor}
+              onChange={(e) => onChange({ ...values, receptor: e.target.value })}
+            />
           </div>
 
           {/* Notas */}
