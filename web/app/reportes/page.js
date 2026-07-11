@@ -203,52 +203,52 @@ export default function ReportesPage() {
   // ═══════════════════════════ ENCABEZADO ════════════════════════════════════
   function makeHeader(doc, {logo,fincaNombre,adminNombre,ubicacion,fecha,hora,numReporte,p,W}) {
     const HH=50;
+    const nombre = (fincaNombre||"MI FINCA").toUpperCase();
     // Fondo oscuro
     doc.setFillColor(18,18,18); doc.rect(0,0,W,HH,"F");
     // Área blanca para el logo
     doc.setFillColor(255,255,255); doc.roundedRect(4,4,42,HH-8,2,2,"F");
-    if(logo) doc.addImage(logo,"JPEG",5,6,40,40*0.52);
+    if(logo) doc.addImage(logo,"JPEG",5,6,40,40*0.75);
 
-    // Nombre de la finca (área oscura)
-    doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(140,140,140);
-    doc.text("GANADERÍA",50,13);
-    doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-    doc.text((fincaNombre||"MI FINCA").toUpperCase().slice(0,18),50,24);
+    // Nombre de la finca — sin "GANADERÍA", tamaño adaptativo, maxWidth para que no se corte
+    const fnSz = nombre.length > 22 ? 11 : nombre.length > 16 ? 13 : 15;
+    doc.setFontSize(fnSz); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+    doc.text(nombre,50,22,{maxWidth:58});
     doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(120,120,120);
-    doc.text("CATTLE MANAGEMENT",50,31);
+    doc.text("CATTLE MANAGEMENT",50,32);
 
     // Línea vertical separadora
     doc.setDrawColor(50,50,50); doc.setLineWidth(0.6);
-    doc.line(112,6,112,HH-6);
+    doc.line(114,6,114,HH-6);
 
-    // Título del reporte (grande, con color institucional)
+    // Título del reporte — limitado antes del panel derecho
     const titleColor=p.dark.map(v=>Math.min(255,v+80));
     doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(140,140,140);
-    doc.text("REPORTE DE",116,14);
-    doc.setFontSize(18); doc.setFont("helvetica","bold"); doc.setTextColor(...titleColor);
-    doc.text(p.title,116,28);
-
+    doc.text("REPORTE DE",118,14);
+    const titleSz = p.title.length > 16 ? 14 : 18;
+    doc.setFontSize(titleSz); doc.setFont("helvetica","bold"); doc.setTextColor(...titleColor);
+    doc.text(p.title,118,28,{maxWidth:W-160});
     // Acento de color bajo el título
-    doc.setFillColor(...p.dark); doc.rect(116,31,doc.getTextWidth(p.title)*18/doc.getFontSize()+1,1.2,"F");
+    doc.setFillColor(...p.dark); doc.rect(118,31,Math.min(doc.getTextWidth(p.title)+1,W-162),1.2,"F");
 
-    // Panel de metadata (derecha)
-    const RX=W-40;
-    doc.setFillColor(30,30,30); doc.roundedRect(RX-2,5,38,HH-10,2,2,"F");
+    // Panel de metadata (derecha) — fecha y número sin QR
+    const RX=W-38;
+    doc.setFillColor(30,30,30); doc.roundedRect(RX-2,5,36,HH-10,2,2,"F");
     doc.setFontSize(5.5); doc.setFont("helvetica","normal"); doc.setTextColor(120,120,120);
-    doc.text("N° REPORTE",RX+17,12,{align:"center"});
-    doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(220,220,220);
-    doc.text(numReporte,RX+17,19,{align:"center"});
+    doc.text("N° REPORTE",RX+16,11,{align:"center"});
+    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(220,220,220);
+    doc.text(numReporte,RX+16,18,{align:"center"});
     doc.setDrawColor(50,50,50); doc.setLineWidth(0.3);
-    doc.line(RX,21,RX+34,21);
+    doc.line(RX,20,RX+32,20);
     doc.setFontSize(5.5); doc.setFont("helvetica","normal"); doc.setTextColor(120,120,120);
-    doc.text("FECHA",RX+17,26,{align:"center"});
-    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(200,200,200);
-    doc.text(fecha,RX+17,32,{align:"center"});
+    doc.text("FECHA",RX+16,25,{align:"center"});
+    doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(200,200,200);
+    doc.text(fecha,RX+16,31,{align:"center"});
+    doc.line(RX,33,RX+32,33);
     doc.setFontSize(5.5); doc.setFont("helvetica","normal"); doc.setTextColor(120,120,120);
-    doc.text("HORA",RX+17,37,{align:"center"});
+    doc.text("HORA",RX+16,37,{align:"center"});
     doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(200,200,200);
-    doc.text(hora,RX+17,43,{align:"center"});
-    drawQR(doc,RX+1,HH-1,14,[200,200,200]);
+    doc.text(hora,RX+16,43,{align:"center"});
 
     // Franja de info (finca, ubicación, admin)
     doc.setFillColor(245,246,248); doc.rect(0,HH,W,10,"F");
