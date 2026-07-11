@@ -52,7 +52,7 @@ export default function GastosPage() {
       const q = periodo ? `?periodo=${periodo}` : "";
       const [res, me] = await Promise.all([
         api(`/gastos${q}`),
-        api("/auth/me").catch(() => null),
+        api("/usuarios/perfil").catch(() => null),
       ]);
       setData(res);
       setUser(me);
