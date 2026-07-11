@@ -64,6 +64,7 @@ router.delete("/fincas/:id", async (req, res, next) => {
 
     // Eliminar en cascada todos los datos relacionados
     await prisma.$transaction([
+      prisma.actividadLog.deleteMany({ where: { fincaId: id } }),
       prisma.tareaAnimal.deleteMany({ where: { tarea: { fincaId: id } } }),
       prisma.tarea.deleteMany({ where: { fincaId: id } }),
       prisma.evento.deleteMany({ where: { animal: { fincaId: id } } }),
