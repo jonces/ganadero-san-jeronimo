@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
 import { api } from "@/lib/api";
 
@@ -156,7 +156,6 @@ const gi = { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,2
 export default function AnimalDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [animal, setAnimal] = useState(null);
   const [finca,  setFinca]  = useState(null);
   const [error, setError] = useState("");
@@ -196,13 +195,6 @@ export default function AnimalDetailPage() {
 
   useEffect(() => { load(); }, [id]);
 
-  // Auto-generar informe si viene con ?informe=1
-  useEffect(() => {
-    if(animal && finca && searchParams.get("informe")==="1") {
-      setGenerando(true);
-      generarInformeAnimal(animal, finca).finally(()=>setGenerando(false));
-    }
-  }, [animal, finca]);
 
   async function handleDescargar() {
     setGenerando(true);

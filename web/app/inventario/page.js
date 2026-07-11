@@ -344,7 +344,7 @@ export default function InventarioPage() {
                     <button onClick={ev=>abrirEditar(a,ev)} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(49,130,206,0.25)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
                       ✏️ Editar
                     </button>
-                    <button onClick={ev=>{ev.stopPropagation();router.push(`/inventario/${a.id}?informe=1`);}} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(26,58,108,0.5)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
+                    <button onClick={ev=>{ev.stopPropagation();router.push(`/inventario/${a.id}`);}} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(26,58,108,0.5)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
                       📋 Informe
                     </button>
                     {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
@@ -419,7 +419,7 @@ export default function InventarioPage() {
                     style={{background:"rgba(49,130,206,0.25)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
                     ✏️ Editar
                   </button>
-                  <button onClick={ev=>{ev.stopPropagation();router.push(`/inventario/${a.id}?informe=1`);}}
+                  <button onClick={ev=>{ev.stopPropagation();router.push(`/inventario/${a.id}`);}}
                     className="flex-1 text-xs py-1.5 rounded-xl font-bold"
                     style={{background:"rgba(26,58,108,0.5)",border:"1px solid rgba(147,197,253,0.4)",color:"#bfdbfe"}}>
                     📋 Informe
