@@ -75,6 +75,21 @@ async function generarInformeAnimal(animal, finca) {
     y += 2*10+6;
   }
 
+  // ── HIJOS / CRÍAS ──────────────────────────────────────────────────────────
+  if((animal.crias||[]).length>0){
+    if(y>H-50){doc.addPage();y=15;}
+    y = secTitulo(`HIJOS / CRIAS (${animal.crias.length})`,y);
+    animal.crias.forEach((c,i)=>{
+      if(y>H-20){doc.addPage();y=15;}
+      const col=i%2,row=Math.floor(i/2),cx=10+col*(colW2+4),cy=y+row*10;
+      if(col===0){doc.setFillColor(232,245,233);doc.rect(10,cy-1,W-20,9,"F");}
+      doc.setFontSize(5.5);doc.setFont("helvetica","bold");doc.setTextColor(...GR);doc.text(`CRIA ${i+1} · ${c.sexo==="HEMBRA"?"HEMBRA":"MACHO"}`,cx+1,cy+3);
+      doc.setFontSize(7.5);doc.setFont("helvetica","bold");doc.setTextColor(20,60,20);
+      doc.text(`${c.nombre||"Sin nombre"} — Arete: ${c.identificador}`,cx+1,cy+8);
+    });
+    y += Math.ceil(animal.crias.length/2)*10+6;
+  }
+
   // ── VACUNACIONES RESUMEN ────────────────────────────────────────────────────
   const vacunas=(animal.eventos||[]).filter(ev=>ev.tipo==="VACUNACION");
   if(vacunas.length>0){
@@ -679,6 +694,34 @@ export default function AnimalDetailPage() {
                       <div key={lbl} className="px-3 py-2" style={{ background: "rgba(5,25,12,0.6)" }}>
                         <p className="text-white/40 text-xs">{lbl}</p>
                         <p className="text-white font-bold text-sm">{val}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Hijos / Crías */}
+              {(animal.crias||[]).length > 0 && (
+                <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(45,158,63,0.4)" }}>
+                  <div className="px-4 py-2" style={{ background: "rgba(45,158,63,0.15)" }}>
+                    <p className="text-green-300 font-black text-xs uppercase tracking-widest">
+                      Hijos / Crías — {animal.crias.length} registrado{animal.crias.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div className="divide-y" style={{ borderColor: "rgba(45,158,63,0.15)" }}>
+                    {animal.crias.map((c, i) => (
+                      <div key={c.id} className="flex items-center gap-3 px-4 py-3" style={{ background: "rgba(5,25,12,0.6)" }}>
+                        <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0"
+                          style={{ background: "rgba(45,158,63,0.3)", color: "#86efac" }}>{i+1}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-bold text-sm">{c.nombre || "Sin nombre"}</p>
+                          <p className="text-green-300 text-xs">Arete: {c.identificador}</p>
+                        </div>
+                        <span className="text-xs px-2 py-0.5 rounded-lg font-bold"
+                          style={{ background: c.sexo==="HEMBRA" ? "rgba(229,62,62,0.25)" : "rgba(49,130,206,0.25)",
+                            color: c.sexo==="HEMBRA" ? "#fc8181" : "#90cdf4" }}>
+                          {c.sexo==="HEMBRA" ? "♀ Hembra" : "♂ Macho"}
+                        </span>
                       </div>
                     ))}
                   </div>
