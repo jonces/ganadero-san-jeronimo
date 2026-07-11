@@ -28,12 +28,15 @@ const PERIODICIDADES = [
   { value: "MENSUAL",   label: "📊 Mensual" },
 ];
 
+const TRABAJADOR_VACIO = { nombre: "", dias: 1, precioDia: 0 };
+
 const FORM_VACIO = {
   descripcion: "", categoria: "ALIMENTACION", monto: "",
   moneda: "NIO", periodicidad: "UNICO",
   fecha: new Date().toISOString().slice(0, 10),
   notas: "", responsable: "", receptor: "",
-  proveedor: "", factura: "", detalle: "",
+  proveedor: "", factura: "",
+  trabajadores: [{ ...TRABAJADOR_VACIO }],
 };
 
 function notaAutomatica(categoria, fecha) {
@@ -176,73 +179,167 @@ function FormGasto({ values, onChange, onSubmit, titulo, onCancel, usuarios, fin
         {/* ── CAMPOS PARA GASTOS (no salario) ── */}
         {values.categoria !== "SALARIO" && (<>
 
-          {/* Descripción del gasto */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">
-              {values.categoria === "ALIMENTACION" ? "Producto / alimento comprado" :
-               values.categoria === "MEDICAMENTO"  ? "Medicamento / insumo veterinario" :
-               values.categoria === "MANTENIMIENTO"? "Trabajo o material de mantenimiento" :
-               values.categoria === "COMBUSTIBLE"  ? "Tipo de combustible / uso" :
-               "Descripcion del gasto"} *
-            </label>
-            <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
-              placeholder={
-                values.categoria === "ALIMENTACION" ? "Ej: Concentrado para engorde, sal mineral..." :
-                values.categoria === "MEDICAMENTO"  ? "Ej: Ivermectina 1%, vacuna brucelosis..." :
-                values.categoria === "MANTENIMIENTO"? "Ej: Reparacion de cerca, pintura de instalaciones..." :
-                values.categoria === "COMBUSTIBLE"  ? "Ej: Gasolina para tractor, diesel generador..." :
-                "Describe el gasto..."
-              }
-              value={values.descripcion}
-              onChange={(e) => onChange({ ...values, descripcion: e.target.value })} required />
-          </div>
+          {/* ── MANTENIMIENTO: lista de trabajadores ── */}
+          {values.categoria === "MANTENIMIENTO" ? (<>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">Descripcion del trabajo *</label>
+              <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+                placeholder="Ej: Reparacion de cerca norte, pintura de galera..."
+                value={values.descripcion}
+                onChange={(e) => onChange({ ...values, descripcion: e.target.value })} required />
+            </div>
 
-          {/* Proveedor */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">
-              {values.categoria === "MANTENIMIENTO" ? "Persona o empresa que realizó el trabajo" : "Proveedor / Lugar de compra"}
-            </label>
-            <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
-              placeholder={values.categoria === "MANTENIMIENTO" ? "Ej: Taller Rodriguez, Juan Pérez..." : "Ej: Agroveterinaria Lopez, Ferreteria Central..."}
-              value={values.proveedor || ""}
-              onChange={(e) => onChange({ ...values, proveedor: e.target.value, responsable: e.target.value })} />
-          </div>
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase">Trabajadores</label>
+                  <p className="text-xs text-gray-400">Cada uno tendra su propio comprobante al imprimir</p>
+                </div>
+                <button type="button"
+                  onClick={() => onChange({ ...values, trabajadores: [...(values.trabajadores||[]), { ...TRABAJADOR_VACIO }] })}
+                  className="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-bold text-white"
+                  style={{ background: "#805ad5" }}>
+                  + Agregar
+                </button>
+              </div>
 
-          {/* Numero de factura */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">Numero de factura o recibo <span className="text-gray-300">(opcional)</span></label>
-            <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
-              placeholder="Ej: FAC-00123, REC-456..."
-              value={values.factura || ""}
-              onChange={(e) => onChange({ ...values, factura: e.target.value, receptor: e.target.value })} />
-          </div>
+              <div className="space-y-3">
+                {(values.trabajadores||[]).map((t, i) => {
+                  const subtotal = (Number(t.dias)||0) * (Number(t.precioDia)||0);
+                  return (
+                    <div key={i} className="rounded-2xl border-2 p-4" style={{ borderColor: "#e9d5ff", background: "#faf8ff" }}>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs font-black text-purple-700 uppercase">Trabajador #{i+1}</span>
+                        {(values.trabajadores||[]).length > 1 && (
+                          <button type="button"
+                            onClick={() => onChange({ ...values, trabajadores: values.trabajadores.filter((_,j)=>j!==i) })}
+                            className="text-xs text-red-400 font-bold hover:text-red-600">✕ Quitar</button>
+                        )}
+                      </div>
+                      <input className="w-full border-2 border-gray-200 rounded-xl p-3 mb-2 focus:border-purple-400 focus:outline-none bg-white text-sm font-semibold"
+                        placeholder="Nombre completo del trabajador"
+                        value={t.nombre}
+                        onChange={(e) => { const w=[...values.trabajadores]; w[i]={...w[i],nombre:e.target.value}; onChange({...values,trabajadores:w}); }} />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-xs text-gray-400 font-bold">Dias trabajados</label>
+                          <input type="number" min="1" step="0.5"
+                            className="w-full border-2 border-gray-200 rounded-xl p-2 mt-1 focus:border-purple-400 focus:outline-none bg-white text-sm text-center font-bold"
+                            value={t.dias}
+                            onChange={(e) => { const w=[...values.trabajadores]; w[i]={...w[i],dias:e.target.value}; onChange({...values,trabajadores:w}); }} />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-400 font-bold">Pago por dia (C$)</label>
+                          <input type="number" min="0" step="0.01"
+                            className="w-full border-2 border-gray-200 rounded-xl p-2 mt-1 focus:border-purple-400 focus:outline-none bg-white text-sm text-center font-bold"
+                            value={t.precioDia}
+                            onChange={(e) => { const w=[...values.trabajadores]; w[i]={...w[i],precioDia:e.target.value}; onChange({...values,trabajadores:w}); }} />
+                        </div>
+                      </div>
+                      {subtotal > 0 && (
+                        <div className="mt-2 px-3 py-2 rounded-xl flex justify-between items-center" style={{ background: "#ede9fe" }}>
+                          <span className="text-xs font-bold text-purple-700">Total a pagar:</span>
+                          <span className="font-black text-purple-900">C$ {subtotal.toLocaleString("es",{maximumFractionDigits:2})}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
-          {/* Notas adicionales */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">Notas adicionales <span className="text-gray-300">(opcional)</span></label>
-            <textarea className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none resize-none bg-gray-50 text-sm"
-              placeholder="Cualquier detalle extra relevante..."
-              rows={3} value={values.notas}
-              onChange={(e) => onChange({ ...values, notas: e.target.value })} />
-          </div>
+              {/* Total general */}
+              {(() => {
+                const total = (values.trabajadores||[]).reduce((s,t)=>s+(Number(t.dias)||0)*(Number(t.precioDia)||0),0);
+                return total > 0 ? (
+                  <div className="mt-3 p-4 rounded-2xl flex justify-between items-center" style={{ background: "#553c9a" }}>
+                    <div>
+                      <p className="text-purple-200 text-xs font-bold">{(values.trabajadores||[]).length} trabajador(es)</p>
+                      <p className="text-white text-xs">Total general</p>
+                    </div>
+                    <span className="text-white font-black text-2xl">C$ {total.toLocaleString("es",{maximumFractionDigits:2})}</span>
+                  </div>
+                ) : null;
+              })()}
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">Notas <span className="text-gray-300">(opcional)</span></label>
+              <textarea className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none resize-none bg-gray-50 text-sm"
+                placeholder="Detalles del trabajo realizado..."
+                rows={2} value={values.notas}
+                onChange={(e) => onChange({ ...values, notas: e.target.value })} />
+            </div>
+          </>) : (<>
+            {/* Otros gastos (alimentacion, medicamento, combustible, otro) */}
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">
+                {values.categoria === "ALIMENTACION" ? "Producto / alimento comprado" :
+                 values.categoria === "MEDICAMENTO"  ? "Medicamento / insumo veterinario" :
+                 values.categoria === "COMBUSTIBLE"  ? "Tipo de combustible / uso" :
+                 "Descripcion del gasto"} *
+              </label>
+              <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+                placeholder={
+                  values.categoria === "ALIMENTACION" ? "Ej: Concentrado para engorde, sal mineral..." :
+                  values.categoria === "MEDICAMENTO"  ? "Ej: Ivermectina 1%, vacuna brucelosis..." :
+                  values.categoria === "COMBUSTIBLE"  ? "Ej: Gasolina para tractor, diesel generador..." :
+                  "Describe el gasto..."
+                }
+                value={values.descripcion}
+                onChange={(e) => onChange({ ...values, descripcion: e.target.value })} required />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">Proveedor / Lugar de compra</label>
+              <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+                placeholder="Ej: Agroveterinaria Lopez, Ferreteria Central..."
+                value={values.proveedor || ""}
+                onChange={(e) => onChange({ ...values, proveedor: e.target.value, responsable: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">Numero de factura o recibo <span className="text-gray-300">(opcional)</span></label>
+              <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+                placeholder="Ej: FAC-00123, REC-456..."
+                value={values.factura || ""}
+                onChange={(e) => onChange({ ...values, factura: e.target.value, receptor: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">Notas adicionales <span className="text-gray-300">(opcional)</span></label>
+              <textarea className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none resize-none bg-gray-50 text-sm"
+                placeholder="Cualquier detalle extra relevante..."
+                rows={3} value={values.notas}
+                onChange={(e) => onChange({ ...values, notas: e.target.value })} />
+            </div>
+          </>)}
         </>)}
 
-        {/* Monto y Fecha — siempre visibles */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">Monto (C$) *</label>
-            <input type="number" step="0.01"
-              className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
-              placeholder="0.00" value={values.monto}
-              onChange={(e) => onChange({ ...values, monto: e.target.value })} required />
+        {/* Monto y Fecha para SALARIO */}
+        {values.categoria === "SALARIO" && (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">Monto (C$) *</label>
+              <input type="number" step="0.01"
+                className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+                placeholder="0.00" value={values.monto}
+                onChange={(e) => onChange({ ...values, monto: e.target.value })} required />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">Fecha</label>
+              <input type="date"
+                className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+                value={values.fecha} onChange={(e) => onChange({ ...values, fecha: e.target.value })} />
+            </div>
           </div>
+        )}
+
+        {/* Fecha para MANTENIMIENTO (monto viene de trabajadores) */}
+        {values.categoria === "MANTENIMIENTO" && (
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">Fecha</label>
+            <label className="text-xs font-bold text-gray-500 uppercase">Fecha del trabajo</label>
             <input type="date"
               className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
               value={values.fecha} onChange={(e) => onChange({ ...values, fecha: e.target.value })} />
           </div>
-        </div>
+        )}
 
         {/* Periodicidad — siempre visible */}
         <div>
@@ -258,11 +355,33 @@ function FormGasto({ values, onChange, onSubmit, titulo, onCancel, usuarios, fin
           </div>
         </div>
 
+        {/* Para mantenimiento ocultar monto manual — se calcula de trabajadores */}
+        {values.categoria !== "MANTENIMIENTO" && (
+          <div className="grid grid-cols-2 gap-3 -mt-2">
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">Monto (C$) *</label>
+              <input type="number" step="0.01"
+                className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+                placeholder="0.00" value={values.monto}
+                onChange={(e) => onChange({ ...values, monto: e.target.value })} required />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase">Fecha</label>
+              <input type="date"
+                className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+                value={values.fecha} onChange={(e) => onChange({ ...values, fecha: e.target.value })} />
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-3">
           <button disabled={enviando} type="submit"
             className="flex-1 text-white rounded-2xl py-4 font-black disabled:opacity-50"
             style={{ background: "#805ad5" }}>
-            {enviando ? "Guardando..." : "Guardar"}
+            {enviando ? "Guardando..." :
+              values.categoria === "MANTENIMIENTO"
+                ? `Guardar ${(values.trabajadores||[]).filter(t=>t.nombre.trim()).length || ""} comprobante(s)`
+                : "Guardar"}
           </button>
           <button type="button" onClick={onCancel}
             className="px-6 rounded-2xl py-4 font-black border-2 border-gray-200 text-gray-500 hover:bg-gray-50">
@@ -311,7 +430,24 @@ export default function GastosPage() {
     e.preventDefault();
     setEnviando(true); setError("");
     try {
-      await api("/gastos", { method: "POST", body: form });
+      if (form.categoria === "MANTENIMIENTO" && form.trabajadores?.length > 0) {
+        // Crear un gasto individual por cada trabajador
+        const validos = form.trabajadores.filter(t => t.nombre.trim() && Number(t.dias) > 0 && Number(t.precioDia) > 0);
+        if (validos.length === 0) { setError("Agrega al menos un trabajador con nombre, días y pago por día."); setEnviando(false); return; }
+        await Promise.all(validos.map(t => api("/gastos", { method: "POST", body: {
+          descripcion: form.descripcion || "Mantenimiento",
+          categoria:   "MANTENIMIENTO",
+          monto:       Number(t.dias) * Number(t.precioDia),
+          moneda:      form.moneda,
+          periodicidad:form.periodicidad,
+          fecha:       form.fecha,
+          notas:       form.notas || null,
+          responsable: form.responsable || null,
+          receptor:    t.nombre.trim(),
+        }})));
+      } else {
+        await api("/gastos", { method: "POST", body: form });
+      }
       setForm(FORM_VACIO); setShowForm(false); load();
     } catch (err) { setError(err.message); }
     finally { setEnviando(false); }
