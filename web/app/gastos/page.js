@@ -35,6 +35,19 @@ const FORM_VACIO = {
   notas: "", responsable: "", receptor: "",
 };
 
+function notaAutomatica(categoria, fecha) {
+  const f = fecha ? new Date(fecha + "T12:00:00").toLocaleDateString("es", { day: "numeric", month: "long", year: "numeric" }) : "";
+  const notas = {
+    SALARIO: `Por medio del presente comprobante se hace constar que se realiza el pago de salario correspondiente al trabajador que firma el presente documento, conforme al acuerdo laboral establecido entre las partes y en pleno cumplimiento de las políticas internas de la empresa. El pago se entrega en la fecha indicada (${f}) como reconocimiento de los servicios prestados durante el período acordado. Ambas partes confirman estar de acuerdo con el monto recibido.`,
+    ALIMENTACION: `Pago realizado el ${f} por concepto de adquisición de insumos de alimentación para el ganado, conforme al plan de nutrición establecido por la administración de la finca.`,
+    MEDICAMENTO: `Compra de medicamentos y/o insumos veterinarios realizada el ${f}, conforme al protocolo de salud animal vigente aprobado por la administración.`,
+    MANTENIMIENTO: `Pago efectuado el ${f} por concepto de mantenimiento de instalaciones y/o equipos de la finca, según programa de mantenimiento aprobado por la administración.`,
+    COMBUSTIBLE: `Pago por adquisición de combustible realizado el ${f} para uso exclusivo de maquinaria y vehículos de la finca, conforme a las necesidades operativas autorizadas.`,
+    OTRO: `Gasto registrado el ${f} conforme a las políticas internas de la empresa y debidamente autorizado por la administración de la finca.`,
+  };
+  return notas[categoria] || notas.OTRO;
+}
+
 function numToWords(n) {
   n = Math.round(n || 0);
   if (!n) return "CERO CORDOBAS NETOS";
@@ -76,7 +89,8 @@ function FormGasto({ values, onChange, onSubmit, titulo, onCancel, usuarios, fin
           <label className="text-xs font-bold text-gray-500 uppercase">Categoría</label>
           <div className="grid grid-cols-2 gap-2 mt-2">
             {CATEGORIAS.map((c) => (
-              <button type="button" key={c.value} onClick={() => onChange({ ...values, categoria: c.value })}
+              <button type="button" key={c.value}
+                onClick={() => onChange({ ...values, categoria: c.value, notas: notaAutomatica(c.value, values.fecha) })}
                 className="rounded-xl py-2 px-3 text-sm font-bold border-2 transition-all text-left"
                 style={{ background: values.categoria === c.value ? c.color : "#fff", color: values.categoria === c.value ? "#fff" : c.color, borderColor: c.color }}>
                 {c.label}
@@ -190,9 +204,19 @@ function FormGasto({ values, onChange, onSubmit, titulo, onCancel, usuarios, fin
 
         {/* Notas */}
         <div>
-          <label className="text-xs font-bold text-gray-500 uppercase">Notas</label>
-          <textarea className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none resize-none bg-gray-50"
-            placeholder="Detalles adicionales..." rows={2} value={values.notas}
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs font-bold text-gray-500 uppercase">Nota del comprobante</label>
+            {values.notas && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+                style={{ background: "#f5f0ff", color: "#805ad5" }}>
+                Generada automaticamente · puedes editar
+              </span>
+            )}
+          </div>
+          <textarea className="w-full border-2 rounded-xl p-3 focus:outline-none resize-none text-sm leading-relaxed"
+            style={{ borderColor: values.notas ? "#c4b5fd" : "#e5e7eb", background: values.notas ? "#faf8ff" : "#f9fafb", color: "#374151" }}
+            placeholder="Selecciona una categoria para generar la nota automaticamente..."
+            rows={5} value={values.notas}
             onChange={(e) => onChange({ ...values, notas: e.target.value })} />
         </div>
 
