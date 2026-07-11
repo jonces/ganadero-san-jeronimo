@@ -525,47 +525,30 @@ export default function GastosPage() {
       try{ doc.setGState(doc.GState({opacity:1})); }catch(_){}
 
       // Logo (círculo blanco + imagen)
-      doc.setFillColor(255,255,255); doc.circle(20,28,16,"F");
-      if(logoB64) doc.addImage(logoB64,"JPEG",6,14,28,28);
+      doc.setFillColor(255,255,255); doc.circle(22,28,16,"F");
+      if(logoB64) doc.addImage(logoB64,"JPEG",8,14,28,28);
 
-      // Badge nombre finca bajo logo
-      doc.setFillColor(...PM); doc.roundedRect(5,46,30,8,2,2,"F");
-      doc.setFontSize(5.5); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-      doc.text(fincaNombre.slice(0,12),20,51,{align:"center"});
-      doc.setFontSize(4.5); doc.setFont("helvetica","normal");
-      doc.text("CATTLE MANAGEMENT",20,54.5,{align:"center"});
-
-      // Nombre finca grande
-      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(220,180,255);
-      doc.text("GANADERIA",42,16);
-      doc.setFontSize(22); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-      doc.text(fincaNombre.slice(0,16),42,30);
+      // Nombre finca — ajusta tamaño según longitud
+      const fnSize = fincaNombre.length > 18 ? 14 : fincaNombre.length > 12 ? 17 : 20;
+      doc.setFontSize(fnSize); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text(fincaNombre.toUpperCase(),46,26,{maxWidth:60});
       doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(200,160,255);
-      doc.text("CATTLE MANAGEMENT",42,37);
+      doc.text("CATTLE MANAGEMENT",46,35);
 
       // Línea divisoria vertical
       doc.setDrawColor(126,34,206); doc.setLineWidth(0.5);
-      doc.line(100,6,100,52);
+      doc.line(112,6,112,52);
 
       // Título comprobante
-      doc.setFontSize(16); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-      doc.text("COMPROBANTE DE PAGO",106,18);
+      doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text("COMPROBANTE DE PAGO",W/2+28,18,{align:"center"});
       // Badge número
-      doc.setFillColor(255,255,255); doc.roundedRect(106,21,66,8,3,3,"F");
-      doc.setFontSize(9); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
-      doc.text(num,139,26.5,{align:"center"});
+      doc.setFillColor(255,255,255); doc.roundedRect(116,21,W-120,8,3,3,"F");
+      doc.setFontSize(8.5); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
+      doc.text(num,116+(W-120)/2,26.5,{align:"center"});
       // Fecha
       doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(220,200,255);
-      doc.text("  "+fechaLarga,106,37);
-
-      // QR (simulado)
-      const qrX=W-24, qrY=8, qrS=18;
-      doc.setFillColor(255,255,255); doc.rect(qrX-1,qrY-1,qrS+2,qrS+2,"F");
-      const qCell=qrS/12;
-      const qPat=[[1,1,1,1,1,0,1,1,0,1,1,1],[1,0,1,0,1,0,0,0,0,1,0,1],[1,0,1,0,1,0,1,1,0,1,0,1],[1,0,1,0,1,0,0,1,0,1,0,1],[1,1,1,1,1,0,1,0,0,1,1,1],[0,0,0,0,0,0,1,1,0,0,0,0],[1,0,1,1,0,1,0,1,1,0,1,1],[0,1,0,0,1,0,1,0,0,1,0,0],[1,1,1,0,1,0,1,1,0,1,1,0],[1,0,1,1,1,0,0,1,0,1,0,1],[0,0,1,0,0,0,1,0,1,0,1,1],[1,1,1,1,1,0,0,1,0,1,1,1]];
-      qPat.forEach((row,ri)=>row.forEach((v,ci)=>{if(v){doc.setFillColor(...PD);doc.rect(qrX+ci*qCell,qrY+ri*qCell,qCell,qCell,"F");}}));
-      doc.setFontSize(4); doc.setFont("helvetica","normal"); doc.setTextColor(200,160,255);
-      doc.text("Verificar documento",qrX+qrS/2,qrY+qrS+4,{align:"center"});
+      doc.text(fechaLarga,116+(W-120)/2,37,{align:"center"});
 
       // ── BARRA INFO ─────────────────────────────────────────────────────────
       doc.setFillColor(240,235,255); doc.rect(0,58,W,18,"F");
