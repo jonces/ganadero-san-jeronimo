@@ -344,6 +344,9 @@ export default function InventarioPage() {
                     <button onClick={ev=>abrirEditar(a,ev)} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(49,130,206,0.25)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
                       ✏️ Editar
                     </button>
+                    <button onClick={ev=>{ev.stopPropagation();router.push(`/inventario/${a.id}?informe=1`);}} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(26,58,108,0.5)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
+                      📋 Informe
+                    </button>
                     {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
                       <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
                         🐮 Parto
@@ -410,22 +413,27 @@ export default function InventarioPage() {
                 <p className="text-white font-black text-sm truncate">{a.nombre||a.identificador}</p>
                 <p className="text-white/40 text-xs truncate">{a.raza||"Sin raza"} · {a.identificador}</p>
                 {a.pesoActual&&<p className="text-green-400 text-xs font-bold mt-1">⚖️ {a.pesoActual} kg</p>}
-                <div className="flex gap-1.5 mt-2">
+                <div className="flex gap-1.5 mt-2 flex-wrap">
                   <button onClick={ev=>abrirEditar(a,ev)}
                     className="flex-1 text-xs py-1.5 rounded-xl font-bold"
                     style={{background:"rgba(49,130,206,0.25)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
                     ✏️ Editar
                   </button>
+                  <button onClick={ev=>{ev.stopPropagation();router.push(`/inventario/${a.id}?informe=1`);}}
+                    className="flex-1 text-xs py-1.5 rounded-xl font-bold"
+                    style={{background:"rgba(26,58,108,0.5)",border:"1px solid rgba(147,197,253,0.4)",color:"#bfdbfe"}}>
+                    📋 Informe
+                  </button>
                   {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
                     <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}}
-                      className="flex-1 text-xs py-1.5 rounded-xl font-bold"
+                      className="w-full text-xs py-1.5 rounded-xl font-bold mt-0.5"
                       style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
                       🐮 Parto
                     </button>
                   )}
                   {a.estado==="MUERTO"&&(
                     <button onClick={ev=>archivarAnimal(a.id,ev)}
-                      className="flex-1 text-xs py-1.5 rounded-xl font-bold"
+                      className="w-full text-xs py-1.5 rounded-xl font-bold mt-0.5"
                       style={{background:"rgba(116,42,42,0.5)",border:"1px solid rgba(229,62,62,0.4)",color:"#fc8181"}}>
                       🗑️ Quitar
                     </button>
