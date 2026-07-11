@@ -33,6 +33,7 @@ const FORM_VACIO = {
   moneda: "NIO", periodicidad: "UNICO",
   fecha: new Date().toISOString().slice(0, 10),
   notas: "", responsable: "", receptor: "",
+  proveedor: "", factura: "", detalle: "",
 };
 
 function notaAutomatica(categoria, fecha) {
@@ -99,84 +100,134 @@ function FormGasto({ values, onChange, onSubmit, titulo, onCancel, usuarios, fin
           </div>
         </div>
 
-        {/* Responsable del pago */}
-        <div>
-          <label className="text-xs font-bold text-gray-500 uppercase">Responsable del pago</label>
-          <div className="mt-2 space-y-2">
-            {opcionesUsuario.map((op) => {
-              const sel = values.responsable === op.valor;
-              return (
-                <button type="button" key={op.valor}
-                  onClick={() => onChange({ ...values, responsable: op.valor })}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left"
-                  style={{ borderColor: sel ? "#805ad5" : "#e5e7eb", background: sel ? "#f5f0ff" : "#fff" }}>
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0"
-                    style={{ background: sel ? "#805ad5" : "#e5e7eb", color: sel ? "#fff" : "#6b7280" }}>
-                    {op.initials}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-bold text-sm" style={{ color: sel ? "#553c9a" : "#374151" }}>{op.etiqueta}</p>
-                    <p className="text-xs" style={{ color: sel ? "#805ad5" : "#9ca3af" }}>{op.sub}</p>
-                  </div>
-                  {sel && <span className="ml-auto text-purple-600 font-bold">✓</span>}
-                </button>
-              );
-            })}
-            {/* Opción "Otro" */}
-            <button type="button"
-              onClick={() => onChange({ ...values, responsable: esOtroSeleccionado ? values.responsable : "" })}
-              className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left"
-              style={{ borderColor: esOtroSeleccionado ? "#805ad5" : "#e5e7eb", background: esOtroSeleccionado ? "#f5f0ff" : "#fff" }}>
-              <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0"
-                style={{ background: esOtroSeleccionado ? "#805ad5" : "#e5e7eb", color: esOtroSeleccionado ? "#fff" : "#6b7280" }}>
-                +
-              </div>
-              <div className="min-w-0">
-                <p className="font-bold text-sm" style={{ color: esOtroSeleccionado ? "#553c9a" : "#374151" }}>Otro</p>
-                <p className="text-xs" style={{ color: esOtroSeleccionado ? "#805ad5" : "#9ca3af" }}>Escribir nombre manualmente</p>
-              </div>
-              {esOtroSeleccionado && <span className="ml-auto text-purple-600 font-bold">✓</span>}
-            </button>
+        {/* ── CAMPOS PARA SALARIO ── */}
+        {values.categoria === "SALARIO" && (<>
+
+          {/* Responsable del pago */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">Quien paga / Responsable</label>
+            <p className="text-xs text-gray-400 mb-2">Administrador o encargado que entrega el salario</p>
+            <div className="space-y-2">
+              {opcionesUsuario.map((op) => {
+                const sel = values.responsable === op.valor;
+                return (
+                  <button type="button" key={op.valor}
+                    onClick={() => onChange({ ...values, responsable: op.valor })}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left"
+                    style={{ borderColor: sel ? "#805ad5" : "#e5e7eb", background: sel ? "#f5f0ff" : "#fff" }}>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0"
+                      style={{ background: sel ? "#805ad5" : "#e5e7eb", color: sel ? "#fff" : "#6b7280" }}>
+                      {op.initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-sm" style={{ color: sel ? "#553c9a" : "#374151" }}>{op.etiqueta}</p>
+                      <p className="text-xs" style={{ color: sel ? "#805ad5" : "#9ca3af" }}>{op.sub}</p>
+                    </div>
+                    {sel && <span className="ml-auto text-purple-600 font-bold">✓</span>}
+                  </button>
+                );
+              })}
+              <button type="button"
+                onClick={() => onChange({ ...values, responsable: esOtroSeleccionado ? values.responsable : " " })}
+                className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left"
+                style={{ borderColor: esOtroSeleccionado ? "#805ad5" : "#e5e7eb", background: esOtroSeleccionado ? "#f5f0ff" : "#fff" }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0"
+                  style={{ background: esOtroSeleccionado ? "#805ad5" : "#e5e7eb", color: esOtroSeleccionado ? "#fff" : "#6b7280" }}>+</div>
+                <div><p className="font-bold text-sm" style={{ color: esOtroSeleccionado ? "#553c9a" : "#374151" }}>Otro</p>
+                  <p className="text-xs text-gray-400">Escribir nombre manualmente</p></div>
+                {esOtroSeleccionado && <span className="ml-auto text-purple-600 font-bold">✓</span>}
+              </button>
+            </div>
+            {(esOtroSeleccionado || opcionesUsuario.length === 0) && (
+              <input className="w-full border-2 border-purple-300 rounded-xl p-3 mt-2 focus:border-purple-400 focus:outline-none bg-gray-50"
+                placeholder="Nombre del responsable..." value={values.responsable.trim()}
+                onChange={(e) => onChange({ ...values, responsable: e.target.value })} />
+            )}
           </div>
-          {/* Campo manual si se eligió "Otro" o no hay usuarios cargados */}
-          {(esOtroSeleccionado || (opcionesUsuario.length === 0)) && (
+
+          {/* Nombre del trabajador que recibe */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">Nombre del trabajador que recibe</label>
+            <p className="text-xs text-gray-400 mb-1">Firmará el comprobante confirmando que recibió su pago</p>
             <input
-              className="w-full border-2 border-purple-300 rounded-xl p-3 mt-2 focus:border-purple-400 focus:outline-none bg-gray-50"
-              placeholder="Nombre del responsable..."
-              value={values.responsable}
-              onChange={(e) => onChange({ ...values, responsable: e.target.value })}
+              className="w-full border-2 border-purple-200 rounded-xl p-3 focus:border-purple-400 focus:outline-none bg-gray-50 font-semibold text-gray-800"
+              placeholder="Ej: Juan Carlos Pérez García"
+              value={values.receptor}
+              onChange={(e) => onChange({ ...values, receptor: e.target.value })}
             />
-          )}
-        </div>
+          </div>
 
-        {/* Texto del comprobante — el empleado lo lee antes de firmar */}
-        <div>
-          <label className="text-xs font-bold text-gray-500 uppercase">Texto del comprobante</label>
-          <p className="text-xs text-gray-400 mt-0.5 mb-2">El empleado leerá este texto antes de firmar. Puedes editarlo.</p>
-          {values.notas ? (
+          {/* Texto del comprobante */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">Texto del comprobante</label>
+            <p className="text-xs text-gray-400 mb-1">El trabajador leerá esto antes de firmar</p>
             <div className="rounded-2xl overflow-hidden border-2" style={{ borderColor: "#805ad5" }}>
-              <div className="px-4 py-2 flex items-center gap-2" style={{ background: "#553c9a" }}>
-                <span className="text-white text-xs font-black uppercase tracking-wide">Texto que aparecera en el PDF</span>
-                <span className="ml-auto text-purple-200 text-xs">Editable</span>
+              <div className="px-4 py-2" style={{ background: "#553c9a" }}>
+                <span className="text-white text-xs font-black uppercase tracking-wide">Aparece en el PDF · Editable</span>
               </div>
-              <textarea
-                className="w-full p-4 text-sm leading-relaxed focus:outline-none resize-none"
-                style={{ background: "#faf8ff", color: "#2d1b69", minHeight: "120px" }}
-                rows={6}
-                value={values.notas}
-                onChange={(e) => onChange({ ...values, notas: e.target.value })}
-              />
+              <textarea className="w-full p-4 text-sm leading-relaxed focus:outline-none resize-none"
+                style={{ background: "#faf8ff", color: "#2d1b69" }}
+                rows={5} value={values.notas}
+                onChange={(e) => onChange({ ...values, notas: e.target.value })} />
             </div>
-          ) : (
-            <div className="rounded-2xl border-2 border-dashed border-purple-200 p-6 text-center"
-              style={{ background: "#faf8ff" }}>
-              <p className="text-purple-400 text-sm font-semibold">Selecciona una categoría arriba</p>
-              <p className="text-purple-300 text-xs mt-1">El texto se generará automáticamente</p>
-            </div>
-          )}
-        </div>
+          </div>
+        </>)}
 
-        {/* Monto y Fecha */}
+        {/* ── CAMPOS PARA GASTOS (no salario) ── */}
+        {values.categoria !== "SALARIO" && (<>
+
+          {/* Descripción del gasto */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">
+              {values.categoria === "ALIMENTACION" ? "Producto / alimento comprado" :
+               values.categoria === "MEDICAMENTO"  ? "Medicamento / insumo veterinario" :
+               values.categoria === "MANTENIMIENTO"? "Trabajo o material de mantenimiento" :
+               values.categoria === "COMBUSTIBLE"  ? "Tipo de combustible / uso" :
+               "Descripcion del gasto"} *
+            </label>
+            <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+              placeholder={
+                values.categoria === "ALIMENTACION" ? "Ej: Concentrado para engorde, sal mineral..." :
+                values.categoria === "MEDICAMENTO"  ? "Ej: Ivermectina 1%, vacuna brucelosis..." :
+                values.categoria === "MANTENIMIENTO"? "Ej: Reparacion de cerca, pintura de instalaciones..." :
+                values.categoria === "COMBUSTIBLE"  ? "Ej: Gasolina para tractor, diesel generador..." :
+                "Describe el gasto..."
+              }
+              value={values.descripcion}
+              onChange={(e) => onChange({ ...values, descripcion: e.target.value })} required />
+          </div>
+
+          {/* Proveedor */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">
+              {values.categoria === "MANTENIMIENTO" ? "Persona o empresa que realizó el trabajo" : "Proveedor / Lugar de compra"}
+            </label>
+            <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+              placeholder={values.categoria === "MANTENIMIENTO" ? "Ej: Taller Rodriguez, Juan Pérez..." : "Ej: Agroveterinaria Lopez, Ferreteria Central..."}
+              value={values.proveedor || ""}
+              onChange={(e) => onChange({ ...values, proveedor: e.target.value, responsable: e.target.value })} />
+          </div>
+
+          {/* Numero de factura */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">Numero de factura o recibo <span className="text-gray-300">(opcional)</span></label>
+            <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+              placeholder="Ej: FAC-00123, REC-456..."
+              value={values.factura || ""}
+              onChange={(e) => onChange({ ...values, factura: e.target.value, receptor: e.target.value })} />
+          </div>
+
+          {/* Notas adicionales */}
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">Notas adicionales <span className="text-gray-300">(opcional)</span></label>
+            <textarea className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none resize-none bg-gray-50 text-sm"
+              placeholder="Cualquier detalle extra relevante..."
+              rows={3} value={values.notas}
+              onChange={(e) => onChange({ ...values, notas: e.target.value })} />
+          </div>
+        </>)}
+
+        {/* Monto y Fecha — siempre visibles */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase">Monto (C$) *</label>
@@ -193,7 +244,7 @@ function FormGasto({ values, onChange, onSubmit, titulo, onCancel, usuarios, fin
           </div>
         </div>
 
-        {/* Periodicidad */}
+        {/* Periodicidad — siempre visible */}
         <div>
           <label className="text-xs font-bold text-gray-500 uppercase">Periodicidad</label>
           <div className="grid grid-cols-2 gap-2 mt-2">
@@ -205,20 +256,6 @@ function FormGasto({ values, onChange, onSubmit, titulo, onCancel, usuarios, fin
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Receptor del pago */}
-        <div>
-          <label className="text-xs font-bold text-gray-500 uppercase">
-            Nombre completo de quien recibe el pago
-          </label>
-          <p className="text-xs text-gray-400 mb-1">Esta persona colocará su firma en el comprobante</p>
-          <input
-            className="w-full border-2 border-purple-200 rounded-xl p-3 focus:border-purple-400 focus:outline-none bg-gray-50 font-semibold text-gray-800"
-            placeholder="Ej: Juan Carlos Pérez García"
-            value={values.receptor}
-            onChange={(e) => onChange({ ...values, receptor: e.target.value })}
-          />
         </div>
 
         <div className="flex gap-3">
