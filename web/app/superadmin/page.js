@@ -44,6 +44,18 @@ export default function SuperAdminPage() {
     } catch (err) { setError(err.message); }
   }
 
+  async function eliminarFinca(id, nombre, e) {
+    e.stopPropagation();
+    const confirmar = window.confirm(
+      `⚠️ ELIMINAR FINCA\n\n¿Está seguro que desea eliminar "${nombre}"?\n\nEsto eliminará TODOS los datos: animales, ventas, gastos, usuarios y eventos.\n\nEsta acción NO se puede deshacer.`
+    );
+    if (!confirmar) return;
+    try {
+      await api(`/superadmin/fincas/${id}`, { method: "DELETE" });
+      load();
+    } catch (err) { setError(err.message); }
+  }
+
   const fincasFiltradas = fincas.filter((f) =>
     f.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
     f.usuarios[0]?.email?.toLowerCase().includes(busqueda.toLowerCase())
@@ -163,16 +175,28 @@ export default function SuperAdminPage() {
                 <p className="text-white/30 text-xs">
                   Registrada: {new Date(finca.createdAt).toLocaleDateString("es", { dateStyle: "medium" })}
                 </p>
-                <button
-                  onClick={(e) => toggleFinca(finca.id, e)}
-                  className="text-xs font-bold px-4 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
-                  style={{
-                    background: finca.activa ? "rgba(220,38,38,0.2)" : "rgba(34,197,94,0.2)",
-                    color: finca.activa ? "#f87171" : "#4ade80",
-                    border: finca.activa ? "1px solid rgba(220,38,38,0.4)" : "1px solid rgba(34,197,94,0.4)",
-                  }}>
-                  {finca.activa ? "🔒 Suspender" : "✅ Activar"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => toggleFinca(finca.id, e)}
+                    className="text-xs font-bold px-4 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
+                    style={{
+                      background: finca.activa ? "rgba(220,38,38,0.2)" : "rgba(34,197,94,0.2)",
+                      color: finca.activa ? "#f87171" : "#4ade80",
+                      border: finca.activa ? "1px solid rgba(220,38,38,0.4)" : "1px solid rgba(34,197,94,0.4)",
+                    }}>
+                    {finca.activa ? "🔒 Suspender" : "✅ Activar"}
+                  </button>
+                  <button
+                    onClick={(e) => eliminarFinca(finca.id, finca.nombre, e)}
+                    className="text-xs font-bold px-4 py-2 rounded-xl transition-all hover:scale-105 active:scale-95"
+                    style={{
+                      background: "rgba(220,38,38,0.15)",
+                      color: "#f87171",
+                      border: "1px solid rgba(220,38,38,0.35)",
+                    }}>
+                    🗑️ Eliminar
+                  </button>
+                </div>
               </div>
             </div>
           </div>

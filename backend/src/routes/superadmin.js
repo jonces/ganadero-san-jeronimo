@@ -55,6 +55,30 @@ router.patch("/fincas/:id/toggle", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Eliminar finca y todos sus datos
+router.delete("/fincas/:id", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const finca = await prisma.finca.findUnique({ where: { id } });
+    if (!finca) return res.status(404).json({ error: "Finca no encontrada" });
+
+    // Eliminar en cascada todos los datos relacionados
+    await prisma.$transaction([
+      prisma.tareaAnimal.deleteMany({ where: { tarea: { fincaId: id } } }),
+      prisma.tarea.deleteMany({ where: { fincaId: id } }),
+      prisma.evento.deleteMany({ where: { animal: { fincaId: id } } }),
+      prisma.media.deleteMany({ where: { animal: { fincaId: id } } }),
+      prisma.venta.deleteMany({ where: { fincaId: id } }),
+      prisma.gasto.deleteMany({ where: { fincaId: id } }),
+      prisma.animal.deleteMany({ where: { fincaId: id } }),
+      prisma.usuario.deleteMany({ where: { fincaId: id } }),
+      prisma.finca.delete({ where: { id } }),
+    ]);
+
+    res.json({ ok: true, mensaje: `Finca "${finca.nombre}" eliminada correctamente` });
+  } catch (err) { next(err); }
+});
+
 // Stats globales
 router.get("/stats", async (req, res, next) => {
   try {
