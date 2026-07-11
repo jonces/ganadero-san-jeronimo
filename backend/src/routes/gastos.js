@@ -36,9 +36,21 @@ router.get("/", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Lista de usuarios de la finca (para selector)
+router.get("/usuarios-finca", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next) => {
+  try {
+    const usuarios = await prisma.usuario.findMany({
+      where: { fincaId: req.user.fincaId },
+      select: { id: true, nombre: true, role: true },
+      orderBy: { nombre: "asc" },
+    });
+    res.json(usuarios);
+  } catch (err) { next(err); }
+});
+
 router.post("/", async (req, res, next) => {
   try {
-    const { descripcion, categoria, monto, moneda, periodicidad, fecha, notas } = req.body;
+    const { descripcion, categoria, monto, moneda, periodicidad, fecha, notas, responsable } = req.body;
     if (!descripcion || !monto || !periodicidad) {
       return res.status(400).json({ error: "descripcion, monto y periodicidad son requeridos" });
     }
@@ -52,10 +64,11 @@ router.post("/", async (req, res, next) => {
         periodicidad,
         fecha: fecha ? new Date(fecha) : undefined,
         notas: notas || null,
+        responsable: responsable || null,
         fincaId: req.user.fincaId,
         usuarioId: req.user.sub,
       },
-      include: { usuario: { select: { nombre: true } } },
+      include: { usuario: { select: { nombre: true } }, finca: { select: { nombre: true, ubicacion: true } } },
     });
     logActividad({ accion: "Registró gasto", detalle: `${descripcion} — C$ ${monto}`, modulo: "Gastos", fincaId: req.user.fincaId, usuarioId: req.user.sub });
     res.status(201).json(gasto);
@@ -66,17 +79,19 @@ router.patch("/:id", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next)
   try {
     const g = await prisma.gasto.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
     if (!g) return res.status(404).json({ error: "No encontrado" });
-    const { descripcion, categoria, monto, fecha, periodicidad, notas } = req.body;
+    const { descripcion, categoria, monto, fecha, periodicidad, notas, responsable } = req.body;
     const updated = await prisma.gasto.update({
       where: { id: g.id },
       data: {
-        ...(descripcion !== undefined && { descripcion }),
-        ...(categoria   !== undefined && { categoria }),
-        ...(monto       !== undefined && { monto: parseFloat(monto) }),
-        ...(fecha       !== undefined && { fecha: new Date(fecha) }),
-        ...(periodicidad!== undefined && { periodicidad }),
-        ...(notas       !== undefined && { notas }),
+        ...(descripcion  !== undefined && { descripcion }),
+        ...(categoria    !== undefined && { categoria }),
+        ...(monto        !== undefined && { monto: parseFloat(monto) }),
+        ...(fecha        !== undefined && { fecha: new Date(fecha) }),
+        ...(periodicidad !== undefined && { periodicidad }),
+        ...(notas        !== undefined && { notas }),
+        ...(responsable  !== undefined && { responsable }),
       },
+      include: { usuario: { select: { nombre: true } }, finca: { select: { nombre: true, ubicacion: true } } },
     });
     res.json(updated);
   } catch (err) { next(err); }

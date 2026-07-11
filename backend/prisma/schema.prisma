@@ -180,6 +180,7 @@ model Gasto {
   periodicidad String   // DIARIO, SEMANAL, QUINCENAL, MENSUAL, UNICO
   fecha        DateTime @default(now())
   notas        String?
+  responsable  String?  // nombre libre del que paga o registra
   fincaId      String
   finca        Finca    @relation(fields: [fincaId], references: [id])
   usuarioId    String
