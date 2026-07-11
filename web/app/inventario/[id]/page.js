@@ -164,6 +164,7 @@ export default function AnimalDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [generando, setGenerando] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [mediaIdx, setMediaIdx] = useState(0);
   const [nuevosArchivos, setNuevosArchivos] = useState([]);
   const [eliminandoMedia, setEliminandoMedia] = useState(null);
@@ -203,7 +204,7 @@ export default function AnimalDetailPage() {
     }
   }, [animal, finca]);
 
-  async function handleInforme() {
+  async function handleDescargar() {
     setGenerando(true);
     try { await generarInformeAnimal(animal, finca); }
     catch(e){ setError("Error generando informe: "+e.message); }
@@ -468,7 +469,7 @@ export default function AnimalDetailPage() {
             style={{ background: "linear-gradient(135deg,#1a6b2a,#2d9e3f)", border: "1px solid rgba(255,255,255,0.2)" }}>
             ✏️ Editar
           </button>
-          <button onClick={handleInforme} disabled={generando}
+          <button onClick={() => setShowPreview(true)} disabled={generando}
             className="text-white font-black py-4 rounded-2xl text-base shadow-xl hover:scale-105 transition-all disabled:opacity-60"
             style={{ background: "linear-gradient(135deg,#1a3a6c,#2980b9)", border: "1px solid rgba(255,255,255,0.2)" }}>
             {generando ? "..." : "📋 Informe"}
@@ -612,6 +613,171 @@ export default function AnimalDetailPage() {
                 className="text-white font-black py-3 rounded-2xl disabled:opacity-50"
                 style={{ background: "linear-gradient(135deg,#9b2626,#e53e3e)" }}>
                 {enviando ? "..." : "🗑️ Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL VISTA PREVIA DEL INFORME ── */}
+      {showPreview && animal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+          style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(6px)" }}>
+          <div className="w-full sm:max-w-lg max-h-[95vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl shadow-2xl"
+            style={{ background: "#0a1a0f" }}>
+
+            {/* Header del modal */}
+            <div className="sticky top-0 z-10 px-5 py-4 flex items-center justify-between rounded-t-3xl"
+              style={{ background: "linear-gradient(135deg,#1a6b2a,#2d9e3f)" }}>
+              <div>
+                <p className="text-green-200 text-xs font-bold uppercase tracking-widest">Vista previa del informe</p>
+                <h2 className="text-white font-black text-xl">{animal.nombre || animal.identificador}</h2>
+              </div>
+              <button onClick={() => setShowPreview(false)}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-lg"
+                style={{ background: "rgba(0,0,0,0.3)" }}>✕</button>
+            </div>
+
+            <div className="p-5 space-y-4">
+
+              {/* Datos generales */}
+              <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(45,158,63,0.3)" }}>
+                <div className="px-4 py-2" style={{ background: "rgba(45,158,63,0.2)" }}>
+                  <p className="text-green-300 font-black text-xs uppercase tracking-widest">Datos Generales</p>
+                </div>
+                <div className="grid grid-cols-2 gap-px" style={{ background: "rgba(255,255,255,0.05)" }}>
+                  {[
+                    ["Nombre",        animal.nombre || "Sin nombre"],
+                    ["Arete / ID",    animal.identificador],
+                    ["Raza",          animal.raza || "No registrada"],
+                    ["Sexo",          animal.sexo === "HEMBRA" ? "♀ Hembra" : "♂ Macho"],
+                    ["Fecha de nac.", animal.fechaNacimiento ? new Date(animal.fechaNacimiento).toLocaleDateString("es", { dateStyle: "medium" }) : "No registrada"],
+                    ["Edad",          animal.fechaNacimiento ? (()=>{ const d=Math.floor((Date.now()-new Date(animal.fechaNacimiento))/86400000); return d>=365?`${Math.floor(d/365)} año(s)`:`${d} días`; })() : "—"],
+                    ["Peso actual",   animal.pesoActual ? `${animal.pesoActual} kg` : "No registrado"],
+                    ["Fierro",        animal.fierro || "Sin fierro"],
+                    ["Estado",        animal.estado || "ACTIVO"],
+                    ["Estado reprod.",animal.estadoReproductivo || "—"],
+                  ].map(([lbl, val]) => (
+                    <div key={lbl} className="px-3 py-2" style={{ background: "rgba(5,25,12,0.6)" }}>
+                      <p className="text-white/40 text-xs">{lbl}</p>
+                      <p className="text-white font-bold text-sm">{val}</p>
+                    </div>
+                  ))}
+                </div>
+                {animal.observacion && (
+                  <div className="px-4 py-3" style={{ background: "rgba(5,25,12,0.4)" }}>
+                    <p className="text-white/40 text-xs">Observaciones</p>
+                    <p className="text-white text-sm mt-0.5">{animal.observacion}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Madre */}
+              {animal.madre && (
+                <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(214,158,46,0.3)" }}>
+                  <div className="px-4 py-2" style={{ background: "rgba(214,158,46,0.15)" }}>
+                    <p className="text-yellow-300 font-black text-xs uppercase tracking-widest">Información de la Madre</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-px">
+                    {[
+                      ["Nombre de la madre", animal.madre.nombre || "Sin nombre"],
+                      ["Arete de la madre",  animal.madre.identificador],
+                      ["Raza",               animal.madre.raza || "No registrada"],
+                    ].map(([lbl, val]) => (
+                      <div key={lbl} className="px-3 py-2" style={{ background: "rgba(5,25,12,0.6)" }}>
+                        <p className="text-white/40 text-xs">{lbl}</p>
+                        <p className="text-white font-bold text-sm">{val}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Vacunaciones */}
+              {(animal.eventos||[]).filter(e=>e.tipo==="VACUNACION").length > 0 && (
+                <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(49,130,206,0.4)" }}>
+                  <div className="px-4 py-2" style={{ background: "rgba(49,130,206,0.15)" }}>
+                    <p className="text-blue-300 font-black text-xs uppercase tracking-widest">
+                      Vacunaciones — {(animal.eventos||[]).filter(e=>e.tipo==="VACUNACION").length} aplicadas
+                    </p>
+                  </div>
+                  <div className="divide-y" style={{ borderColor: "rgba(49,130,206,0.15)" }}>
+                    {(animal.eventos||[]).filter(e=>e.tipo==="VACUNACION").map((v,i) => (
+                      <div key={v.id} className="flex items-start gap-3 px-4 py-3" style={{ background: "rgba(5,25,12,0.6)" }}>
+                        <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-0.5"
+                          style={{ background: "rgba(49,130,206,0.3)", color: "#90cdf4" }}>{i+1}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-semibold">{v.descripcion || "Sin detalle"}</p>
+                          <p className="text-blue-300 text-xs mt-0.5">{new Date(v.fecha).toLocaleDateString("es", { dateStyle: "medium" })}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Historial de eventos */}
+              {(animal.eventos||[]).length > 0 && (
+                <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <div className="px-4 py-2" style={{ background: "rgba(255,255,255,0.05)" }}>
+                    <p className="text-white/60 font-black text-xs uppercase tracking-widest">
+                      Historial completo — {animal.eventos.length} eventos
+                    </p>
+                  </div>
+                  {/* Resumen por tipo */}
+                  <div className="flex flex-wrap gap-2 px-4 py-3" style={{ background: "rgba(5,25,12,0.4)" }}>
+                    {Object.entries((animal.eventos||[]).reduce((acc,ev)=>({...acc,[ev.tipo]:(acc[ev.tipo]||0)+1}),{})).map(([tipo,cnt])=>{
+                      const cols={VACUNACION:"#3182ce",TRATAMIENTO:"#e53e3e",PESAJE:"#d69e2e",PARTO:"#805ad5",MOVIMIENTO:"#2d9e3f",OBSERVACION:"#718096"};
+                      return (
+                        <span key={tipo} className="px-2 py-1 rounded-lg text-white text-xs font-bold"
+                          style={{ background: cols[tipo]||"#718096" }}>
+                          {TIPOS_LABEL[tipo]||tipo}: {cnt}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <div className="divide-y max-h-64 overflow-y-auto" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+                    {(animal.eventos||[]).map(ev => {
+                      const cols={VACUNACION:"#3182ce",TRATAMIENTO:"#e53e3e",PESAJE:"#d69e2e",PARTO:"#805ad5",MOVIMIENTO:"#2d9e3f",OBSERVACION:"#718096"};
+                      return (
+                        <div key={ev.id} className="flex items-start gap-3 px-4 py-3" style={{ background: "rgba(5,25,12,0.5)" }}>
+                          <span className="px-2 py-0.5 rounded-md text-white text-xs font-black shrink-0 mt-0.5"
+                            style={{ background: cols[ev.tipo]||"#718096" }}>
+                            {TIPOS_LABEL[ev.tipo]||ev.tipo}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-sm">{ev.descripcion || "Sin descripcion"}</p>
+                            {ev.peso && <p className="text-yellow-400 text-xs mt-0.5">Peso: {ev.peso} kg</p>}
+                            <p className="text-white/30 text-xs mt-0.5">{new Date(ev.fecha).toLocaleDateString("es", { dateStyle: "medium" })}{ev.usuario?.nombre ? ` · ${ev.usuario.nombre}` : ""}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {(animal.eventos||[]).length === 0 && !animal.madre && (
+                <div className="text-center py-6 text-white/30">
+                  <p className="text-4xl mb-2">📋</p>
+                  <p>Este animal aún no tiene historial registrado</p>
+                </div>
+              )}
+            </div>
+
+            {/* Botones fijos abajo */}
+            <div className="sticky bottom-0 px-5 py-4 flex gap-3"
+              style={{ background: "#0a1a0f", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+              <button onClick={() => setShowPreview(false)}
+                className="flex-1 py-3 rounded-2xl font-bold text-white/60 text-sm"
+                style={{ border: "1px solid rgba(255,255,255,0.15)" }}>
+                Cerrar
+              </button>
+              <button onClick={() => { setShowPreview(false); handleDescargar(); }}
+                disabled={generando}
+                className="flex-1 py-3 rounded-2xl font-black text-white text-sm disabled:opacity-60"
+                style={{ background: "linear-gradient(135deg,#1a3a6c,#2980b9)" }}>
+                {generando ? "Generando..." : "Descargar PDF"}
               </button>
             </div>
           </div>
