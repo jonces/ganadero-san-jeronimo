@@ -33,19 +33,19 @@ async function generarInformeAnimal(animal, finca) {
   doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(...GD);
   const ini = (animal.nombre||animal.identificador).slice(0,2).toUpperCase();
   doc.text(ini, 22, 27, { align: "center" });
-  // Finca y título
-  doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(180,220,180);
-  doc.text("GANADERIA", 42, 14);
-  doc.setFontSize(18); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-  doc.text((finca?.nombre || "MI FINCA").toUpperCase(), 42, 24);
+  // Nombre finca — tamaño adaptativo, sin "GANADERIA"
+  const fNombre = (finca?.nombre || "MI FINCA").toUpperCase();
+  const fSz = fNombre.length > 22 ? 12 : fNombre.length > 16 ? 14 : 17;
+  doc.setFontSize(fSz); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+  doc.text(fNombre, 42, 24, { maxWidth: 72 });
   doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(180,220,180);
-  doc.text("CATTLE MANAGEMENT", 42, 31);
+  doc.text("CATTLE MANAGEMENT", 42, 33);
   // Separador vertical
-  doc.setDrawColor(255,255,255,0.3); doc.setLineWidth(0.3); doc.line(120, 8, 120, 40);
+  doc.setDrawColor(255,255,255); doc.setLineWidth(0.3); doc.line(120, 8, 120, 40);
   // Título derecha
-  doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-  doc.text("INFORME DE ANIMAL", 165, 18, { align: "center" });
-  doc.setFillColor(255,255,255,0.2); doc.setDrawColor(255,255,255); doc.setLineWidth(0.4);
+  doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+  doc.text("INFORME DE ANIMAL", 163, 18, { align: "center" });
+  doc.setDrawColor(255,255,255); doc.setLineWidth(0.4);
   doc.roundedRect(125, 22, 76, 8, 2, 2, "D");
   doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
   doc.text(`Arete: ${animal.identificador}`, 163, 27.5, { align: "center" });

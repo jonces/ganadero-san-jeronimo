@@ -46,10 +46,11 @@ export default function SuperAdminInformesPage() {
         doc.setFont("helvetica", "bold");
         doc.text(inicial, 20, 24, { align: "center" });
 
-        doc.setFontSize(15);
+        const fnLen = (data.finca.nombre||"").length;
+        doc.setFontSize(fnLen > 22 ? 11 : fnLen > 16 ? 13 : 15);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(255, 255, 255);
-        doc.text("Finca: " + data.finca.nombre, 36, 14);
+        doc.text((data.finca.nombre||"").toUpperCase(), 36, 14, {maxWidth: W - 80});
         doc.setFontSize(8);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(210, 235, 210);

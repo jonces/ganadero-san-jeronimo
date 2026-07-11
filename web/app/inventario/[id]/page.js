@@ -19,12 +19,12 @@ async function generarInformeAnimal(animal, finca) {
   doc.setFillColor(255,255,255); doc.circle(22,24,14,"F");
   doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(...GD);
   doc.text((animal.nombre||animal.identificador).slice(0,2).toUpperCase(),22,27,{align:"center"});
-  doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(180,220,180);
-  doc.text("GANADERIA",42,14);
-  doc.setFontSize(18); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-  doc.text((finca?.nombre||"MI FINCA").toUpperCase(),42,24);
+  const fN2=(finca?.nombre||"MI FINCA").toUpperCase();
+  const fS2=fN2.length>22?12:fN2.length>16?14:17;
+  doc.setFontSize(fS2); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+  doc.text(fN2,42,24,{maxWidth:72});
   doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(180,220,180);
-  doc.text("CATTLE MANAGEMENT",42,31);
+  doc.text("CATTLE MANAGEMENT",42,33);
   doc.setDrawColor(255,255,255); doc.setLineWidth(0.3); doc.line(120,8,120,40);
   doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
   doc.text("INFORME DE ANIMAL",163,18,{align:"center"});
