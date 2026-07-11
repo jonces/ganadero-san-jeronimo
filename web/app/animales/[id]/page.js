@@ -4,33 +4,271 @@ import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 
 const TIPOS = [
-  { value: "OBSERVACION", label: "📝 Observación", color: "#718096" },
-  { value: "VACUNACION", label: "💉 Vacunación", color: "#3182ce" },
-  { value: "TRATAMIENTO", label: "🏥 Tratamiento", color: "#e53e3e" },
-  { value: "PESAJE", label: "⚖️ Pesaje", color: "#d69e2e" },
-  { value: "PARTO", label: "🐣 Parto", color: "#805ad5" },
-  { value: "MOVIMIENTO", label: "📍 Movimiento", color: "#2d9e3f" },
+  { value: "OBSERVACION", label: "Observacion",  color: "#718096" },
+  { value: "VACUNACION",  label: "Vacunacion",   color: "#3182ce" },
+  { value: "TRATAMIENTO", label: "Tratamiento",  color: "#e53e3e" },
+  { value: "PESAJE",      label: "Pesaje",       color: "#d69e2e" },
+  { value: "PARTO",       label: "Parto",        color: "#805ad5" },
+  { value: "MOVIMIENTO",  label: "Movimiento",   color: "#2d9e3f" },
 ];
+
+const TIPOS_LABEL = {
+  OBSERVACION: "Observacion", VACUNACION: "Vacunacion",
+  TRATAMIENTO: "Tratamiento", PESAJE: "Pesaje",
+  PARTO: "Parto", MOVIMIENTO: "Movimiento",
+};
+
+async function generarInformeAnimal(animal, finca) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const W = 210, H = 297;
+  const GD = [20, 100, 40], GM = [45, 158, 63], GL = [232, 245, 233];
+  const GR = [100, 100, 110];
+  let y = 0;
+
+  // ── HEADER ────────────────────────────────────────────────────────────────
+  doc.setFillColor(...GD); doc.rect(0, 0, W, 48, "F");
+  // Logo/iniciales círculo
+  doc.setFillColor(255,255,255); doc.circle(22, 24, 14, "F");
+  doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(...GD);
+  const ini = (animal.nombre||animal.identificador).slice(0,2).toUpperCase();
+  doc.text(ini, 22, 27, { align: "center" });
+  // Finca y título
+  doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(180,220,180);
+  doc.text("GANADERIA", 42, 14);
+  doc.setFontSize(18); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+  doc.text((finca?.nombre || "MI FINCA").toUpperCase(), 42, 24);
+  doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(180,220,180);
+  doc.text("CATTLE MANAGEMENT", 42, 31);
+  // Separador vertical
+  doc.setDrawColor(255,255,255,0.3); doc.setLineWidth(0.3); doc.line(120, 8, 120, 40);
+  // Título derecha
+  doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+  doc.text("INFORME DE ANIMAL", 165, 18, { align: "center" });
+  doc.setFillColor(255,255,255,0.2); doc.setDrawColor(255,255,255); doc.setLineWidth(0.4);
+  doc.roundedRect(125, 22, 76, 8, 2, 2, "D");
+  doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+  doc.text(`Arete: ${animal.identificador}`, 163, 27.5, { align: "center" });
+  const fechaDoc = new Date().toLocaleDateString("es", { day: "numeric", month: "long", year: "numeric" });
+  doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(180,220,180);
+  doc.text(fechaDoc, 163, 35, { align: "center" });
+
+  // ── BARRA INFO ─────────────────────────────────────────────────────────────
+  doc.setFillColor(245,250,245); doc.rect(0, 48, W, 14, "F");
+  doc.setDrawColor(...GM); doc.setLineWidth(0.3); doc.line(0, 48, W, 48); doc.line(0, 62, W, 62);
+  const infoBar = [
+    { icon: "F", label: "FINCA", val: finca?.nombre || "—" },
+    { icon: "U", label: "UBICACION", val: finca?.ubicacion || "—" },
+    { icon: "S", label: "SEXO", val: animal.sexo === "HEMBRA" ? "Hembra" : "Macho" },
+    { icon: "E", label: "ESTADO", val: animal.estado || "ACTIVO" },
+  ];
+  infoBar.forEach(({ icon, label, val }, i) => {
+    const x = 12 + i * 50;
+    doc.setFillColor(...GM); doc.circle(x, 55, 3.5, "F");
+    doc.setFontSize(5); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+    doc.text(icon, x, 56.5, { align: "center" });
+    doc.setFontSize(5.5); doc.setFont("helvetica","bold"); doc.setTextColor(...GR);
+    doc.text(label, x + 6, 52.5);
+    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...GD);
+    doc.text(String(val).slice(0, 20), x + 6, 58);
+  });
+  y = 70;
+
+  // ── DATOS GENERALES ─────────────────────────────────────────────────────────
+  const secTitulo = (txt, yy) => {
+    doc.setFillColor(...GL); doc.roundedRect(8, yy, W - 16, 8, 2, 2, "F");
+    doc.setDrawColor(...GM); doc.setLineWidth(0.4); doc.line(8, yy, 16, yy);
+    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...GD);
+    doc.text(txt, 12, yy + 5.5);
+    return yy + 12;
+  };
+
+  y = secTitulo("DATOS GENERALES DEL ANIMAL", y);
+
+  const edad = animal.fechaNacimiento
+    ? (() => { const d = Math.floor((Date.now() - new Date(animal.fechaNacimiento)) / 86400000); return d >= 365 ? `${Math.floor(d/365)} año(s) ${Math.floor((d%365)/30)} mes(es)` : `${d} dias`; })()
+    : "No registrada";
+
+  const camposGenerales = [
+    ["Nombre",            animal.nombre || "Sin nombre"],
+    ["Arete / ID",        animal.identificador],
+    ["Raza",              animal.raza || "No registrada"],
+    ["Sexo",              animal.sexo === "HEMBRA" ? "Hembra" : "Macho"],
+    ["Fecha de nacimiento", animal.fechaNacimiento ? new Date(animal.fechaNacimiento).toLocaleDateString("es", { dateStyle: "long" }) : "No registrada"],
+    ["Edad aproximada",   edad],
+    ["Peso actual",       animal.pesoActual ? `${animal.pesoActual} kg` : "No registrado"],
+    ["Fierro / marca",    animal.fierro || "Sin fierro"],
+    ["Estado",            animal.estado || "ACTIVO"],
+    ["Estado reproductivo", animal.estadoReproductivo || "—"],
+    ["Observaciones",     animal.observacion || "—"],
+  ];
+
+  const colW2 = (W - 20) / 2;
+  camposGenerales.forEach(([lbl, val], i) => {
+    const col = i % 2; const row = Math.floor(i / 2);
+    const cx = 10 + col * (colW2 + 4);
+    const cy = y + row * 10;
+    if (col === 0) {
+      doc.setFillColor(col % 2 === 0 ? 248 : 255, 252, 248);
+      doc.rect(10, cy - 1, W - 20, 9, "F");
+    }
+    doc.setFontSize(5.5); doc.setFont("helvetica","bold"); doc.setTextColor(...GR);
+    doc.text(lbl.toUpperCase(), cx + 1, cy + 3);
+    doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(20, 60, 20);
+    doc.text(String(val).slice(0, 28), cx + 1, cy + 8);
+  });
+  y += Math.ceil(camposGenerales.length / 2) * 10 + 6;
+
+  // ── MADRE ──────────────────────────────────────────────────────────────────
+  if (animal.madre) {
+    y = secTitulo("INFORMACION DE LA MADRE", y);
+    const madreEdad = animal.madre.fechaNacimiento
+      ? (() => { const d = Math.floor((Date.now() - new Date(animal.madre.fechaNacimiento)) / 86400000); return d >= 365 ? `${Math.floor(d/365)} año(s)` : `${d} dias`; })()
+      : "—";
+    const camposMadre = [
+      ["Nombre de la madre", animal.madre.nombre || "Sin nombre"],
+      ["Arete / ID de la madre", animal.madre.identificador],
+      ["Raza", animal.madre.raza || "No registrada"],
+      ["Edad", madreEdad],
+    ];
+    camposMadre.forEach(([lbl, val], i) => {
+      const col = i % 2, row = Math.floor(i / 2);
+      const cx = 10 + col * (colW2 + 4), cy = y + row * 10;
+      doc.setFontSize(5.5); doc.setFont("helvetica","bold"); doc.setTextColor(...GR);
+      doc.text(lbl.toUpperCase(), cx + 1, cy + 3);
+      doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(20, 60, 20);
+      doc.text(String(val).slice(0, 28), cx + 1, cy + 8);
+    });
+    y += Math.ceil(camposMadre.length / 2) * 10 + 6;
+  }
+
+  // ── HISTORIAL DE EVENTOS ────────────────────────────────────────────────────
+  if (animal.eventos?.length > 0) {
+    // Nueva página si no hay espacio
+    if (y > H - 60) { doc.addPage(); y = 15; }
+    y = secTitulo(`HISTORIAL DE EVENTOS (${animal.eventos.length})`, y);
+
+    // Resumen por tipo
+    const resumen = {};
+    animal.eventos.forEach(ev => { resumen[ev.tipo] = (resumen[ev.tipo] || 0) + 1; });
+    const tipos = Object.entries(resumen);
+    tipos.forEach(([tipo, cnt], i) => {
+      const col = i % 4, row = Math.floor(i / 4);
+      const bx = 10 + col * 48, by = y + row * 14;
+      const colores = { VACUNACION:[49,130,206], TRATAMIENTO:[229,62,62], PESAJE:[214,158,46], PARTO:[128,90,213], MOVIMIENTO:[45,158,63], OBSERVACION:[113,128,150] };
+      const c = colores[tipo] || [100,100,100];
+      doc.setFillColor(...c); doc.roundedRect(bx, by, 44, 11, 2, 2, "F");
+      doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text(TIPOS_LABEL[tipo] || tipo, bx + 22, by + 4.5, { align: "center" });
+      doc.setFontSize(10); doc.setFont("helvetica","bold");
+      doc.text(String(cnt), bx + 22, by + 10, { align: "center" });
+    });
+    y += Math.ceil(tipos.length / 4) * 14 + 6;
+
+    // Listado detallado
+    animal.eventos.forEach((ev) => {
+      if (y > H - 30) { doc.addPage(); y = 15; }
+      const colores = { VACUNACION:[49,130,206], TRATAMIENTO:[229,62,62], PESAJE:[214,158,46], PARTO:[128,90,213], MOVIMIENTO:[45,158,63], OBSERVACION:[113,128,150] };
+      const c = colores[ev.tipo] || [113,128,150];
+      const fechaEv = new Date(ev.fecha).toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" });
+      const descLines = doc.splitTextToSize(ev.descripcion || "Sin descripcion", W - 50);
+      const evH = Math.max(12, descLines.length * 4 + 8);
+
+      doc.setFillColor(248, 252, 248); doc.setDrawColor(200, 230, 200); doc.setLineWidth(0.3);
+      doc.roundedRect(8, y, W - 16, evH, 2, 2, "FD");
+      // Badge tipo
+      doc.setFillColor(...c); doc.roundedRect(10, y + 2, 28, 7, 1, 1, "F");
+      doc.setFontSize(5.5); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text(TIPOS_LABEL[ev.tipo] || ev.tipo, 24, y + 6.5, { align: "center" });
+      // Fecha
+      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...GR);
+      doc.text(fechaEv, W - 12, y + 6, { align: "right" });
+      // Descripcion
+      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(30, 60, 30);
+      doc.text(descLines, 42, y + 6);
+      // Peso si aplica
+      if (ev.peso) {
+        doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...GM);
+        doc.text(`Peso: ${ev.peso} kg`, 42, y + evH - 3);
+      }
+      // Registrado por
+      if (ev.usuario?.nombre) {
+        doc.setFontSize(5.5); doc.setFont("helvetica","normal"); doc.setTextColor(...GR);
+        doc.text(`Registrado por: ${ev.usuario.nombre}`, W - 12, y + evH - 3, { align: "right" });
+      }
+      y += evH + 3;
+    });
+  }
+
+  // ── VACUNACIONES RESALTADAS ─────────────────────────────────────────────────
+  const vacunas = animal.eventos?.filter(ev => ev.tipo === "VACUNACION") || [];
+  if (vacunas.length > 0) {
+    if (y > H - 40) { doc.addPage(); y = 15; }
+    y = secTitulo(`RESUMEN DE VACUNACIONES (${vacunas.length})`, y);
+    vacunas.forEach((v, i) => {
+      if (y > H - 20) { doc.addPage(); y = 15; }
+      const fechaV = new Date(v.fecha).toLocaleDateString("es", { dateStyle: "medium" });
+      doc.setFillColor(232, 240, 255); doc.setDrawColor(49,130,206); doc.setLineWidth(0.3);
+      doc.roundedRect(8, y, W - 16, 10, 2, 2, "FD");
+      doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(49,130,206);
+      doc.text(`${i + 1}.`, 13, y + 6.5);
+      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(20,40,80);
+      doc.text(String(v.descripcion || "Vacunacion sin detalle").slice(0, 60), 20, y + 6.5);
+      doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(100,120,140);
+      doc.text(fechaV, W - 12, y + 6.5, { align: "right" });
+      y += 13;
+    });
+  }
+
+  // ── FOOTER ────────────────────────────────────────────────────────────────
+  const totalPags = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPags; p++) {
+    doc.setPage(p);
+    doc.setFillColor(...GD); doc.rect(0, H - 14, W, 14, "F");
+    doc.setDrawColor(...GM); doc.setLineWidth(0.5); doc.line(0, H - 14, W, H - 14);
+    doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(180,220,180);
+    doc.text("Henriquez Cattle Management ERP", 12, H - 7);
+    doc.text(`Pag. ${p} / ${totalPags}`, W - 12, H - 7, { align: "right" });
+    doc.setTextColor(255,255,255);
+    doc.text(`Informe de: ${animal.nombre || animal.identificador} | Generado: ${new Date().toLocaleDateString("es")}`, W / 2, H - 7, { align: "center" });
+  }
+
+  const nombreArchivo = `informe-${animal.identificador}-${new Date().toISOString().slice(0,10)}.pdf`;
+  doc.save(nombreArchivo);
+}
 
 export default function AnimalDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const [animal, setAnimal] = useState(null);
+  const [finca,  setFinca]  = useState(null);
   const [error, setError] = useState("");
   const [tipo, setTipo] = useState("OBSERVACION");
   const [descripcion, setDescripcion] = useState("");
   const [peso, setPeso] = useState("");
   const [archivos, setArchivos] = useState([]);
   const [enviando, setEnviando] = useState(false);
+  const [generando, setGenerando] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
   async function load() {
     try {
-      const data = await api(`/animales/${id}`);
+      const [data, fi] = await Promise.all([
+        api(`/animales/${id}`),
+        api("/fincas/mi-finca").catch(() => null),
+      ]);
       setAnimal(data);
+      setFinca(fi);
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  async function handleInforme() {
+    setGenerando(true);
+    try { await generarInformeAnimal(animal, finca); }
+    catch (e) { setError("Error generando informe: " + e.message); }
+    finally { setGenerando(false); }
   }
 
   useEffect(() => {
@@ -124,14 +362,24 @@ export default function AnimalDetailPage() {
           <p className="text-sm text-gray-400 mt-2">Arete: {animal.identificador}</p>
         </div>
 
-        {/* Botón nuevo reporte */}
-        <button
-          onClick={() => setShowForm((s) => !s)}
-          className="w-full text-white rounded-xl py-3 font-bold text-base flex items-center justify-center gap-2"
-          style={{ background: showForm ? "#718096" : "#2d9e3f" }}
-        >
-          {showForm ? "✕ Cancelar" : "📝 Nuevo Reporte"}
-        </button>
+        {/* Botones de acción */}
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowForm((s) => !s)}
+            className="flex-1 text-white rounded-xl py-3 font-bold text-base flex items-center justify-center gap-2"
+            style={{ background: showForm ? "#718096" : "#2d9e3f" }}
+          >
+            {showForm ? "✕ Cancelar" : "+ Nuevo Reporte"}
+          </button>
+          <button
+            onClick={handleInforme}
+            disabled={generando}
+            className="flex items-center gap-2 px-5 rounded-xl py-3 font-bold text-base text-white disabled:opacity-60"
+            style={{ background: "#1a3a6c" }}
+          >
+            {generando ? "..." : "Informe PDF"}
+          </button>
+        </div>
 
         {/* Formulario de reporte */}
         {showForm && (

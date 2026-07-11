@@ -96,34 +96,42 @@ export default function AnimalesPage() {
           {animales.map((a) => {
             const foto = a.media?.find((m) => m.tipo === "FOTO") || a.media?.[0];
             return (
-              <a key={a.id} href={`/animales/${a.id}`}
-                className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow">
-                {foto ? (
-                  foto.tipo === "FOTO"
-                    ? <img src={foto.url} alt={a.identificador} className="w-full h-48 object-cover" />
-                    : <video src={foto.url} className="w-full h-48 object-cover" muted />
-                ) : (
-                  <div className="w-full h-48 flex items-center justify-center text-6xl" style={{ background: "#e8f5e9" }}>
-                    🐄
-                  </div>
-                )}
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <h2 className="font-bold text-gray-800 text-lg">{a.nombre || a.identificador}</h2>
-                    <span className="text-xs font-bold px-2 py-1 rounded-full text-white"
-                      style={{ background: a.sexo === "HEMBRA" ? "#e53e3e" : "#3182ce" }}>
-                      {a.sexo === "HEMBRA" ? "♀" : "♂"}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-500">{a.raza || "Raza no registrada"}</p>
-                  {a.pesoActual && (
-                    <p className="text-sm font-medium mt-1" style={{ color: "#2d9e3f" }}>⚖️ {a.pesoActual} kg</p>
+              <div key={a.id} className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow">
+                <a href={`/animales/${a.id}`}>
+                  {foto ? (
+                    foto.tipo === "FOTO"
+                      ? <img src={foto.url} alt={a.identificador} className="w-full h-48 object-cover" />
+                      : <video src={foto.url} className="w-full h-48 object-cover" muted />
+                  ) : (
+                    <div className="w-full h-48 flex items-center justify-center text-6xl" style={{ background: "#e8f5e9" }}>
+                      🐄
+                    </div>
                   )}
-                  {a.identificador !== a.nombre && a.nombre && (
-                    <p className="text-xs text-gray-400 mt-1">Arete: {a.identificador}</p>
-                  )}
+                  <div className="p-4 pb-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <h2 className="font-bold text-gray-800 text-lg">{a.nombre || a.identificador}</h2>
+                      <span className="text-xs font-bold px-2 py-1 rounded-full text-white"
+                        style={{ background: a.sexo === "HEMBRA" ? "#e53e3e" : "#3182ce" }}>
+                        {a.sexo === "HEMBRA" ? "♀" : "♂"}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500">{a.raza || "Raza no registrada"}</p>
+                    {a.pesoActual && (
+                      <p className="text-sm font-medium mt-1" style={{ color: "#2d9e3f" }}>⚖️ {a.pesoActual} kg</p>
+                    )}
+                    {a.identificador !== a.nombre && a.nombre && (
+                      <p className="text-xs text-gray-400 mt-1">Arete: {a.identificador}</p>
+                    )}
+                  </div>
+                </a>
+                <div className="px-4 pb-4">
+                  <a href={`/animales/${a.id}`}
+                    className="w-full block text-center text-white text-sm font-bold rounded-xl py-2"
+                    style={{ background: "#1a3a6c" }}>
+                    Ver informe completo
+                  </a>
                 </div>
-              </a>
+              </div>
             );
           })}
         </div>
