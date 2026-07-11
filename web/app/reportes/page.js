@@ -562,38 +562,87 @@ export default function ReportesPage() {
     });
     y=doc.lastAutoTable.finalY+8;
 
-    // Resumen financiero + métodos de pago + top clientes
-    if(y>H-80){doc.addPage();y=makeHeader(doc,{logo,fincaNombre,adminNombre,ubicacion:finca?.ubicacion,fecha,hora,numReporte,p,W})+2;}
-    y=secTitle(doc,8,y,"RESUMEN FINANCIERO  |  MÉTODOS DE PAGO  |  TOP 5 CLIENTES",p,W);
+    // ── RESUMEN FINANCIERO | MÉTODOS DE PAGO | TOP 5 CLIENTES ──
+    if(y>H-90){doc.addPage();y=makeHeader(doc,{logo,fincaNombre,adminNombre,ubicacion:finca?.ubicacion,fecha,hora,numReporte,p,W})+2;}
+
+    // Encabezados de las 3 columnas
     const col3=(W-24)/3;
+    const cx1=8, cx2=8+col3+4, cx3=8+2*(col3+4);
+    const secH=8;
+    // Títulos columna
+    [["RESUMEN FINANCIERO",cx1],["METODOS DE PAGO",cx2],["TOP 5 CLIENTES",cx3]].forEach(([t,cx])=>{
+      doc.setFillColor(...p.dark); doc.rect(cx,y,col3,secH,"F");
+      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text(t,cx+col3/2,y+5.8,{align:"center"});
+    });
+    y+=secH+3;
 
-    // Resumen financiero
-    const resRows=[["Total en Córdobas",fN(totalNIO)],["Total en USD",fU(totalUSD)],["Venta Mayor",fN(Math.max(...ventas.map(v=>v.precioNIO||0)))],["Venta Menor",fN(Math.min(...ventas.map(v=>v.precioNIO||0)))]];
-    let ry=y+1;
+    // ── Columna 1: Resumen financiero ──
+    const resRows=[
+      ["Total en Cordobas", fN(totalNIO)],
+      ["Total en USD",      fU(totalUSD)],
+      ["Venta Mayor",       fN(Math.max(...ventas.map(v=>v.precioNIO||0)))],
+      ["Venta Menor",       fN(Math.min(...ventas.filter(v=>v.precioNIO>0).map(v=>v.precioNIO||0)))],
+    ];
+    const rowH=12;
     resRows.forEach((r,i)=>{
-      doc.setFillColor(i%2===0?248:255,i%2===0?248:255,i%2===0?252:255); doc.rect(8,ry,col3-2,8,"F");
-      doc.setFontSize(7);doc.setFont("helvetica","normal");doc.setTextColor(60,60,60);doc.text(r[0],11,ry+5.5);
-      doc.setFont("helvetica","bold");doc.setTextColor(...p.dark);doc.text(r[1],8+col3-4,ry+5.5,{align:"right"});
-      ry+=8;
+      const ry=y+i*rowH;
+      doc.setFillColor(i%2===0?245:255,i%2===0?246:255,i%2===0?250:255);
+      doc.rect(cx1,ry,col3,rowH,"F");
+      doc.setDrawColor(230,230,235); doc.setLineWidth(0.2);
+      doc.line(cx1,ry+rowH,cx1+col3,ry+rowH);
+      // Icono cuadro pequeño
+      doc.setFillColor(...p.dark.map(v=>Math.min(255,v+160)));
+      doc.roundedRect(cx1+2,ry+2.5,7,7,1,1,"F");
+      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(70,70,70);
+      doc.text(r[0],cx1+12,ry+7.5);
+      doc.setFont("helvetica","bold"); doc.setTextColor(...p.dark);
+      doc.text(r[1],cx1+col3-3,ry+7.5,{align:"right"});
     });
 
-    // Métodos de pago (pie pequeño)
-    const pieMet=cPie(Object.entries(metodos).map(([k,v])=>({k,v})),Math.round(col3*3.2),Math.round(col3*2.3));
-    if(pieMet){doc.addImage(pieMet,"JPEG",8+col3+4,y,col3-2,col3*0.72);}
-
-    // Top 5 clientes
-    let cy2=y+1;
-    topComp.forEach(([nombre,d],i)=>{
-      const pct=(d.t/(totalNIO||1));
-      doc.setFillColor(i%2===0?248:255,i%2===0?248:255,i%2===0?252:255); doc.rect(8+2*(col3+4),cy2,col3-2,10,"F");
-      doc.setFillColor(...p.dark); doc.rect(8+2*(col3+4),cy2,Math.max(pct*(col3-2),3),10,"F");
-      doc.setTextColor(255,255,255); doc.setFontSize(6.5); doc.setFont("helvetica","bold");
-      doc.text(`${i+1}. ${nombre.slice(0,20)}`,8+2*(col3+4)+3,cy2+6.5);
-      doc.setTextColor(255,255,255); doc.setFont("helvetica","bold");
-      doc.text(fN(d.t),8+2*(col3+4)+col3-5,cy2+6.5,{align:"right"});
-      cy2+=12;
+    // ── Columna 2: Métodos de pago (pie + leyenda) ──
+    const metArr=Object.entries(metodos).map(([k,v])=>({k,v}));
+    const totalMet=metArr.reduce((s,m)=>s+(m.v||0),0)||1;
+    const pieH=col3*0.6;
+    const pieMet=cPie(metArr,Math.round(col3*3.2),Math.round(pieH*3.2));
+    if(pieMet) doc.addImage(pieMet,"JPEG",cx2,y,col3,pieH);
+    // Leyenda debajo del pie
+    let ly2=y+pieH+3;
+    metArr.forEach((m,i)=>{
+      const col=CP[i%CP.length];
+      doc.setFillColor(...col); doc.rect(cx2+3,ly2,5,5,"F");
+      doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(55,55,55);
+      doc.text(m.k,cx2+11,ly2+4);
+      doc.setFont("helvetica","bold"); doc.setTextColor(...p.dark);
+      doc.text(`${Math.round((m.v/totalMet)*100)}%  ${fN(m.v)}`,cx2+col3-3,ly2+4,{align:"right"});
+      ly2+=7;
     });
-    y=Math.max(ry,cy2)+10;
+
+    // ── Columna 3: Top 5 clientes ──
+    const topActual=topComp.slice(0,5);
+    topActual.forEach(([nombre,d],i)=>{
+      const ty=y+i*rowH;
+      doc.setFillColor(i%2===0?245:255,i%2===0?246:255,i%2===0?250:255);
+      doc.rect(cx3,ty,col3,rowH,"F");
+      doc.setDrawColor(230,230,235); doc.setLineWidth(0.2);
+      doc.line(cx3,ty+rowH,cx3+col3,ty+rowH);
+      // Número en círculo
+      const circleCol=i===0?p.dark:[180,180,200]; doc.setFillColor(...circleCol);
+      doc.circle(cx3+6,ty+6,4.5,"F");
+      doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+      doc.text(String(i+1),cx3+6,ty+7.5,{align:"center"});
+      // Nombre
+      doc.setFont("helvetica","bold"); doc.setTextColor(40,40,40);
+      doc.setFontSize(7); doc.text(nombre.slice(0,18),cx3+13,ty+5.5);
+      // Monto
+      doc.setFont("helvetica","bold"); doc.setTextColor(...p.dark);
+      doc.text(fN(d.t),cx3+col3-3,ty+5.5,{align:"right"});
+      // Ventas count
+      doc.setFont("helvetica","normal"); doc.setTextColor(130,130,130);
+      doc.setFontSize(6); doc.text(`${d.n} venta${d.n!==1?"s":""}`,cx3+13,ty+9.5);
+    });
+
+    y=Math.max(y+resRows.length*rowH, y+topActual.length*rowH, ly2)+8;
 
     // Firmas
     if(y>H-55){doc.addPage();y=makeHeader(doc,{logo,fincaNombre,adminNombre,ubicacion:finca?.ubicacion,fecha,hora,numReporte,p,W})+4;}
