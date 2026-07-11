@@ -51,6 +51,167 @@ function numToWords(n) {
   return r+" CORDOBAS NETOS";
 }
 
+// ── Formulario reutilizable (FUERA del componente para evitar remontaje) ─────
+function FormGasto({ values, onChange, onSubmit, titulo, onCancel, usuarios, finca, enviando }) {
+  const roleLabel = (r) => r === "ADMIN" ? "Administrador" : r === "SUPER_ADMIN" ? "Super Admin" : "Trabajador";
+
+  const opcionesUsuario = usuarios.map(u => ({
+    valor: `${u.nombre} — ${roleLabel(u.role)} de ${finca?.nombre || "la Finca"}`,
+    etiqueta: u.nombre,
+    sub: `${roleLabel(u.role)} · ${finca?.nombre || ""}`,
+    initials: u.nombre.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase(),
+  }));
+
+  const esOpcionConocida = (val) => opcionesUsuario.some(o => o.valor === val);
+  const esOtroSeleccionado = values.responsable !== "" && !esOpcionConocida(values.responsable);
+
+  return (
+    <form onSubmit={onSubmit} className="bg-white rounded-2xl shadow-xl mb-5 overflow-hidden">
+      <div className="px-5 py-4" style={{ background: "linear-gradient(135deg,#553c9a,#805ad5)" }}>
+        <h2 className="text-white font-black text-lg">{titulo}</h2>
+      </div>
+      <div className="p-5 space-y-4">
+        {/* Categoría */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Categoría</label>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            {CATEGORIAS.map((c) => (
+              <button type="button" key={c.value} onClick={() => onChange({ ...values, categoria: c.value })}
+                className="rounded-xl py-2 px-3 text-sm font-bold border-2 transition-all text-left"
+                style={{ background: values.categoria === c.value ? c.color : "#fff", color: values.categoria === c.value ? "#fff" : c.color, borderColor: c.color }}>
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Responsable del pago */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Responsable del pago</label>
+          <div className="mt-2 space-y-2">
+            {opcionesUsuario.map((op) => {
+              const sel = values.responsable === op.valor;
+              return (
+                <button type="button" key={op.valor}
+                  onClick={() => onChange({ ...values, responsable: op.valor })}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left"
+                  style={{ borderColor: sel ? "#805ad5" : "#e5e7eb", background: sel ? "#f5f0ff" : "#fff" }}>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0"
+                    style={{ background: sel ? "#805ad5" : "#e5e7eb", color: sel ? "#fff" : "#6b7280" }}>
+                    {op.initials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm" style={{ color: sel ? "#553c9a" : "#374151" }}>{op.etiqueta}</p>
+                    <p className="text-xs" style={{ color: sel ? "#805ad5" : "#9ca3af" }}>{op.sub}</p>
+                  </div>
+                  {sel && <span className="ml-auto text-purple-600 font-bold">✓</span>}
+                </button>
+              );
+            })}
+            {/* Opción "Otro" */}
+            <button type="button"
+              onClick={() => onChange({ ...values, responsable: esOtroSeleccionado ? values.responsable : "" })}
+              className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left"
+              style={{ borderColor: esOtroSeleccionado ? "#805ad5" : "#e5e7eb", background: esOtroSeleccionado ? "#f5f0ff" : "#fff" }}>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0"
+                style={{ background: esOtroSeleccionado ? "#805ad5" : "#e5e7eb", color: esOtroSeleccionado ? "#fff" : "#6b7280" }}>
+                +
+              </div>
+              <div className="min-w-0">
+                <p className="font-bold text-sm" style={{ color: esOtroSeleccionado ? "#553c9a" : "#374151" }}>Otro</p>
+                <p className="text-xs" style={{ color: esOtroSeleccionado ? "#805ad5" : "#9ca3af" }}>Escribir nombre manualmente</p>
+              </div>
+              {esOtroSeleccionado && <span className="ml-auto text-purple-600 font-bold">✓</span>}
+            </button>
+          </div>
+          {/* Campo manual si se eligió "Otro" o no hay usuarios cargados */}
+          {(esOtroSeleccionado || (opcionesUsuario.length === 0)) && (
+            <input
+              className="w-full border-2 border-purple-300 rounded-xl p-3 mt-2 focus:border-purple-400 focus:outline-none bg-gray-50"
+              placeholder="Nombre del responsable..."
+              value={values.responsable}
+              onChange={(e) => onChange({ ...values, responsable: e.target.value })}
+            />
+          )}
+        </div>
+
+        {/* Descripción */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Descripción *</label>
+          <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+            placeholder="Ej: Compra de concentrado, sal mineral..." value={values.descripcion}
+            onChange={(e) => onChange({ ...values, descripcion: e.target.value })} required />
+        </div>
+
+        {/* Monto y Fecha */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">Monto (C$) *</label>
+            <input type="number" step="0.01"
+              className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+              placeholder="0.00" value={values.monto}
+              onChange={(e) => onChange({ ...values, monto: e.target.value })} required />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase">Fecha</label>
+            <input type="date"
+              className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
+              value={values.fecha} onChange={(e) => onChange({ ...values, fecha: e.target.value })} />
+          </div>
+        </div>
+
+        {/* Periodicidad */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Periodicidad</label>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            {PERIODICIDADES.map((p) => (
+              <button type="button" key={p.value} onClick={() => onChange({ ...values, periodicidad: p.value })}
+                className="rounded-xl py-2 px-3 text-sm font-bold border-2 transition-all"
+                style={{ background: values.periodicidad === p.value ? "#805ad5" : "#fff", color: values.periodicidad === p.value ? "#fff" : "#805ad5", borderColor: "#805ad5" }}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Receptor del pago */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">
+            Nombre completo de quien recibe el pago
+          </label>
+          <p className="text-xs text-gray-400 mb-1">Esta persona colocará su firma en el comprobante</p>
+          <input
+            className="w-full border-2 border-purple-200 rounded-xl p-3 focus:border-purple-400 focus:outline-none bg-gray-50 font-semibold text-gray-800"
+            placeholder="Ej: Juan Carlos Pérez García"
+            value={values.receptor}
+            onChange={(e) => onChange({ ...values, receptor: e.target.value })}
+          />
+        </div>
+
+        {/* Notas */}
+        <div>
+          <label className="text-xs font-bold text-gray-500 uppercase">Notas</label>
+          <textarea className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none resize-none bg-gray-50"
+            placeholder="Detalles adicionales..." rows={2} value={values.notas}
+            onChange={(e) => onChange({ ...values, notas: e.target.value })} />
+        </div>
+
+        <div className="flex gap-3">
+          <button disabled={enviando} type="submit"
+            className="flex-1 text-white rounded-2xl py-4 font-black disabled:opacity-50"
+            style={{ background: "#805ad5" }}>
+            {enviando ? "Guardando..." : "Guardar"}
+          </button>
+          <button type="button" onClick={onCancel}
+            className="px-6 rounded-2xl py-4 font-black border-2 border-gray-200 text-gray-500 hover:bg-gray-50">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}
+
 export default function GastosPage() {
   const [data,     setData]     = useState({ gastos: [], total: 0 });
   const [periodo,  setPeriodo]  = useState("");
@@ -386,152 +547,6 @@ export default function GastosPage() {
     count: data.gastos.filter((g) => g.categoria === c.value).length,
   })).filter((c) => c.count > 0);
 
-  // ── Formulario reutilizable ──────────────────────────────────────────────────
-  function FormGasto({ values, onChange, onSubmit, titulo, onCancel }) {
-    return (
-      <form onSubmit={onSubmit} className="bg-white rounded-2xl shadow-xl mb-5 overflow-hidden">
-        <div className="px-5 py-4" style={{ background: "linear-gradient(135deg,#553c9a,#805ad5)" }}>
-          <h2 className="text-white font-black text-lg">{titulo}</h2>
-        </div>
-        <div className="p-5 space-y-4">
-          {/* Categoría */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">Categoría</label>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {CATEGORIAS.map((c) => (
-                <button type="button" key={c.value} onClick={() => onChange({ ...values, categoria: c.value })}
-                  className="rounded-xl py-2 px-3 text-sm font-bold border-2 transition-all text-left"
-                  style={{ background: values.categoria === c.value ? c.color : "#fff", color: values.categoria === c.value ? "#fff" : c.color, borderColor: c.color }}>
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Responsable */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">Responsable del pago</label>
-            <div className="mt-2 space-y-2">
-              {/* Opciones predefinidas como tarjetas */}
-              {[
-                ...usuarios.map(u => ({
-                  valor: `${u.nombre} — ${u.role === "ADMIN" ? "Administrador" : u.role === "TRABAJADOR" ? "Trabajador" : u.role} de ${finca?.nombre || "la Finca"}`,
-                  etiqueta: u.nombre,
-                  sub: `${u.role === "ADMIN" ? "Administrador" : u.role === "TRABAJADOR" ? "Trabajador" : u.role} · ${finca?.nombre || ""}`,
-                  initials: u.nombre.split(" ").map(n=>n[0]).slice(0,2).join("").toUpperCase(),
-                })),
-                { valor: "__otro__", etiqueta: "Otro", sub: "Escribir nombre manualmente", initials: "+" },
-              ].map((op) => {
-                const seleccionado = values.responsable === op.valor || (op.valor === "__otro__" && values.responsable && !usuarios.find(u=>`${u.nombre} — ${u.role === "ADMIN" ? "Administrador" : u.role === "TRABAJADOR" ? "Trabajador" : u.role} de ${finca?.nombre || "la Finca"}` === values.responsable));
-                return (
-                  <button type="button" key={op.valor}
-                    onClick={() => onChange({ ...values, responsable: op.valor === "__otro__" ? "" : op.valor })}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left"
-                    style={{
-                      borderColor: seleccionado ? "#805ad5" : "#e5e7eb",
-                      background: seleccionado ? "#f5f0ff" : "#fff",
-                    }}>
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0"
-                      style={{ background: seleccionado ? "#805ad5" : "#e5e7eb", color: seleccionado ? "#fff" : "#6b7280" }}>
-                      {op.initials}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-sm" style={{ color: seleccionado ? "#553c9a" : "#374151" }}>{op.etiqueta}</p>
-                      <p className="text-xs" style={{ color: seleccionado ? "#805ad5" : "#9ca3af" }}>{op.sub}</p>
-                    </div>
-                    {seleccionado && <span className="ml-auto text-purple-600">✓</span>}
-                  </button>
-                );
-              })}
-            </div>
-            {/* Campo manual si no coincide con ninguna opción predefinida */}
-            {values.responsable !== "" && !usuarios.find(u=>`${u.nombre} — ${u.role === "ADMIN" ? "Administrador" : u.role === "TRABAJADOR" ? "Trabajador" : u.role} de ${finca?.nombre || "la Finca"}` === values.responsable) && (
-              <input
-                className="w-full border-2 border-purple-300 rounded-xl p-3 mt-2 focus:border-purple-400 focus:outline-none bg-gray-50"
-                placeholder="Nombre del responsable..."
-                value={values.responsable}
-                onChange={(e) => onChange({ ...values, responsable: e.target.value })}
-              />
-            )}
-          </div>
-
-          {/* Descripción */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">Descripción *</label>
-            <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
-              placeholder="Ej: Compra de concentrado, sal mineral..." value={values.descripcion}
-              onChange={(e) => onChange({ ...values, descripcion: e.target.value })} required />
-          </div>
-
-          {/* Monto y Fecha */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-bold text-gray-500 uppercase">Monto (C$) *</label>
-              <input type="number" step="0.01"
-                className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
-                placeholder="0.00" value={values.monto}
-                onChange={(e) => onChange({ ...values, monto: e.target.value })} required />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-500 uppercase">Fecha</label>
-              <input type="date"
-                className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
-                value={values.fecha} onChange={(e) => onChange({ ...values, fecha: e.target.value })} />
-            </div>
-          </div>
-
-          {/* Periodicidad */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">Periodicidad</label>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {PERIODICIDADES.map((p) => (
-                <button type="button" key={p.value} onClick={() => onChange({ ...values, periodicidad: p.value })}
-                  className="rounded-xl py-2 px-3 text-sm font-bold border-2 transition-all"
-                  style={{ background: values.periodicidad === p.value ? "#805ad5" : "#fff", color: values.periodicidad === p.value ? "#fff" : "#805ad5", borderColor: "#805ad5" }}>
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Receptor del pago */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">
-              Nombre completo de quien recibe el pago
-            </label>
-            <p className="text-xs text-gray-400 mb-1">Esta persona colocará su firma en el comprobante</p>
-            <input
-              className="w-full border-2 border-purple-200 rounded-xl p-3 focus:border-purple-400 focus:outline-none bg-gray-50 font-semibold text-gray-800"
-              placeholder="Ej: Juan Carlos Pérez García"
-              value={values.receptor}
-              onChange={(e) => onChange({ ...values, receptor: e.target.value })}
-            />
-          </div>
-
-          {/* Notas */}
-          <div>
-            <label className="text-xs font-bold text-gray-500 uppercase">Notas</label>
-            <textarea className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none resize-none bg-gray-50"
-              placeholder="Detalles adicionales..." rows={2} value={values.notas}
-              onChange={(e) => onChange({ ...values, notas: e.target.value })} />
-          </div>
-
-          <div className="flex gap-3">
-            <button disabled={enviando} type="submit"
-              className="flex-1 text-white rounded-2xl py-4 font-black disabled:opacity-50"
-              style={{ background: "#805ad5" }}>
-              {enviando ? "Guardando..." : "Guardar"}
-            </button>
-            <button type="button" onClick={onCancel}
-              className="px-6 rounded-2xl py-4 font-black border-2 border-gray-200 text-gray-500 hover:bg-gray-50">
-              Cancelar
-            </button>
-          </div>
-        </div>
-      </form>
-    );
-  }
-
   return (
     <AppLayout title="💸 Control de Gastos" subtitle="Registro de gastos de la finca">
       <div className="max-w-2xl mx-auto">
@@ -581,7 +596,8 @@ export default function GastosPage() {
 
         {showForm && !editando && (
           <FormGasto values={form} onChange={setForm} onSubmit={handleSubmit}
-            titulo="Nuevo Gasto" onCancel={() => setShowForm(false)} />
+            titulo="Nuevo Gasto" onCancel={() => setShowForm(false)}
+            usuarios={usuarios} finca={finca} enviando={enviando} />
         )}
 
         {/* Modal editar */}
@@ -590,7 +606,8 @@ export default function GastosPage() {
             style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}>
             <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
               <FormGasto values={formEdit} onChange={setFormEdit} onSubmit={handleEditar}
-                titulo="Editar Gasto" onCancel={() => setEditando(null)} />
+                titulo="Editar Gasto" onCancel={() => setEditando(null)}
+                usuarios={usuarios} finca={finca} enviando={enviando} />
             </div>
           </div>
         )}
