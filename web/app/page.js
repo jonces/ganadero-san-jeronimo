@@ -137,7 +137,7 @@ export default function LoginPage() {
         <section className="flex-1 flex flex-col lg:flex-row items-center justify-center gap-12 px-6 py-8 max-w-6xl mx-auto w-full">
 
           {/* Texto izquierda */}
-          <div className={`flex-1 text-center lg:text-left transition-all duration-700 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div className={`flex-1 text-center lg:text-left transition-all duration-700 order-2 lg:order-1 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-6"
               style={{ background: "rgba(45,158,63,0.2)", border: "1px solid rgba(45,158,63,0.4)" }}>
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -182,7 +182,7 @@ export default function LoginPage() {
           </div>
 
           {/* Card derecha */}
-          <div ref={cardRef} className={`w-full max-w-sm transition-all duration-700 delay-200 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <div ref={cardRef} className={`w-full max-w-sm transition-all duration-700 delay-200 order-1 lg:order-2 ${loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
             <div className="rounded-3xl p-8 shadow-2xl" style={glass}>
 
               {!showLogin ? (
