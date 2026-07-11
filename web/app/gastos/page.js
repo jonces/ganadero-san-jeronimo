@@ -90,7 +90,7 @@ function FormGasto({ values, onChange, onSubmit, titulo, onCancel, usuarios, fin
           <div className="grid grid-cols-2 gap-2 mt-2">
             {CATEGORIAS.map((c) => (
               <button type="button" key={c.value}
-                onClick={() => onChange({ ...values, categoria: c.value, notas: notaAutomatica(c.value, values.fecha) })}
+                onClick={() => onChange({ ...values, categoria: c.value, descripcion: c.label.replace(/[^\w\s]/gu,"").trim(), notas: notaAutomatica(c.value, values.fecha) })}
                 className="rounded-xl py-2 px-3 text-sm font-bold border-2 transition-all text-left"
                 style={{ background: values.categoria === c.value ? c.color : "#fff", color: values.categoria === c.value ? "#fff" : c.color, borderColor: c.color }}>
                 {c.label}
@@ -149,12 +149,31 @@ function FormGasto({ values, onChange, onSubmit, titulo, onCancel, usuarios, fin
           )}
         </div>
 
-        {/* Descripción */}
+        {/* Texto del comprobante — el empleado lo lee antes de firmar */}
         <div>
-          <label className="text-xs font-bold text-gray-500 uppercase">Descripción *</label>
-          <input className="w-full border-2 border-gray-200 rounded-xl p-3 mt-1 focus:border-purple-400 focus:outline-none bg-gray-50"
-            placeholder="Ej: Compra de concentrado, sal mineral..." value={values.descripcion}
-            onChange={(e) => onChange({ ...values, descripcion: e.target.value })} required />
+          <label className="text-xs font-bold text-gray-500 uppercase">Texto del comprobante</label>
+          <p className="text-xs text-gray-400 mt-0.5 mb-2">El empleado leerá este texto antes de firmar. Puedes editarlo.</p>
+          {values.notas ? (
+            <div className="rounded-2xl overflow-hidden border-2" style={{ borderColor: "#805ad5" }}>
+              <div className="px-4 py-2 flex items-center gap-2" style={{ background: "#553c9a" }}>
+                <span className="text-white text-xs font-black uppercase tracking-wide">Texto que aparecera en el PDF</span>
+                <span className="ml-auto text-purple-200 text-xs">Editable</span>
+              </div>
+              <textarea
+                className="w-full p-4 text-sm leading-relaxed focus:outline-none resize-none"
+                style={{ background: "#faf8ff", color: "#2d1b69", minHeight: "120px" }}
+                rows={6}
+                value={values.notas}
+                onChange={(e) => onChange({ ...values, notas: e.target.value })}
+              />
+            </div>
+          ) : (
+            <div className="rounded-2xl border-2 border-dashed border-purple-200 p-6 text-center"
+              style={{ background: "#faf8ff" }}>
+              <p className="text-purple-400 text-sm font-semibold">Selecciona una categoría arriba</p>
+              <p className="text-purple-300 text-xs mt-1">El texto se generará automáticamente</p>
+            </div>
+          )}
         </div>
 
         {/* Monto y Fecha */}
@@ -200,24 +219,6 @@ function FormGasto({ values, onChange, onSubmit, titulo, onCancel, usuarios, fin
             value={values.receptor}
             onChange={(e) => onChange({ ...values, receptor: e.target.value })}
           />
-        </div>
-
-        {/* Notas */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-bold text-gray-500 uppercase">Nota del comprobante</label>
-            {values.notas && (
-              <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-                style={{ background: "#f5f0ff", color: "#805ad5" }}>
-                Generada automaticamente · puedes editar
-              </span>
-            )}
-          </div>
-          <textarea className="w-full border-2 rounded-xl p-3 focus:outline-none resize-none text-sm leading-relaxed"
-            style={{ borderColor: values.notas ? "#c4b5fd" : "#e5e7eb", background: values.notas ? "#faf8ff" : "#f9fafb", color: "#374151" }}
-            placeholder="Selecciona una categoria para generar la nota automaticamente..."
-            rows={5} value={values.notas}
-            onChange={(e) => onChange({ ...values, notas: e.target.value })} />
         </div>
 
         <div className="flex gap-3">
@@ -450,10 +451,9 @@ export default function GastosPage() {
         ["FINCA",         finca?.nombre||"—"],
         ["CATEGORIA",     cat.value],
         ["PERIODICIDAD",  g.periodicidad],
-        ...(g.notas?[["NOTAS",g.notas]]:[] ),
       ];
       let fy=y+8;
-      filasDet.slice(0,7).forEach(([lbl,val])=>{
+      filasDet.slice(0,6).forEach(([lbl,val])=>{
         doc.setFillColor(...PL); doc.circle(colL+6,fy,3.5,"F");
         doc.setFontSize(5); doc.setFont("helvetica","bold"); doc.setTextColor(...PD);
         doc.text(lbl,colL+12,fy-2.5);
@@ -490,6 +490,25 @@ export default function GastosPage() {
         ry2+=13;
       });
       y+=detH+6;
+
+      // ── NOTA / OBSERVACIONES ───────────────────────────────────────────────
+      if(g.notas){
+        const notaTxt = String(g.notas);
+        doc.setFontSize(7.5);
+        const lineas = doc.splitTextToSize(notaTxt, W-36);
+        const notaH  = Math.max(20, lineas.length*4.5+10);
+        doc.setFillColor(245,240,255); doc.setDrawColor(...PM); doc.setLineWidth(0.4);
+        doc.roundedRect(8,y,W-16,notaH,3,3,"FD");
+        // Header de la caja
+        doc.setFillColor(...PD); doc.roundedRect(8,y,W-16,8,3,3,"F");
+        doc.rect(8,y+4,W-16,4,"F");
+        doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+        doc.text("NOTA / OBSERVACIONES",W/2,y+5.5,{align:"center"});
+        // Texto de la nota
+        doc.setFontSize(7.5); doc.setFont("helvetica","normal"); doc.setTextColor(40,20,70);
+        doc.text(lineas, 16, y+13);
+        y+=notaH+6;
+      }
 
       // ── FIRMAS ─────────────────────────────────────────────────────────────
       doc.setFillColor(...PL); doc.roundedRect(8,y,W-16,62,4,4,"F");
