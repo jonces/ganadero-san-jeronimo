@@ -7,6 +7,20 @@ import AppLayout from "@/components/AppLayout";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
 
+function calcularEdad(fechaNac) {
+  if (!fechaNac) return "—";
+  const hoy = new Date();
+  const nac = new Date(fechaNac);
+  let años = hoy.getFullYear() - nac.getFullYear();
+  let meses = hoy.getMonth() - nac.getMonth();
+  let dias = hoy.getDate() - nac.getDate();
+  if (dias < 0) { meses--; dias += 30; }
+  if (meses < 0) { años--; meses += 12; }
+  if (años > 0) return `${años} año${años>1?"s":""} ${meses>0?`y ${meses} mes${meses>1?"es":""}`:""}`;
+  if (meses > 0) return `${meses} mes${meses>1?"es":""}`;
+  return `${dias} día${dias>1?"s":""}`;
+}
+
 const ESTADOS_REPRO = ["PREÑADA", "LACTANCIA", "PARIDA", "SECA", "VACIA", "TERNERA", "TERNERO", "TORETE", "SEMENTAL"];
 const REPRO_CONFIG = {
   PREÑADA:   { label: "Preñada",   color: "#e53e3e", bg: "rgba(229,62,62,0.2)",   icon: "🤰" },
@@ -30,7 +44,7 @@ export default function InventarioPage() {
   const [archivos, setArchivos] = useState([]);
   const [filtro, setFiltro] = useState("TODOS");
   const [busqueda, setBusqueda] = useState("");
-  const [form, setForm] = useState({ identificador:"",nombre:"",raza:"",fierro:"",sexo:"HEMBRA",pesoActual:"",observacion:"",estadoReproductivo:"",madreId:"" });
+  const [form, setForm] = useState({ identificador:"",nombre:"",raza:"",fierro:"",sexo:"HEMBRA",pesoActual:"",observacion:"",estadoReproductivo:"",madreId:"",fechaNacimiento:"" });
   const [formParto, setFormParto] = useState({ identificadorCria:"",nombreCria:"",sexoCria:"HEMBRA",pesoNacimiento:"" });
   const [archivosParto, setArchivosParto] = useState([]);
   const [editAnimal, setEditAnimal] = useState(null);
@@ -47,6 +61,7 @@ export default function InventarioPage() {
       pesoActual: a.pesoActual||"",
       observacion: a.observacion||"",
       estadoReproductivo: a.estadoReproductivo||"",
+      fechaNacimiento: a.fechaNacimiento ? a.fechaNacimiento.split("T")[0] : "",
     });
   }
 
@@ -61,6 +76,7 @@ export default function InventarioPage() {
           raza: formEdit.raza||null,
           fierro: formEdit.fierro||null,
           pesoActual: formEdit.pesoActual||null,
+          fechaNacimiento: formEdit.fechaNacimiento||null,
           observacion: formEdit.observacion||null,
           estadoReproductivo: formEdit.estadoReproductivo||null,
         }),
@@ -100,7 +116,7 @@ export default function InventarioPage() {
     try {
       const res = await fetch(`${API_URL}/animales`, {
         method:"POST", headers:{"Content-Type":"application/json",Authorization:`Bearer ${getToken()}`},
-        body: JSON.stringify({...form, estadoReproductivo: form.sexo==="HEMBRA"?form.estadoReproductivo:undefined }),
+        body: JSON.stringify({...form, estadoReproductivo: form.sexo==="HEMBRA"?form.estadoReproductivo:undefined, fechaNacimiento: form.fechaNacimiento||undefined }),
       });
       const animal = await res.json();
       if(!res.ok) throw new Error(animal.error||"Error");
@@ -108,7 +124,7 @@ export default function InventarioPage() {
         const fd=new FormData(); Array.from(archivos).forEach(f=>fd.append("archivos",f));
         await fetch(`${API_URL}/animales/${animal.id}/media`,{method:"POST",headers:{Authorization:`Bearer ${getToken()}`},body:fd});
       }
-      setForm({identificador:"",nombre:"",raza:"",fierro:"",sexo:"HEMBRA",pesoActual:"",observacion:"",estadoReproductivo:"",madreId:""});
+      setForm({identificador:"",nombre:"",raza:"",fierro:"",sexo:"HEMBRA",pesoActual:"",observacion:"",estadoReproductivo:"",madreId:"",fechaNacimiento:""});
       setArchivos([]); setShowForm(false); load();
     } catch(err){ setError(err.message); } finally{ setEnviando(false); }
   }
@@ -244,6 +260,8 @@ export default function InventarioPage() {
             <div><label className="text-white/50 text-xs">Raza</label><input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="Brahman" value={form.raza} onChange={e=>setForm({...form,raza:e.target.value})}/></div>
             <div><label className="text-white/50 text-xs">Fierro</label><input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="M20" value={form.fierro} onChange={e=>setForm({...form,fierro:e.target.value})}/></div>
             <div><label className="text-white/50 text-xs">Peso (kg)</label><input type="number" className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="350" value={form.pesoActual} onChange={e=>setForm({...form,pesoActual:e.target.value})}/></div>
+            <div><label className="text-white/50 text-xs">Fecha de Nacimiento</label><input type="date" className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.fechaNacimiento} onChange={e=>setForm({...form,fechaNacimiento:e.target.value})}/></div>
+            <div><label className="text-white/50 text-xs">Edad calculada</label><div className="w-full rounded-xl px-3 py-3 text-base mt-0.5 text-green-400 font-bold" style={gi}>{form.fechaNacimiento ? calcularEdad(form.fechaNacimiento) : "—"}</div></div>
             <div className="sm:col-span-2"><label className="text-white/50 text-xs">Categoría / Estado</label><select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.estadoReproductivo} onChange={e=>setForm({...form,estadoReproductivo:e.target.value})}><option value="">Sin definir</option>{ESTADOS_REPRO.map(e=><option key={e} value={e}>{REPRO_CONFIG[e].icon} {REPRO_CONFIG[e].label}</option>)}</select></div>
             <div className="sm:col-span-2"><label className="text-white/50 text-xs">Madre (si es cría)</label><select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.madreId} onChange={e=>setForm({...form,madreId:e.target.value})}><option value="">Sin madre</option>{hembrasActivas.map(h=><option key={h.id} value={h.id}>{h.nombre||h.identificador}</option>)}</select></div>
           </div>
@@ -299,6 +317,10 @@ export default function InventarioPage() {
               <input className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.fierro} onChange={e=>setFormEdit({...formEdit,fierro:e.target.value})} placeholder="M20"/></div>
             <div><label className="text-white/50 text-xs">Peso actual (kg)</label>
               <input type="number" className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.pesoActual} onChange={e=>setFormEdit({...formEdit,pesoActual:e.target.value})} placeholder="350"/></div>
+            <div><label className="text-white/50 text-xs">Fecha de Nacimiento</label>
+              <input type="date" className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.fechaNacimiento} onChange={e=>setFormEdit({...formEdit,fechaNacimiento:e.target.value})}/></div>
+            <div><label className="text-white/50 text-xs">Edad calculada</label>
+              <div className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5 text-green-400 font-bold" style={gi}>{formEdit.fechaNacimiento ? calcularEdad(formEdit.fechaNacimiento) : "—"}</div></div>
             <div>
               <label className="text-white/50 text-xs">Categoría / Estado</label>
               <select className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.estadoReproductivo} onChange={e=>setFormEdit({...formEdit,estadoReproductivo:e.target.value})}>
@@ -339,6 +361,7 @@ export default function InventarioPage() {
                   </div>
                   {a.fierro&&<p className="text-white/40 text-xs mt-1">Fierro: {a.fierro}</p>}
                   {a.pesoActual&&<p className="text-green-400 text-sm font-bold mt-1">⚖️ {a.pesoActual} kg</p>}
+                  {a.fechaNacimiento&&<p className="text-blue-300 text-xs mt-1">🎂 {new Date(a.fechaNacimiento).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"})} · {calcularEdad(a.fechaNacimiento)}</p>}
                   {(et||repro)&&<p className="text-xs mt-2 px-2 py-1 rounded-lg font-semibold inline-block" style={{background:repro?.bg||"rgba(255,255,255,0.1)",color:repro?.color||"white"}}>{repro?.icon} {et||repro?.label}</p>}
                   <div className="flex gap-2 mt-2">
                     <button onClick={ev=>abrirEditar(a,ev)} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(49,130,206,0.25)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
@@ -413,6 +436,7 @@ export default function InventarioPage() {
                 <p className="text-white font-black text-sm truncate">{a.nombre||a.identificador}</p>
                 <p className="text-white/40 text-xs truncate">{a.raza||"Sin raza"} · {a.identificador}</p>
                 {a.pesoActual&&<p className="text-green-400 text-xs font-bold mt-1">⚖️ {a.pesoActual} kg</p>}
+                {a.fechaNacimiento&&<p className="text-blue-300 text-xs mt-1">🎂 {calcularEdad(a.fechaNacimiento)}</p>}
                 <div className="flex gap-1.5 mt-2 flex-wrap">
                   <button onClick={ev=>abrirEditar(a,ev)}
                     className="flex-1 text-xs py-1.5 rounded-xl font-bold"
