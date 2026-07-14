@@ -65,10 +65,14 @@ router.delete("/fincas/:id", async (req, res, next) => {
     // Eliminar en cascada todos los datos relacionados
     await prisma.$transaction([
       prisma.actividadLog.deleteMany({ where: { fincaId: id } }),
+      prisma.comentario.deleteMany({ where: { anuncio: { fincaId: id } } }),
+      prisma.anuncio.deleteMany({ where: { fincaId: id } }),
+      prisma.documento.deleteMany({ where: { fincaId: id } }),
       prisma.tareaAnimal.deleteMany({ where: { tarea: { fincaId: id } } }),
       prisma.tarea.deleteMany({ where: { fincaId: id } }),
+      prisma.media.deleteMany({ where: { fincaId: id } }),
+      prisma.incidente.deleteMany({ where: { fincaId: id } }),
       prisma.evento.deleteMany({ where: { animal: { fincaId: id } } }),
-      prisma.media.deleteMany({ where: { animal: { fincaId: id } } }),
       prisma.venta.deleteMany({ where: { fincaId: id } }),
       prisma.gasto.deleteMany({ where: { fincaId: id } }),
       prisma.animal.deleteMany({ where: { fincaId: id } }),

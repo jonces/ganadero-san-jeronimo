@@ -19,8 +19,10 @@ export default function SuperAdminPage() {
   const [fincas, setFincas] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   async function load() {
+    setLoading(true);
     try {
       const [s, f] = await Promise.all([
         api("/superadmin/stats"),
@@ -30,7 +32,9 @@ export default function SuperAdminPage() {
       setFincas(f);
     } catch (err) {
       setError(err.message);
-      if (err.message.includes("denegado")) router.push("/");
+      if (err.message.includes("denegado") || err.message.includes("401")) router.push("/");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -58,7 +62,18 @@ export default function SuperAdminPage() {
 
   const fincasFiltradas = fincas.filter((f) =>
     f.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    f.usuarios[0]?.email?.toLowerCase().includes(busqueda.toLowerCase())
+    f.usuarios?.[0]?.email?.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  if (loading) return (
+    <AppLayout title="Panel de Control" subtitle="Super Administrador">
+      <div className="flex items-center justify-center py-32">
+        <div className="text-center">
+          <p className="text-5xl mb-4 animate-bounce">🐄</p>
+          <p className="text-white/60 text-lg animate-pulse">Cargando fincas...</p>
+        </div>
+      </div>
+    </AppLayout>
   );
 
   return (

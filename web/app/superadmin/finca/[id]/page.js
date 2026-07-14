@@ -2,9 +2,8 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import { api } from "@/lib/api";
 const FARM_BG = "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1920&q=85";
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
 
 const glass = { background: "rgba(5,25,12,0.65)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.12)" };
 const glassCard = { background: "rgba(255,255,255,0.07)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.1)" };
@@ -22,14 +21,13 @@ export default function FincaDetailPage() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(`${API_URL}/superadmin/fincas/${id}`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        });
-        const d = await res.json();
-        if (!res.ok) throw new Error(d.error);
+        const d = await api(`/superadmin/fincas/${id}`);
         setFinca(d.finca);
         setData(d);
-      } catch (err) { setError(err.message); }
+      } catch (err) {
+        setError(err.message);
+        if (err.message?.includes("denegado") || err.message?.includes("401")) router.replace("/dashboard");
+      }
     }
     load();
   }, [id]);
