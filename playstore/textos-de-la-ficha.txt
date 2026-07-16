@@ -1,0 +1,57 @@
+════════════════════════════════════════════════
+TEXTOS PARA LA FICHA DE GOOGLE PLAY — GANADEROS G
+(copiar y pegar en cada campo de Play Console)
+════════════════════════════════════════════════
+
+── NOMBRE DE LA APP (máx. 30 caracteres) ──
+Ganaderos G
+
+── DESCRIPCIÓN BREVE (máx. 80 caracteres) ──
+Administra tu finca ganadera: ganado, ventas, gastos y reportes en tiempo real.
+
+── DESCRIPCIÓN COMPLETA (máx. 4000 caracteres) ──
+🐄 Ganaderos G — El software para administrar tu finca ganadera
+
+Lleva el control completo de tu finca desde el teléfono, con fotos y videos de tu ganado en tiempo real.
+
+📋 INVENTARIO ANIMAL
+• Registra cada animal con su arete, raza, sexo, peso y fecha de nacimiento
+• Súbele fotos y videos desde el corral
+• Historial completo: vacunas, tratamientos, pesajes, partos y movimientos
+
+💰 VENTAS
+• Registra ventas en pie o por peso, en córdobas o dólares
+• Control de pagos: pagado, pendiente o parcial
+• Resumen de ingresos del mes y del histórico
+
+💸 CONTROL DE GASTOS
+• Alimentación, medicamentos, salarios, combustible y más
+• Totales por categoría y por periodo
+
+🚨 INCIDENTES
+• Reporta enfermedades, accidentes o novedades con fotos
+• Tu equipo se entera al momento
+
+👥 TRABAJO EN EQUIPO
+• Crea cuentas para tus trabajadores con permisos limitados
+• Tablón de anuncios con comentarios para coordinar la finca
+• Registro de actividad: quién hizo qué y cuándo
+
+📄 DOCUMENTOS LEGALES
+• Guarda fierros, cartas de venta y permisos de alcaldía
+• Todo respaldado en la nube, disponible desde cualquier lugar
+
+📊 REPORTES PROFESIONALES
+• Informes PDF de inventario, ventas y gastos con el sello de tu finca
+
+Ideal para fincas ganaderas de cualquier tamaño. Tus datos se sincronizan con la versión web en www.ganaderosg.app — trabaja desde el teléfono en el campo y desde la computadora en la oficina.
+
+── CATEGORÍA ──
+Empresa (Business)
+
+── URL DE POLÍTICA DE PRIVACIDAD ──
+https://www.ganaderosg.app/privacidad
+
+── DATOS DE CONTACTO ──
+Email: jhonces20@gmail.com
+Sitio web: https://www.ganaderosg.app
