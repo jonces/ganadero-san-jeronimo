@@ -20,6 +20,7 @@ class _InventarioScreenState extends State<InventarioScreen> {
   final _busquedaCtrl = TextEditingController();
   String _filtroSexo = 'TODOS';
   String _filtroEstado = 'ACTIVO';
+  String? _filtroFierro;
 
   @override
   void initState() {
@@ -44,10 +45,30 @@ class _InventarioScreenState extends State<InventarioScreen> {
     }
   }
 
+  List<MapEntry<String, int>> get _porFierro {
+    final conteo = <String, int>{};
+    for (final a in _animales) {
+      if (a['estado'] != 'ACTIVO') continue;
+      final f = (a['fierro'] as String?)?.trim();
+      final key = (f == null || f.isEmpty) ? 'Sin fierro' : f;
+      conteo[key] = (conteo[key] ?? 0) + 1;
+    }
+    final entradas = conteo.entries.toList();
+    entradas.sort((a, b) => b.value.compareTo(a.value));
+    return entradas;
+  }
+
   List<dynamic> get _filtrados {
     var lista = _animales.where((a) => a['estado'] != 'ELIMINADO').toList();
     if (_filtroEstado != 'TODOS') lista = lista.where((a) => a['estado'] == _filtroEstado).toList();
     if (_filtroSexo != 'TODOS') lista = lista.where((a) => a['sexo'] == _filtroSexo).toList();
+    if (_filtroFierro != null) {
+      lista = lista.where((a) {
+        final f = (a['fierro'] as String?)?.trim();
+        final key = (f == null || f.isEmpty) ? 'Sin fierro' : f;
+        return key == _filtroFierro;
+      }).toList();
+    }
     final q = _busquedaCtrl.text.toLowerCase().trim();
     if (q.isNotEmpty) {
       lista = lista.where((a) =>
@@ -394,6 +415,43 @@ class _InventarioScreenState extends State<InventarioScreen> {
                       ],
                     ),
                   ),
+                  if (_porFierro.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('🔥 Animales por fierro',
+                          style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.w700)),
+                    ),
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: _porFierro.map((e) {
+                          final sel = _filtroFierro == e.key;
+                          return GestureDetector(
+                            onTap: () => setState(() => _filtroFierro = sel ? null : e.key),
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              constraints: const BoxConstraints(minWidth: 78),
+                              decoration: BoxDecoration(
+                                color: sel ? const Color(0xFF2D9E3F).withOpacity(0.3) : Colors.white.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: sel ? const Color(0xFF2D9E3F) : Colors.white.withOpacity(0.15), width: sel ? 2 : 1),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${e.value}', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                                  Text(e.key, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11)),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

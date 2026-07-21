@@ -44,6 +44,7 @@ export default function InventarioPage() {
   const [archivos, setArchivos] = useState([]);
   const [filtro, setFiltro] = useState("TODOS");
   const [busqueda, setBusqueda] = useState("");
+  const [filtroFierro, setFiltroFierro] = useState(null);
   const [form, setForm] = useState({ identificador:"",nombre:"",raza:"",fierro:"",sexo:"HEMBRA",pesoActual:"",observacion:"",estadoReproductivo:"",madreId:"",fechaNacimiento:"" });
   const [formParto, setFormParto] = useState({ identificadorCria:"",nombreCria:"",sexoCria:"HEMBRA",pesoNacimiento:"" });
   const [archivosParto, setArchivosParto] = useState([]);
@@ -179,10 +180,21 @@ export default function InventarioPage() {
     if(filtro==="CRIAS") return !!a.madreId&&a.estado==="ACTIVO";
     return a.estadoReproductivo===filtro&&a.estado==="ACTIVO";
   }).filter(a=>{
+    if(!filtroFierro) return true;
+    return (a.fierro||"Sin fierro")===filtroFierro;
+  }).filter(a=>{
     if(!busqueda.trim()) return true;
     const q=busqueda.toLowerCase();
     return (a.nombre||"").toLowerCase().includes(q)||(a.identificador||"").toLowerCase().includes(q)||(a.raza||"").toLowerCase().includes(q)||(a.fierro||"").toLowerCase().includes(q);
   });
+
+  const porFierro=Object.entries(
+    activos.reduce((acc,a)=>{
+      const key=a.fierro?.trim()||"Sin fierro";
+      acc[key]=(acc[key]||0)+1;
+      return acc;
+    },{})
+  ).sort((a,b)=>b[1]-a[1]);
 
   const hembrasActivas=animales.filter(a=>a.sexo==="HEMBRA"&&a.estado==="ACTIVO");
   const glass={background:"rgba(5,25,12,0.65)",backdropFilter:"blur(16px)",border:"1px solid rgba(255,255,255,0.12)"};
@@ -241,6 +253,28 @@ export default function InventarioPage() {
           </button>
         ))}
       </div>
+
+      {/* Resumen por Fierro */}
+      {porFierro.length>0&&(
+        <div className="rounded-2xl p-4 mb-5" style={glass}>
+          <p className="text-white/70 font-bold text-sm mb-3">🔥 Animales por Fierro</p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {porFierro.map(([fierro,cantidad])=>(
+              <button key={fierro} onClick={()=>setFiltroFierro(f=>f===fierro?null:fierro)}
+                className="flex-shrink-0 rounded-xl px-4 py-2.5 text-left transition-all"
+                style={{
+                  background:filtroFierro===fierro?"rgba(45,158,63,0.3)":"rgba(255,255,255,0.06)",
+                  border:filtroFierro===fierro?"2px solid #2d9e3f":"1px solid rgba(255,255,255,0.15)",
+                  minWidth:90,
+                }}>
+                <p className="text-white font-black text-xl leading-none">{cantidad}</p>
+                <p className="text-white/60 text-xs mt-1 truncate">{fierro}</p>
+              </button>
+            ))}
+          </div>
+          {filtroFierro&&<button onClick={()=>setFiltroFierro(null)} className="text-green-400 text-xs mt-2 font-bold">✕ Quitar filtro de fierro</button>}
+        </div>
+      )}
 
       {/* Botón */}
       <button onClick={()=>setShowForm(s=>!s)}
