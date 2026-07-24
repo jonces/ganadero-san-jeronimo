@@ -5,10 +5,16 @@ import { api } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
 const fmt = (n) => Number(n || 0).toLocaleString("es-NI", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtUSD = (n) => Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// Tasa de cambio NIO → USD (1 USD = ~36.5 NIO aprox. BCN Nicaragua)
+const TASA_CAMBIO = 36.50;
+const toUSD = (nio) => nio / TASA_CAMBIO;
+const toNIO = (usd) => usd * TASA_CAMBIO;
 
 const TIPOS_PAGO = ["Diario", "Semanal", "Quincenal", "Mensual", "Extraordinario", "Otro"];
 const METODOS_PAGO = ["Efectivo", "Transferencia bancaria", "Cheque", "Pago móvil", "Otro"];
-const MONEDAS = [{ value: "NIO", label: "NIO — Córdoba" }, { value: "USD", label: "USD — Dólar" }];
+const MONEDAS = [{ value: "NIO", label: "C$ — Córdoba" }, { value: "USD", label: "$ — Dólar" }];
 
 const VACIO = {
   responsableId: "", responsableNombre: "", responsableRol: "",
@@ -198,34 +204,51 @@ export default function NominaPage() {
     doc.text(form.tipoPago, pageW/2 + 4, y + 12);
     y += 22;
 
+    const simNIO = form.moneda === "NIO";
+    const simUSD = form.moneda === "USD";
+    const monedaSimbolo = simNIO ? "C$" : "$";
+
     // Tabla de desglose
     autoTable(doc, {
       startY: y,
-      head: [["Concepto", "Monto"]],
+      head: [["Concepto", `Monto (${form.moneda})`, simNIO ? "Equiv. USD" : "Equiv. NIO"]],
       body: [
-        ["Salario base", `${form.moneda} ${fmt(form.salarioBase)}`],
-        ...(Number(form.bonificacion) > 0 ? [["Bonificación", `${form.moneda} ${fmt(form.bonificacion)}`]] : []),
-        ...(Number(form.horasExtras) > 0 ? [["Horas extras", `${form.moneda} ${fmt(form.horasExtras)}`]] : []),
-        ...(Number(form.otrasRemuneraciones) > 0 ? [["Otras remuneraciones", `${form.moneda} ${fmt(form.otrasRemuneraciones)}`]] : []),
-        ["Total ingresos", `${form.moneda} ${fmt(totalIngresos)}`],
-        ...(Number(form.deducciones) > 0 ? [["Deducciones", `- ${form.moneda} ${fmt(form.deducciones)}`]] : []),
-        ...(Number(form.adelantos) > 0 ? [["Adelantos descontados", `- ${form.moneda} ${fmt(form.adelantos)}`]] : []),
+        ["Salario base", `${monedaSimbolo} ${fmt(form.salarioBase)}`, simNIO ? `$ ${fmtUSD(toUSD(Number(form.salarioBase)||0))}` : `C$ ${fmt(toNIO(Number(form.salarioBase)||0))}`],
+        ...(Number(form.bonificacion) > 0 ? [["Bonificación", `${monedaSimbolo} ${fmt(form.bonificacion)}`, simNIO ? `$ ${fmtUSD(toUSD(Number(form.bonificacion)))}` : `C$ ${fmt(toNIO(Number(form.bonificacion)))}`]] : []),
+        ...(Number(form.horasExtras) > 0 ? [["Horas extras", `${monedaSimbolo} ${fmt(form.horasExtras)}`, simNIO ? `$ ${fmtUSD(toUSD(Number(form.horasExtras)))}` : `C$ ${fmt(toNIO(Number(form.horasExtras)))}`]] : []),
+        ...(Number(form.otrasRemuneraciones) > 0 ? [["Otras remuneraciones", `${monedaSimbolo} ${fmt(form.otrasRemuneraciones)}`, simNIO ? `$ ${fmtUSD(toUSD(Number(form.otrasRemuneraciones)))}` : `C$ ${fmt(toNIO(Number(form.otrasRemuneraciones)))}`]] : []),
+        ["Total ingresos", `${monedaSimbolo} ${fmt(totalIngresos)}`, simNIO ? `$ ${fmtUSD(toUSD(totalIngresos))}` : `C$ ${fmt(toNIO(totalIngresos))}`],
+        ...(Number(form.deducciones) > 0 ? [["Deducciones", `- ${monedaSimbolo} ${fmt(form.deducciones)}`, simNIO ? `- $ ${fmtUSD(toUSD(Number(form.deducciones)))}` : `- C$ ${fmt(toNIO(Number(form.deducciones)))}`]] : []),
+        ...(Number(form.adelantos) > 0 ? [["Adelantos descontados", `- ${monedaSimbolo} ${fmt(form.adelantos)}`, simNIO ? `- $ ${fmtUSD(toUSD(Number(form.adelantos)))}` : `- C$ ${fmt(toNIO(Number(form.adelantos)))}`]] : []),
       ],
-      foot: [[{ content: "TOTAL NETO A PAGAR", styles: { fontStyle:"bold", textColor:[255,255,255], fillColor:V } },
-               { content: `${form.moneda} ${fmt(totalNeto)}`, styles: { fontStyle:"bold", textColor:[255,255,255], fillColor:V, halign:"right" } }]],
+      foot: [[
+        { content: "TOTAL NETO A PAGAR", styles: { fontStyle:"bold", textColor:[255,255,255], fillColor:V } },
+        { content: `${monedaSimbolo} ${fmt(totalNeto)}`, styles: { fontStyle:"bold", textColor:[255,255,255], fillColor:V, halign:"right" } },
+        { content: simNIO ? `$ ${fmtUSD(toUSD(totalNeto))} USD` : `C$ ${fmt(toNIO(totalNeto))} NIO`, styles: { fontStyle:"bold", textColor:[200,255,200], fillColor:V, halign:"right" } },
+      ]],
       headStyles: { fillColor: V, textColor: [255,255,255], fontStyle: "bold", fontSize: 8 },
       bodyStyles: { fontSize: 8, textColor: [40,40,40] },
-      columnStyles: { 1: { halign: "right" } },
+      columnStyles: { 1: { halign: "right" }, 2: { halign: "right", textColor: [5,150,105] } },
       alternateRowStyles: { fillColor: GR },
       margin: { left: 10, right: 10 },
     });
     y = doc.lastAutoTable.finalY + 8;
 
+    // Caja doble moneda destacada
+    doc.setFillColor(V); doc.roundedRect(10, y, pageW - 20, 18, 3, 3, "F");
+    doc.setFont("helvetica","black"); doc.setFontSize(13); doc.setTextColor(255,255,255);
+    doc.text(`${monedaSimbolo} ${fmt(totalNeto)}`, pageW/2 - 4, y + 9, { align: "right" });
+    doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(150,255,180);
+    doc.text(simNIO ? `≈ $ ${fmtUSD(toUSD(totalNeto))} USD` : `≈ C$ ${fmt(toNIO(totalNeto))} NIO`, pageW/2 + 2, y + 9, { align: "left" });
+    doc.setFontSize(6); doc.setTextColor(180,230,180);
+    doc.text(`Tasa: C$ ${TASA_CAMBIO} / USD`, pageW/2, y + 15, { align: "center" });
+    y += 24;
+
     // Total en letras
     doc.setFillColor(LV);
     doc.roundedRect(10, y, pageW - 20, 12, 2, 2, "F");
     doc.setFont("helvetica","bolditalic"); doc.setFontSize(7.5); doc.setTextColor(V);
-    doc.text(`Son: ${numToWords(totalNeto)}`, pageW/2, y + 7, { align: "center" });
+    doc.text(`Son: ${numToWords(totalNeto)} ${form.moneda === "NIO" ? "Córdobas Netos" : "Dólares Netos"}`, pageW/2, y + 7, { align: "center" });
     y += 18;
 
     // Método y referencia
@@ -308,11 +331,21 @@ export default function NominaPage() {
         </div>
         <h2 className="text-2xl font-black mb-2" style={{ color: "#1a4d2e" }}>¡Pago registrado!</h2>
         <p className="text-gray-500 mb-8">El comprobante de <strong>{exito.receptor}</strong> fue generado y descargado.</p>
-        <div className="rounded-2xl p-5 mb-6 text-left" style={{ background: "#e8f5e9" }}>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Total neto pagado</span>
-            <span className="font-black text-xl" style={{ color: "#1a4d2e" }}>{form.moneda} {fmt(exito.total)}</span>
-          </div>
+        <div className="rounded-2xl p-5 mb-6 text-center" style={{ background: "#e8f5e9" }}>
+          <p className="text-xs text-gray-500 mb-1">Total neto pagado</p>
+          {form.moneda === "NIO" ? (
+            <>
+              <p className="font-black text-4xl" style={{ color: "#1a4d2e" }}>C$ {fmt(exito.total)}</p>
+              <p className="font-bold text-lg mt-1" style={{ color: "#059669" }}>≈ $ {fmtUSD(toUSD(exito.total))} USD</p>
+              <p className="text-xs text-gray-400 mt-0.5">Tasa de cambio: C$ {TASA_CAMBIO} por dólar</p>
+            </>
+          ) : (
+            <>
+              <p className="font-black text-4xl" style={{ color: "#1a4d2e" }}>$ {fmt(exito.total)} USD</p>
+              <p className="font-bold text-lg mt-1" style={{ color: "#059669" }}>≈ C$ {fmt(toNIO(exito.total))} NIO</p>
+              <p className="text-xs text-gray-400 mt-0.5">Tasa de cambio: C$ {TASA_CAMBIO} por dólar</p>
+            </>
+          )}
         </div>
         <div className="flex gap-3">
           <button onClick={() => generarPDF(exito.id)}
@@ -684,17 +717,39 @@ export default function NominaPage() {
                 <div className="border-t pt-3 space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">Total ingresos</span>
-                    <span className="font-semibold text-green-700">+ {form.moneda} {fmt(totalIngresos)}</span>
+                    <div className="text-right">
+                      <span className="font-semibold text-green-700">+ {form.moneda === "NIO" ? "C$" : "$"} {fmt(totalIngresos)}</span>
+                      {form.moneda === "NIO" && totalIngresos > 0 && (
+                        <p className="text-gray-400" style={{ fontSize: 10 }}>$ {fmtUSD(toUSD(totalIngresos))} USD</p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">Total deducciones</span>
-                    <span className="font-semibold text-red-500">- {form.moneda} {fmt(totalDeducciones)}</span>
+                    <div className="text-right">
+                      <span className="font-semibold text-red-500">- {form.moneda === "NIO" ? "C$" : "$"} {fmt(totalDeducciones)}</span>
+                      {form.moneda === "NIO" && totalDeducciones > 0 && (
+                        <p className="text-gray-400" style={{ fontSize: 10 }}>$ {fmtUSD(toUSD(totalDeducciones))} USD</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 <div className="rounded-xl p-3" style={{ background: lc }}>
                   <p className="text-xs font-bold mb-1" style={{ color: gc }}>Total neto a pagar</p>
-                  <p className="font-black text-2xl" style={{ color: gc }}>{form.moneda} {fmt(totalNeto)}</p>
+                  {form.moneda === "NIO" ? (
+                    <>
+                      <p className="font-black text-3xl leading-none" style={{ color: gc }}>C$ {fmt(totalNeto)}</p>
+                      <p className="text-sm font-bold mt-1.5" style={{ color: "#059669" }}>≈ $ {fmtUSD(toUSD(totalNeto))} <span className="font-normal text-gray-400 text-xs">USD</span></p>
+                      <p className="text-xs text-gray-400 mt-0.5">Tasa: C$ {TASA_CAMBIO} / USD</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-black text-3xl leading-none" style={{ color: gc }}>$ {fmt(totalNeto)}</p>
+                      <p className="text-sm font-bold mt-1.5" style={{ color: "#059669" }}>≈ C$ {fmt(toNIO(totalNeto))} <span className="font-normal text-gray-400 text-xs">NIO</span></p>
+                      <p className="text-xs text-gray-400 mt-0.5">Tasa: C$ {TASA_CAMBIO} / USD</p>
+                    </>
+                  )}
                 </div>
 
                 <div className="rounded-xl p-3 flex items-start gap-2" style={{ background: "#f0fdf4", border: `1px solid ${lc}` }}>
