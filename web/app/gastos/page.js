@@ -781,12 +781,17 @@ export default function GastosPage() {
             <button onClick={() => router.push("/gastos/nomina")}
               className="flex-1 text-white rounded-2xl py-3 font-black text-base shadow-lg flex items-center justify-center gap-2"
               style={{ background: "#1a5c2a" }}>
-              💵 Registrar pago de nómina
+              💵 Nómina fija
+            </button>
+            <button onClick={() => router.push("/gastos/nomina/temporal")}
+              className="flex-1 text-white rounded-2xl py-3 font-black text-base shadow-lg flex items-center justify-center gap-2"
+              style={{ background: "#065f46" }}>
+              👷 Temporal
             </button>
             <button onClick={() => router.push("/gastos/nomina/historial")}
               className="px-5 text-white rounded-2xl py-3 font-bold text-sm shadow-lg flex items-center justify-center gap-1"
               style={{ background: "#14532d" }}>
-              📋 Historial
+              📋
             </button>
           </div>
         </div>

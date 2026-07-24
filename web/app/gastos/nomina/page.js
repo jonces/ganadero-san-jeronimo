@@ -382,10 +382,14 @@ export default function NominaPage() {
       <div className="max-w-6xl mx-auto px-3 pb-16">
 
         {/* Encabezado con estado */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center flex-wrap gap-2 mb-6">
           <button onClick={() => router.push("/gastos")} className="flex items-center gap-2 text-sm font-semibold" style={{ color: gc }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-            Volver a Gastos
+            Gastos
+          </button>
+          <button onClick={() => router.push("/gastos/nomina/temporal")}
+            className="flex items-center gap-2 text-sm font-black px-4 py-2 rounded-xl text-white shadow-sm" style={{ background: "#065f46" }}>
+            👷 Trabajador temporal
           </button>
           <button onClick={() => router.push("/gastos/nomina/historial")}
             className="flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-xl border-2" style={{ borderColor: gc, color: gc }}>
