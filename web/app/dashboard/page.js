@@ -164,7 +164,7 @@ function HatoChart({ animales = [] }) {
 }
 
 /* ── Stat card component ── */
-function StatCard({ icon, bg, label, value, delta, deltaPos, spark, sparkColor, href, onClick }) {
+function StatCard({ icon, bg, label, value, usd, delta, deltaPos, spark, sparkColor, href, onClick }) {
   return (
     <button onClick={onClick}
       className="rounded-2xl p-3 text-left transition-all hover:shadow-lg active:scale-95 relative overflow-hidden"
@@ -175,7 +175,8 @@ function StatCard({ icon, bg, label, value, delta, deltaPos, spark, sparkColor, 
           {icon}
         </div>
       </div>
-      <p className="font-black text-lg leading-none mb-0.5" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>{value}</p>
+      <p className="font-black text-lg leading-none mb-0" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>{value}</p>
+      {usd && <p className="text-xs font-bold mb-0.5" style={{ color: "#059669" }}>{usd} USD</p>}
       <p className="font-semibold text-xs mb-2" style={{ color: C.textLight }}>{label}</p>
       <div className="mb-1" style={{ height: 28 }}>
         {spark?.length >= 2 ? <Spark data={spark} color={sparkColor} /> : <div style={{ height: 28 }} />}
@@ -199,6 +200,14 @@ export default function DashboardPage() {
   const [ahora, setAhora] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
+  const [tasaLive, setTasaLive] = useState(null); // null = cargando
+
+  useEffect(() => {
+    fetch("https://open.er-api.com/v6/latest/USD")
+      .then(r => r.json())
+      .then(d => { if (d?.rates?.NIO) setTasaLive(Number(d.rates.NIO.toFixed(2))); })
+      .catch(() => setTasaLive(36.50));
+  }, []);
 
   async function cargarDatos() {
     try {
@@ -244,7 +253,7 @@ export default function DashboardPage() {
   const v = stats?.ventas || {};
   const gastosMes = stats?.gastosMes || 0;
   const balance = (v.totalMesNIO || 0) - gastosMes;
-  const tc = stats?.tipoCambio || 36.5;
+  const tc = tasaLive || stats?.tipoCambio || 36.5;
   const grafica = stats?.grafica || [];
   const ventasSpark = grafica.map(d => d.ventas);
   const gastosSpark = grafica.map(d => d.gastos);
@@ -279,18 +288,19 @@ export default function DashboardPage() {
     },
     {
       icon: "💰", bg: "linear-gradient(135deg,#1565C0,#1E88E5)", label: "Ventas del mes",
-      value: `C$ ${fmt(v.totalMesNIO)}`, delta: `${fmt(v.cantidadMes || 0)} ventas`, deltaPos: true,
+      value: `C$ ${fmt(v.totalMesNIO)}`, usd: v.totalMesNIO > 0 ? `≈ $ ${(v.totalMesNIO / tc).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null,
+      delta: `${fmt(v.cantidadMes || 0)} ventas`, deltaPos: true,
       spark: ventasSpark, sparkColor: "#1E88E5", href: "/ventas",
     },
     {
       icon: "💸", bg: "linear-gradient(135deg,#B71C1C,#E53935)", label: "Gastos del mes",
-      value: `C$ ${fmt(gastosMesReal)}`,
+      value: `C$ ${fmt(gastosMesReal)}`, usd: gastosMesReal > 0 ? `≈ $ ${(gastosMesReal / tc).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null,
       delta: gastosMesReal > 0 ? `${fmt(gastosMesReal)} en gastos` : "Sin gastos este mes", deltaPos: false,
       spark: gastosSpark, sparkColor: "#E53935", href: "/gastos",
     },
     {
       icon: "📈", bg: "linear-gradient(135deg,#6A1B9A,#8E24AA)", label: "Ganancias",
-      value: `C$ ${fmt(Math.abs(balance))}`,
+      value: `C$ ${fmt(Math.abs(balance))}`, usd: balance !== 0 ? `≈ $ ${(Math.abs(balance) / tc).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null,
       delta: balance >= 0 ? `+${fmt((balance / Math.max(v.totalMesNIO || 1, 1) * 100), 0)}% margen` : "Revisar gastos",
       deltaPos: balance >= 0, spark: gastosSpark, sparkColor: "#8E24AA", href: "/gastos",
     },
