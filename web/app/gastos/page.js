@@ -850,15 +850,15 @@ export default function GastosPage() {
                     {mediaGasto.map(m => (
                       <div key={m.id} className="relative group">
                         {m.tipo === "video" ? (
-                          <video src={m.url} className="w-20 h-20 object-cover rounded-xl border border-gray-200" />
-                        ) : m.tipo === "imagen" ? (
+                          <video src={m.url} className="w-20 h-20 object-cover rounded-xl border border-gray-200" controls />
+                        ) : m.tipo === "imagen" || m.tipo === "FOTO" ? (
                           <img src={m.url} alt="prueba" className="w-20 h-20 object-cover rounded-xl border border-gray-200 cursor-pointer"
                             onClick={() => window.open(m.url, "_blank")} />
                         ) : (
-                          <a href={m.url} target="_blank" rel="noreferrer"
-                            className="w-20 h-20 flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100">
+                          <a href={m.url} download target="_blank" rel="noreferrer"
+                            className="w-20 h-20 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 text-gray-500 hover:bg-green-50 hover:border-green-400 transition-colors">
                             <span className="text-2xl">📄</span>
-                            <span className="text-xs mt-1">Doc</span>
+                            <span className="text-xs mt-1 font-bold">Descargar</span>
                           </a>
                         )}
                         <button onClick={() => eliminarPrueba(m.id)}
