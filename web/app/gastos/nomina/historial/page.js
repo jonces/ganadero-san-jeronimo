@@ -12,6 +12,35 @@ function iniciales(nombre) {
 }
 
 const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const DIAS_SEMANA = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+
+function proximoPago(fecha, periodicidad) {
+  if (!fecha || !periodicidad) return null;
+  const d = new Date(fecha);
+  switch (periodicidad) {
+    case "DIARIO":     d.setDate(d.getDate() + 1); break;
+    case "SEMANAL":    d.setDate(d.getDate() + 7); break;
+    case "QUINCENAL":  d.setDate(d.getDate() + 15); break;
+    case "MENSUAL":    d.setMonth(d.getMonth() + 1); break;
+    default: return null;
+  }
+  return d;
+}
+
+function etiquetaProximo(fecha) {
+  if (!fecha) return null;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const d = new Date(fecha); d.setHours(0,0,0,0);
+  const diff = Math.round((d - hoy) / (1000 * 60 * 60 * 24));
+  const dia = d.getDate();
+  const mes = MESES[d.getMonth()];
+  const diaSemana = DIAS_SEMANA[d.getDay()];
+  if (diff < 0) return { texto: `Venció hace ${Math.abs(diff)} día${Math.abs(diff)>1?"s":""}`, color: "#dc2626", urgente: true };
+  if (diff === 0) return { texto: "Hoy", color: "#d97706", urgente: true };
+  if (diff === 1) return { texto: "Mañana", color: "#d97706", urgente: true };
+  if (diff <= 7) return { texto: `${diaSemana} ${dia} ${mes} (${diff}d)`, color: "#059669", urgente: false };
+  return { texto: `${dia} ${mes}`, color: "#6b7280", urgente: false };
+}
 
 export default function HistorialNominaPage() {
   const router = useRouter();
@@ -172,7 +201,7 @@ export default function HistorialNominaPage() {
             { label: "Total pagado", value: `C$ ${fmt(totalGeneral)}`, sub: `${pagos.length} pago${pagos.length !== 1 ? "s" : ""}`, color: gc },
             { label: "Trabajadores", value: trabajadores.length, sub: "con al menos 1 pago", color: "#059669" },
             { label: "Promedio mensual", value: `C$ ${fmt(promedioMensual)}`, sub: `en ${meses.length} mes${meses.length !== 1 ? "es" : ""}`, color: "#0284c7" },
-            { label: "Último pago", value: pagos[0] ? new Date(pagos[0].fecha).toLocaleDateString("es-NI", { day:"2-digit", month:"short" }) : "—", sub: pagos[0]?.receptor?.split(" ")[0] || "—", color: "#7c3aed" },
+            { label: "Próximo pago", value: (() => { const p = pagos[0]; const f = p ? proximoPago(p.fecha, p.periodicidad) : null; const e = etiquetaProximo(f); return e ? e.texto : "—"; })(), sub: (() => { const p = pagos[0]; const f = p ? proximoPago(p.fecha, p.periodicidad) : null; const e = etiquetaProximo(f); return e ? (p?.receptor?.split(" ")[0] || "—") : "sin datos"; })(), color: (() => { const p = pagos[0]; const f = p ? proximoPago(p.fecha, p.periodicidad) : null; const e = etiquetaProximo(f); return e?.color || "#7c3aed"; })() },
           ].map(c => (
             <div key={c.label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
               <p className="text-xs text-gray-400 font-semibold">{c.label}</p>
@@ -249,6 +278,8 @@ export default function HistorialNominaPage() {
                 {pagos.map(g => {
                   const { desde, hasta } = parsearDescripcion(g);
                   const isOpen = expandido === g.id;
+                  const proxFecha = proximoPago(g.fecha, g.periodicidad);
+                  const proxEtiqueta = etiquetaProximo(proxFecha);
                   return (
                     <div key={g.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                       <button onClick={() => setExpandido(isOpen ? null : g.id)}
@@ -261,6 +292,11 @@ export default function HistorialNominaPage() {
                           <p className="text-xs text-gray-400">
                             {desde && hasta ? `${desde} → ${hasta}` : new Date(g.fecha).toLocaleDateString("es-NI", { dateStyle: "medium" })}
                           </p>
+                          {proxEtiqueta && (
+                            <p className="text-xs font-bold mt-0.5" style={{ color: proxEtiqueta.color }}>
+                              🗓 Próximo: {proxEtiqueta.texto}
+                            </p>
+                          )}
                         </div>
                         <div className="text-right shrink-0">
                           <p className="font-black text-base" style={{ color: gc }}>C$ {fmt(g.monto)}</p>
@@ -321,6 +357,15 @@ export default function HistorialNominaPage() {
                           {ultimo && (
                             <p className="text-xs text-gray-400">Último: {new Date(ultimo.fecha).toLocaleDateString("es-NI", { dateStyle: "medium" })}</p>
                           )}
+                          {(() => {
+                            const proxF = ultimo ? proximoPago(ultimo.fecha, ultimo.periodicidad) : null;
+                            const proxE = etiquetaProximo(proxF);
+                            return proxE ? (
+                              <p className="text-xs font-bold mt-0.5" style={{ color: proxE.color }}>
+                                🗓 Próximo: {proxE.texto}
+                              </p>
+                            ) : null;
+                          })()}
                         </div>
                         <div className="text-right shrink-0">
                           <p className="font-black text-lg" style={{ color: gc }}>C$ {fmt(t.total)}</p>
