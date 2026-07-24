@@ -7,10 +7,8 @@ import AppLayout from "@/components/AppLayout";
 const fmt = (n) => Number(n || 0).toLocaleString("es-NI", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtUSD = (n) => Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-// Tasa de cambio NIO → USD (1 USD = ~36.5 NIO aprox. BCN Nicaragua)
-const TASA_CAMBIO = 36.50;
-const toUSD = (nio) => nio / TASA_CAMBIO;
-const toNIO = (usd) => usd * TASA_CAMBIO;
+const toUSD = (nio, tasa) => nio / tasa;
+const toNIO = (usd, tasa) => usd * tasa;
 
 const TIPOS_PAGO = ["Diario", "Semanal", "Quincenal", "Mensual", "Extraordinario", "Otro"];
 const METODOS_PAGO = ["Efectivo", "Transferencia bancaria", "Cheque", "Pago móvil", "Otro"];
@@ -63,6 +61,8 @@ export default function NominaPage() {
   const [mostrarSelectorReceptor, setMostrarSelectorReceptor] = useState(false);
   const [busquedaResp, setBusquedaResp] = useState("");
   const [busquedaRecep, setBusquedaRecep] = useState("");
+  const [tasaCambio, setTasaCambio] = useState(36.50); // fallback BCN
+  const [tasaFecha, setTasaFecha] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -74,6 +74,17 @@ export default function NominaPage() {
       setFinca(f);
       setUsuarioActual(me);
     });
+
+    // Tasa de cambio en tiempo real (API gratuita, sin clave)
+    fetch("https://open.er-api.com/v6/latest/USD")
+      .then(r => r.json())
+      .then(data => {
+        if (data?.rates?.NIO) {
+          setTasaCambio(Number(data.rates.NIO.toFixed(2)));
+          setTasaFecha(data.time_last_update_utc || null);
+        }
+      })
+      .catch(() => {}); // si falla, se queda el fallback 36.50
   }, []);
 
   const set = useCallback((k, v) => setForm(f => ({ ...f, [k]: v })), []);
@@ -213,18 +224,18 @@ export default function NominaPage() {
       startY: y,
       head: [["Concepto", `Monto (${form.moneda})`, simNIO ? "Equiv. USD" : "Equiv. NIO"]],
       body: [
-        ["Salario base", `${monedaSimbolo} ${fmt(form.salarioBase)}`, simNIO ? `$ ${fmtUSD(toUSD(Number(form.salarioBase)||0))}` : `C$ ${fmt(toNIO(Number(form.salarioBase)||0))}`],
-        ...(Number(form.bonificacion) > 0 ? [["Bonificación", `${monedaSimbolo} ${fmt(form.bonificacion)}`, simNIO ? `$ ${fmtUSD(toUSD(Number(form.bonificacion)))}` : `C$ ${fmt(toNIO(Number(form.bonificacion)))}`]] : []),
-        ...(Number(form.horasExtras) > 0 ? [["Horas extras", `${monedaSimbolo} ${fmt(form.horasExtras)}`, simNIO ? `$ ${fmtUSD(toUSD(Number(form.horasExtras)))}` : `C$ ${fmt(toNIO(Number(form.horasExtras)))}`]] : []),
-        ...(Number(form.otrasRemuneraciones) > 0 ? [["Otras remuneraciones", `${monedaSimbolo} ${fmt(form.otrasRemuneraciones)}`, simNIO ? `$ ${fmtUSD(toUSD(Number(form.otrasRemuneraciones)))}` : `C$ ${fmt(toNIO(Number(form.otrasRemuneraciones)))}`]] : []),
-        ["Total ingresos", `${monedaSimbolo} ${fmt(totalIngresos)}`, simNIO ? `$ ${fmtUSD(toUSD(totalIngresos))}` : `C$ ${fmt(toNIO(totalIngresos))}`],
-        ...(Number(form.deducciones) > 0 ? [["Deducciones", `- ${monedaSimbolo} ${fmt(form.deducciones)}`, simNIO ? `- $ ${fmtUSD(toUSD(Number(form.deducciones)))}` : `- C$ ${fmt(toNIO(Number(form.deducciones)))}`]] : []),
-        ...(Number(form.adelantos) > 0 ? [["Adelantos descontados", `- ${monedaSimbolo} ${fmt(form.adelantos)}`, simNIO ? `- $ ${fmtUSD(toUSD(Number(form.adelantos)))}` : `- C$ ${fmt(toNIO(Number(form.adelantos)))}`]] : []),
+        ["Salario base", `${monedaSimbolo} ${fmt(form.salarioBase)}`, simNIO ? `$ ${fmtUSD(toUSD(Number(form.salarioBase)||0, tasaCambio))}` : `C$ ${fmt(toNIO(Number(form.salarioBase)||0, tasaCambio))}`],
+        ...(Number(form.bonificacion) > 0 ? [["Bonificación", `${monedaSimbolo} ${fmt(form.bonificacion)}`, simNIO ? `$ ${fmtUSD(toUSD(Number(form.bonificacion), tasaCambio))}` : `C$ ${fmt(toNIO(Number(form.bonificacion), tasaCambio))}`]] : []),
+        ...(Number(form.horasExtras) > 0 ? [["Horas extras", `${monedaSimbolo} ${fmt(form.horasExtras)}`, simNIO ? `$ ${fmtUSD(toUSD(Number(form.horasExtras), tasaCambio))}` : `C$ ${fmt(toNIO(Number(form.horasExtras), tasaCambio))}`]] : []),
+        ...(Number(form.otrasRemuneraciones) > 0 ? [["Otras remuneraciones", `${monedaSimbolo} ${fmt(form.otrasRemuneraciones)}`, simNIO ? `$ ${fmtUSD(toUSD(Number(form.otrasRemuneraciones), tasaCambio))}` : `C$ ${fmt(toNIO(Number(form.otrasRemuneraciones), tasaCambio))}`]] : []),
+        ["Total ingresos", `${monedaSimbolo} ${fmt(totalIngresos)}`, simNIO ? `$ ${fmtUSD(toUSD(totalIngresos, tasaCambio))}` : `C$ ${fmt(toNIO(totalIngresos, tasaCambio))}`],
+        ...(Number(form.deducciones) > 0 ? [["Deducciones", `- ${monedaSimbolo} ${fmt(form.deducciones)}`, simNIO ? `- $ ${fmtUSD(toUSD(Number(form.deducciones), tasaCambio))}` : `- C$ ${fmt(toNIO(Number(form.deducciones), tasaCambio))}`]] : []),
+        ...(Number(form.adelantos) > 0 ? [["Adelantos descontados", `- ${monedaSimbolo} ${fmt(form.adelantos)}`, simNIO ? `- $ ${fmtUSD(toUSD(Number(form.adelantos), tasaCambio))}` : `- C$ ${fmt(toNIO(Number(form.adelantos), tasaCambio))}`]] : []),
       ],
       foot: [[
         { content: "TOTAL NETO A PAGAR", styles: { fontStyle:"bold", textColor:[255,255,255], fillColor:V } },
         { content: `${monedaSimbolo} ${fmt(totalNeto)}`, styles: { fontStyle:"bold", textColor:[255,255,255], fillColor:V, halign:"right" } },
-        { content: simNIO ? `$ ${fmtUSD(toUSD(totalNeto))} USD` : `C$ ${fmt(toNIO(totalNeto))} NIO`, styles: { fontStyle:"bold", textColor:[200,255,200], fillColor:V, halign:"right" } },
+        { content: simNIO ? `$ ${fmtUSD(toUSD(totalNeto, tasaCambio))} USD` : `C$ ${fmt(toNIO(totalNeto, tasaCambio))} NIO`, styles: { fontStyle:"bold", textColor:[200,255,200], fillColor:V, halign:"right" } },
       ]],
       headStyles: { fillColor: V, textColor: [255,255,255], fontStyle: "bold", fontSize: 8 },
       bodyStyles: { fontSize: 8, textColor: [40,40,40] },
@@ -239,9 +250,9 @@ export default function NominaPage() {
     doc.setFont("helvetica","black"); doc.setFontSize(13); doc.setTextColor(255,255,255);
     doc.text(`${monedaSimbolo} ${fmt(totalNeto)}`, pageW/2 - 4, y + 9, { align: "right" });
     doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(150,255,180);
-    doc.text(simNIO ? `≈ $ ${fmtUSD(toUSD(totalNeto))} USD` : `≈ C$ ${fmt(toNIO(totalNeto))} NIO`, pageW/2 + 2, y + 9, { align: "left" });
+    doc.text(simNIO ? `≈ $ ${fmtUSD(toUSD(totalNeto, tasaCambio))} USD` : `≈ C$ ${fmt(toNIO(totalNeto, tasaCambio))} NIO`, pageW/2 + 2, y + 9, { align: "left" });
     doc.setFontSize(6); doc.setTextColor(180,230,180);
-    doc.text(`Tasa: C$ ${TASA_CAMBIO} / USD`, pageW/2, y + 15, { align: "center" });
+    doc.text(`Tasa: C$ ${tasaCambio} / USD`, pageW/2, y + 15, { align: "center" });
     y += 24;
 
     // Total en letras
@@ -336,14 +347,14 @@ export default function NominaPage() {
           {form.moneda === "NIO" ? (
             <>
               <p className="font-black text-4xl" style={{ color: "#1a4d2e" }}>C$ {fmt(exito.total)}</p>
-              <p className="font-bold text-lg mt-1" style={{ color: "#059669" }}>≈ $ {fmtUSD(toUSD(exito.total))} USD</p>
-              <p className="text-xs text-gray-400 mt-0.5">Tasa de cambio: C$ {TASA_CAMBIO} por dólar</p>
+              <p className="font-bold text-lg mt-1" style={{ color: "#059669" }}>≈ $ {fmtUSD(toUSD(exito.total, tasaCambio))} USD</p>
+              <p className="text-xs text-gray-400 mt-0.5">Tasa de cambio: C$ {tasaCambio} por dólar</p>
             </>
           ) : (
             <>
               <p className="font-black text-4xl" style={{ color: "#1a4d2e" }}>$ {fmt(exito.total)} USD</p>
-              <p className="font-bold text-lg mt-1" style={{ color: "#059669" }}>≈ C$ {fmt(toNIO(exito.total))} NIO</p>
-              <p className="text-xs text-gray-400 mt-0.5">Tasa de cambio: C$ {TASA_CAMBIO} por dólar</p>
+              <p className="font-bold text-lg mt-1" style={{ color: "#059669" }}>≈ C$ {fmt(toNIO(exito.total, tasaCambio))} NIO</p>
+              <p className="text-xs text-gray-400 mt-0.5">Tasa de cambio: C$ {tasaCambio} por dólar</p>
             </>
           )}
         </div>
@@ -720,7 +731,7 @@ export default function NominaPage() {
                     <div className="text-right">
                       <span className="font-semibold text-green-700">+ {form.moneda === "NIO" ? "C$" : "$"} {fmt(totalIngresos)}</span>
                       {form.moneda === "NIO" && totalIngresos > 0 && (
-                        <p className="text-gray-400" style={{ fontSize: 10 }}>$ {fmtUSD(toUSD(totalIngresos))} USD</p>
+                        <p className="text-gray-400" style={{ fontSize: 10 }}>$ {fmtUSD(toUSD(totalIngresos, tasaCambio))} USD</p>
                       )}
                     </div>
                   </div>
@@ -729,7 +740,7 @@ export default function NominaPage() {
                     <div className="text-right">
                       <span className="font-semibold text-red-500">- {form.moneda === "NIO" ? "C$" : "$"} {fmt(totalDeducciones)}</span>
                       {form.moneda === "NIO" && totalDeducciones > 0 && (
-                        <p className="text-gray-400" style={{ fontSize: 10 }}>$ {fmtUSD(toUSD(totalDeducciones))} USD</p>
+                        <p className="text-gray-400" style={{ fontSize: 10 }}>$ {fmtUSD(toUSD(totalDeducciones, tasaCambio))} USD</p>
                       )}
                     </div>
                   </div>
@@ -740,14 +751,14 @@ export default function NominaPage() {
                   {form.moneda === "NIO" ? (
                     <>
                       <p className="font-black text-3xl leading-none" style={{ color: gc }}>C$ {fmt(totalNeto)}</p>
-                      <p className="text-sm font-bold mt-1.5" style={{ color: "#059669" }}>≈ $ {fmtUSD(toUSD(totalNeto))} <span className="font-normal text-gray-400 text-xs">USD</span></p>
-                      <p className="text-xs text-gray-400 mt-0.5">Tasa: C$ {TASA_CAMBIO} / USD</p>
+                      <p className="text-sm font-bold mt-1.5" style={{ color: "#059669" }}>≈ $ {fmtUSD(toUSD(totalNeto, tasaCambio))} <span className="font-normal text-gray-400 text-xs">USD</span></p>
+                      <p className="text-xs text-gray-400 mt-0.5">Tasa: C$ {tasaCambio} / USD{tasaFecha ? ` · ${new Date(tasaFecha).toLocaleDateString("es-NI")}` : " · BCN"}</p>
                     </>
                   ) : (
                     <>
                       <p className="font-black text-3xl leading-none" style={{ color: gc }}>$ {fmt(totalNeto)}</p>
-                      <p className="text-sm font-bold mt-1.5" style={{ color: "#059669" }}>≈ C$ {fmt(toNIO(totalNeto))} <span className="font-normal text-gray-400 text-xs">NIO</span></p>
-                      <p className="text-xs text-gray-400 mt-0.5">Tasa: C$ {TASA_CAMBIO} / USD</p>
+                      <p className="text-sm font-bold mt-1.5" style={{ color: "#059669" }}>≈ C$ {fmt(toNIO(totalNeto, tasaCambio))} <span className="font-normal text-gray-400 text-xs">NIO</span></p>
+                      <p className="text-xs text-gray-400 mt-0.5">Tasa: C$ {tasaCambio} / USD{tasaFecha ? ` · ${new Date(tasaFecha).toLocaleDateString("es-NI")}` : " · BCN"}</p>
                     </>
                   )}
                 </div>
