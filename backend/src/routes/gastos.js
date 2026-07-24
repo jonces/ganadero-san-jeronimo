@@ -1,7 +1,11 @@
 const express = require("express");
-const prisma = require("../prisma");
+const multer  = require("multer");
+const prisma  = require("../prisma");
 const { requireAuth, requireRole } = require("../middleware/auth");
+const { uploadMediaConTipo } = require("../lib/storage");
 const logActividad = require("../lib/logActividad");
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 const router = express.Router();
 router.use(requireAuth);
@@ -111,6 +115,45 @@ router.delete("/:id", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next
     const g = await prisma.gasto.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
     if (!g) return res.status(404).json({ error: "No encontrado" });
     await prisma.gasto.delete({ where: { id: g.id } });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// Subir prueba de pago (foto o documento)
+router.post("/:id/media", upload.array("archivos", 5), async (req, res, next) => {
+  try {
+    const gasto = await prisma.gasto.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
+    if (!gasto) return res.status(404).json({ error: "Gasto no encontrado" });
+    if (!req.files?.length) return res.status(400).json({ error: "No se enviaron archivos" });
+
+    const creados = await Promise.all(
+      req.files.map(async (file) => {
+        const { url, tipo } = await uploadMediaConTipo(file);
+        return prisma.media.create({ data: { url, tipo, gastoId: gasto.id } });
+      })
+    );
+    res.status(201).json(creados);
+  } catch (err) { next(err); }
+});
+
+// Obtener pruebas de un pago
+router.get("/:id/media", async (req, res, next) => {
+  try {
+    const gasto = await prisma.gasto.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
+    if (!gasto) return res.status(404).json({ error: "Gasto no encontrado" });
+    const media = await prisma.media.findMany({ where: { gastoId: gasto.id }, orderBy: { createdAt: "asc" } });
+    res.json(media);
+  } catch (err) { next(err); }
+});
+
+// Eliminar prueba
+router.delete("/:id/media/:mediaId", async (req, res, next) => {
+  try {
+    const gasto = await prisma.gasto.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
+    if (!gasto) return res.status(404).json({ error: "Gasto no encontrado" });
+    const media = await prisma.media.findFirst({ where: { id: req.params.mediaId, gastoId: gasto.id } });
+    if (!media) return res.status(404).json({ error: "Archivo no encontrado" });
+    await prisma.media.delete({ where: { id: media.id } });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

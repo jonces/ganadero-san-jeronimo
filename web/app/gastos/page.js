@@ -407,6 +407,8 @@ export default function GastosPage() {
   const [finca,    setFinca]    = useState(null);
   const [form,     setForm]     = useState(FORM_VACIO);
   const [formEdit, setFormEdit] = useState(FORM_VACIO);
+  const [mediaGasto, setMediaGasto]   = useState([]);   // pruebas del gasto en edición
+  const [subiendoMedia, setSubiendoMedia] = useState(false);
 
   async function load() {
     try {
@@ -467,7 +469,32 @@ export default function GastosPage() {
       responsable:  g.responsable  || "",
       receptor:     g.receptor     || "",
     });
+    setMediaGasto([]);
     setEditando(g);
+    // Cargar pruebas existentes
+    api(`/gastos/${g.id}/media`).then(m => setMediaGasto(Array.isArray(m) ? m : [])).catch(() => {});
+  }
+
+  async function subirPrueba(files) {
+    if (!files?.length || !editando) return;
+    setSubiendoMedia(true);
+    try {
+      const fd = new FormData();
+      Array.from(files).forEach(f => fd.append("archivos", f));
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/gastos/${editando.id}/media`, {
+        method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd,
+      });
+      const nuevas = await res.json();
+      setMediaGasto(prev => [...prev, ...(Array.isArray(nuevas) ? nuevas : [])]);
+    } catch {}
+    finally { setSubiendoMedia(false); }
+  }
+
+  async function eliminarPrueba(mediaId) {
+    if (!editando) return;
+    await api(`/gastos/${editando.id}/media/${mediaId}`, { method: "DELETE" }).catch(() => {});
+    setMediaGasto(prev => prev.filter(m => m.id !== mediaId));
   }
 
   async function handleEditar(e) {
@@ -810,6 +837,50 @@ export default function GastosPage() {
               <FormGasto values={formEdit} onChange={setFormEdit} onSubmit={handleEditar}
                 titulo="Editar Gasto" onCancel={() => setEditando(null)}
                 usuarios={usuarios} finca={finca} enviando={enviando} />
+
+              {/* ── SECCIÓN PRUEBAS DE PAGO ── */}
+              <div className="bg-white rounded-b-2xl border-t border-gray-100 p-4">
+                <p className="font-black text-sm mb-3" style={{ color: "#805ad5" }}>
+                  📎 Pruebas de pago
+                </p>
+
+                {/* Miniaturas de pruebas existentes */}
+                {mediaGasto.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {mediaGasto.map(m => (
+                      <div key={m.id} className="relative group">
+                        {m.tipo === "video" ? (
+                          <video src={m.url} className="w-20 h-20 object-cover rounded-xl border border-gray-200" />
+                        ) : m.tipo === "imagen" ? (
+                          <img src={m.url} alt="prueba" className="w-20 h-20 object-cover rounded-xl border border-gray-200 cursor-pointer"
+                            onClick={() => window.open(m.url, "_blank")} />
+                        ) : (
+                          <a href={m.url} target="_blank" rel="noreferrer"
+                            className="w-20 h-20 flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100">
+                            <span className="text-2xl">📄</span>
+                            <span className="text-xs mt-1">Doc</span>
+                          </a>
+                        )}
+                        <button onClick={() => eliminarPrueba(m.id)}
+                          className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow">
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Botón subir */}
+                <label className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl border-2 border-dashed cursor-pointer text-sm font-bold transition-colors
+                  ${subiendoMedia ? "opacity-50 pointer-events-none" : "hover:bg-purple-50"}`}
+                  style={{ borderColor: "#805ad5", color: "#805ad5" }}>
+                  <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx"
+                    className="hidden"
+                    onChange={e => subirPrueba(e.target.files)} />
+                  {subiendoMedia ? "⏳ Subiendo..." : "📷 Subir foto / documento"}
+                </label>
+                <p className="text-xs text-gray-400 text-center mt-1">Fotos, videos o PDF — máx. 5 archivos</p>
+              </div>
             </div>
           </div>
         )}
