@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
@@ -394,6 +395,7 @@ function FormGasto({ values, onChange, onSubmit, titulo, onCancel, usuarios, fin
 }
 
 export default function GastosPage() {
+  const router = useRouter();
   const [data,     setData]     = useState({ gastos: [], total: 0 });
   const [periodo,  setPeriodo]  = useState("");
   const [showForm, setShowForm] = useState(false);
@@ -769,11 +771,25 @@ export default function GastosPage() {
       <div className="max-w-2xl mx-auto px-4 pb-28">
         {error && <p className="text-red-600 mb-4 bg-red-50 rounded-xl p-3 text-sm">{error}</p>}
 
-        <button onClick={() => { setShowForm(s => !s); setEditando(null); setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),50); }}
-          className="w-full text-white rounded-2xl py-4 font-black text-lg mb-5 shadow-lg"
-          style={{ background: showForm ? "#718096" : "#805ad5" }}>
-          {showForm ? "✕ Cancelar" : "+ Registrar Gasto"}
-        </button>
+        <div className="flex flex-col gap-3 mb-5">
+          <button onClick={() => { setShowForm(s => !s); setEditando(null); setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),50); }}
+            className="w-full text-white rounded-2xl py-4 font-black text-lg shadow-lg"
+            style={{ background: showForm ? "#718096" : "#805ad5" }}>
+            {showForm ? "✕ Cancelar" : "+ Registrar Gasto"}
+          </button>
+          <div className="flex gap-3">
+            <button onClick={() => router.push("/gastos/nomina")}
+              className="flex-1 text-white rounded-2xl py-3 font-black text-base shadow-lg flex items-center justify-center gap-2"
+              style={{ background: "#1a5c2a" }}>
+              💵 Registrar pago de nómina
+            </button>
+            <button onClick={() => router.push("/gastos/nomina/historial")}
+              className="px-5 text-white rounded-2xl py-3 font-bold text-sm shadow-lg flex items-center justify-center gap-1"
+              style={{ background: "#14532d" }}>
+              📋 Historial
+            </button>
+          </div>
+        </div>
 
         {showForm && !editando && (
           <FormGasto values={form} onChange={setForm} onSubmit={handleSubmit}

@@ -8,7 +8,7 @@ router.use(requireAuth);
 
 router.get("/", async (req, res, next) => {
   try {
-    const { periodo } = req.query;
+    const { periodo, categoria, receptor, desde: desdeParam, hasta: hastaParam } = req.query;
     const ahora = new Date();
     let desde = null;
 
@@ -22,10 +22,17 @@ router.get("/", async (req, res, next) => {
       desde = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
     }
 
+    // Si vienen fechas exactas desde/hasta, tienen prioridad
+    if (desdeParam) desde = new Date(desdeParam + "T00:00:00");
+    const hasta = hastaParam ? new Date(hastaParam + "T23:59:59") : null;
+
     const gastos = await prisma.gasto.findMany({
       where: {
         fincaId: req.user.fincaId,
         ...(desde ? { fecha: { gte: desde } } : {}),
+        ...(hasta ? { fecha: { ...(desde ? { gte: desde } : {}), lte: hasta } } : {}),
+        ...(categoria ? { categoria } : {}),
+        ...(receptor ? { receptor: { contains: receptor, mode: "insensitive" } } : {}),
       },
       orderBy: { fecha: "desc" },
       include: { usuario: { select: { nombre: true } } },
