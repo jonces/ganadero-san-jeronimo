@@ -13,12 +13,18 @@ router.use(requireAuth);
 const includeAnimal = {
   media: { orderBy: { createdAt: "desc" }, take: 5 },
   eventos: { orderBy: { fecha: "desc" }, take: 1 },
+  publicacion: true,
 };
 
 router.get("/", async (req, res, next) => {
   try {
+    const { estadoComercial, potrero } = req.query;
+    const where = { fincaId: req.user.fincaId };
+    if (estadoComercial) where.estadoComercial = estadoComercial;
+    if (potrero) where.potrero = { contains: potrero, mode: "insensitive" };
+
     const animales = await prisma.animal.findMany({
-      where: { fincaId: req.user.fincaId },
+      where,
       orderBy: { createdAt: "desc" },
       include: includeAnimal,
     });
@@ -44,7 +50,7 @@ router.get("/:id", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { identificador, nombre, raza, fierro, sexo, fechaNacimiento, pesoActual, observacion, estadoReproductivo, madreId } = req.body;
+    const { identificador, nombre, raza, fierro, sexo, fechaNacimiento, pesoActual, observacion, estadoReproductivo, madreId, potrero, costoBase, origen } = req.body;
     if (!identificador || !sexo) return res.status(400).json({ error: "identificador y sexo son requeridos" });
 
     // Si existe un animal con el mismo identificador en estado no-activo, eliminarlo para permitir reutilizar el arete
@@ -72,6 +78,9 @@ router.post("/", async (req, res, next) => {
         fechaNacimiento: fechaNacimiento ? new Date(fechaNacimiento + "T12:00:00") : null,
         pesoActual: pesoActual ? Number(pesoActual) : null,
         observacion: observacion || null,
+        potrero: potrero || null,
+        costoBase: costoBase ? Number(costoBase) : null,
+        origen: origen || "FINCA",
         ...(sexo === "HEMBRA" && estadoReproductivo ? { estadoReproductivo } : {}),
         ...(madreId ? { madreId } : {}),
         fincaId: req.user.fincaId,
@@ -103,7 +112,7 @@ router.patch("/:id", async (req, res, next) => {
     const animal = await prisma.animal.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
     if (!animal) return res.status(404).json({ error: "Animal no encontrado" });
 
-    const { nombre, raza, fierro, pesoActual, estado, estadoReproductivo, fechaParto, fechaSecado, madreId, observacion, fechaNacimiento } = req.body;
+    const { nombre, raza, fierro, pesoActual, estado, estadoReproductivo, fechaParto, fechaSecado, madreId, observacion, fechaNacimiento, potrero, estadoComercial, costoBase } = req.body;
 
     const str = (v) => (v === "" || v === undefined) ? null : v;
     const data = {};
@@ -114,6 +123,9 @@ router.patch("/:id", async (req, res, next) => {
     if (observacion !== undefined) data.observacion = str(observacion);
     if (madreId !== undefined) data.madreId = madreId || null;
     if (fechaNacimiento !== undefined) data.fechaNacimiento = fechaNacimiento ? new Date(fechaNacimiento + "T12:00:00") : null;
+    if (potrero !== undefined) data.potrero = potrero || null;
+    if (estadoComercial !== undefined) data.estadoComercial = estadoComercial;
+    if (costoBase !== undefined) data.costoBase = costoBase ? Number(costoBase) : null;
     if (fechaParto !== undefined) data.fechaParto = fechaParto ? new Date(fechaParto) : null;
     if (fechaSecado !== undefined) data.fechaSecado = fechaSecado ? new Date(fechaSecado) : null;
 
@@ -186,6 +198,152 @@ router.post("/:id/parto", upload.array("archivos", 10), async (req, res, next) =
 
     logActividad({ accion: "Registró parto", detalle: `Madre: ${madre.identificador} → Cría: ${identificadorCria}`, modulo: "Animales", fincaId: req.user.fincaId, usuarioId: req.user.sub });
     res.status(201).json({ madre: madreActualizada, cria });
+  } catch (err) { next(err); }
+});
+
+// POST /:id/poner-en-venta
+router.post("/:id/poner-en-venta", async (req, res, next) => {
+  try {
+    const animal = await prisma.animal.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
+    if (!animal) return res.status(404).json({ error: "Animal no encontrado" });
+
+    const { precio, moneda, modalidad, precioPorUnidad, negociable, descripcion, publicada, contacto, whatsapp, ubicacion } = req.body;
+    if (!precio) return res.status(400).json({ error: "El precio es requerido" });
+
+    // Upsert publicación
+    const pub = await prisma.publicacionVenta.upsert({
+      where: { animalId: animal.id },
+      update: {
+        precio: Number(precio),
+        moneda: moneda || "NIO",
+        modalidad: modalidad || "TOTAL",
+        precioPorUnidad: precioPorUnidad ? Number(precioPorUnidad) : null,
+        negociable: !!negociable,
+        descripcion: descripcion || null,
+        publicada: publicada !== false,
+        fechaPublicacion: new Date(),
+        contacto: contacto || null,
+        whatsapp: whatsapp || null,
+        ubicacion: ubicacion || null,
+      },
+      create: {
+        animalId: animal.id,
+        precio: Number(precio),
+        moneda: moneda || "NIO",
+        modalidad: modalidad || "TOTAL",
+        precioPorUnidad: precioPorUnidad ? Number(precioPorUnidad) : null,
+        negociable: !!negociable,
+        descripcion: descripcion || null,
+        publicada: publicada !== false,
+        fechaPublicacion: new Date(),
+        contacto: contacto || null,
+        whatsapp: whatsapp || null,
+        ubicacion: ubicacion || null,
+      },
+    });
+
+    const actualizado = await prisma.animal.update({
+      where: { id: animal.id },
+      data: { estadoComercial: "EN_VENTA" },
+      include: includeAnimal,
+    });
+
+    logActividad({ accion: "Puso animal en venta", detalle: animal.identificador, modulo: "Inventario", fincaId: req.user.fincaId, usuarioId: req.user.sub });
+    res.json({ animal: actualizado, publicacion: pub });
+  } catch (err) { next(err); }
+});
+
+// POST /:id/quitar-de-venta
+router.post("/:id/quitar-de-venta", async (req, res, next) => {
+  try {
+    const animal = await prisma.animal.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
+    if (!animal) return res.status(404).json({ error: "Animal no encontrado" });
+
+    // Desactivar publicación si existe
+    await prisma.publicacionVenta.updateMany({
+      where: { animalId: animal.id },
+      data: { publicada: false },
+    });
+
+    const actualizado = await prisma.animal.update({
+      where: { id: animal.id },
+      data: { estadoComercial: "NO_DISPONIBLE" },
+      include: includeAnimal,
+    });
+
+    logActividad({ accion: "Quitó animal de venta", detalle: animal.identificador, modulo: "Inventario", fincaId: req.user.fincaId, usuarioId: req.user.sub });
+    res.json(actualizado);
+  } catch (err) { next(err); }
+});
+
+// POST /:id/completar-venta — crea Venta, cambia estado
+router.post("/:id/completar-venta", async (req, res, next) => {
+  try {
+    const animal = await prisma.animal.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
+    if (!animal) return res.status(404).json({ error: "Animal no encontrado" });
+
+    const {
+      tipoVenta, moneda, tipoCambio, precioNIO, precioUSD, pesoKg, unidadPeso, precioKg,
+      metodoPago, estadoPago, numeroFactura, comision, descuento, impuestos,
+      comprador, telefonoComprador, direccionComprador, notas,
+      fechaSalida, pesoFinal, adelantoAplicado, saldoPendiente, reservaId,
+    } = req.body;
+
+    if (!tipoVenta || !precioNIO || !precioUSD) {
+      return res.status(400).json({ error: "tipoVenta, precioNIO y precioUSD son requeridos" });
+    }
+
+    const [venta] = await prisma.$transaction([
+      prisma.venta.create({
+        data: {
+          tipoVenta,
+          moneda: moneda || "NIO",
+          tipoCambio: tipoCambio ? Number(tipoCambio) : 36.5,
+          precioNIO: Number(precioNIO),
+          precioUSD: Number(precioUSD),
+          pesoKg: pesoKg ? Number(pesoKg) : null,
+          unidadPeso: unidadPeso || "LB",
+          precioKg: precioKg ? Number(precioKg) : null,
+          metodoPago: metodoPago || "EFECTIVO",
+          estadoPago: estadoPago || "PAGADO",
+          numeroFactura: numeroFactura || null,
+          comision: comision ? Number(comision) : null,
+          descuento: descuento ? Number(descuento) : null,
+          impuestos: impuestos ? Number(impuestos) : null,
+          comprador: comprador || null,
+          telefonoComprador: telefonoComprador || null,
+          direccionComprador: direccionComprador || null,
+          notas: notas || null,
+          fechaSalida: fechaSalida ? new Date(fechaSalida) : null,
+          pesoFinal: pesoFinal ? Number(pesoFinal) : null,
+          adelantoAplicado: adelantoAplicado ? Number(adelantoAplicado) : 0,
+          saldoPendiente: saldoPendiente ? Number(saldoPendiente) : 0,
+          reservaId: reservaId || null,
+          animalId: animal.id,
+          fincaId: req.user.fincaId,
+          usuarioId: req.user.sub,
+        },
+      }),
+      prisma.animal.update({
+        where: { id: animal.id },
+        data: { estado: "VENDIDO", estadoComercial: "VENTA_COMPLETADA" },
+      }),
+      prisma.publicacionVenta.updateMany({
+        where: { animalId: animal.id },
+        data: { publicada: false },
+      }),
+    ]);
+
+    // Marcar reserva como completada si corresponde
+    if (reservaId) {
+      await prisma.reserva.updateMany({
+        where: { id: reservaId, fincaId: req.user.fincaId },
+        data: { estado: "COMPLETADA" },
+      }).catch(() => {});
+    }
+
+    logActividad({ accion: "Completó venta de animal", detalle: `${animal.identificador} - C$${precioNIO}`, modulo: "Inventario", fincaId: req.user.fincaId, usuarioId: req.user.sub });
+    res.status(201).json(venta);
   } catch (err) { next(err); }
 });
 

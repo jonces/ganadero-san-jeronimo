@@ -1,514 +1,843 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
-
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function calcularEdad(fechaNac) {
   if (!fechaNac) return "—";
-  const hoy = new Date();
-  const nac = new Date(fechaNac);
+  const hoy = new Date(), nac = new Date(fechaNac);
   let años = hoy.getFullYear() - nac.getFullYear();
   let meses = hoy.getMonth() - nac.getMonth();
-  let dias = hoy.getDate() - nac.getDate();
-  if (dias < 0) { meses--; dias += 30; }
   if (meses < 0) { años--; meses += 12; }
-  if (años > 0) return `${años} año${años>1?"s":""} ${meses>0?`y ${meses} mes${meses>1?"es":""}`:""}`;
-  if (meses > 0) return `${meses} mes${meses>1?"es":""}`;
-  return `${dias} día${dias>1?"s":""}`;
+  if (años > 0) return `${años} año${años > 1 ? "s" : ""} ${meses > 0 ? `${meses} mes${meses > 1 ? "es" : ""}` : ""}`;
+  return `${meses} mes${meses > 1 ? "es" : ""}`;
 }
 
-const ESTADOS_REPRO = ["PREÑADA", "LACTANCIA", "PARIDA", "SECA", "VACIA", "TERNERA", "TERNERO", "TORETE", "SEMENTAL"];
-const REPRO_CONFIG = {
-  PREÑADA:   { label: "Preñada",   color: "#e53e3e", bg: "rgba(229,62,62,0.2)",   icon: "🤰" },
-  LACTANCIA: { label: "Lactancia", color: "#38a169", bg: "rgba(56,161,105,0.2)",  icon: "🍼" },
-  PARIDA:    { label: "Parida",    color: "#d69e2e", bg: "rgba(214,158,46,0.2)",  icon: "🐮" },
-  SECA:      { label: "Seca",      color: "#718096", bg: "rgba(113,128,150,0.2)", icon: "🌵" },
-  VACIA:     { label: "Vacía",     color: "#805ad5", bg: "rgba(128,90,213,0.2)",  icon: "⬜" },
-  TERNERA:   { label: "Ternera",   color: "#ed8936", bg: "rgba(237,137,54,0.2)",  icon: "🐄" },
-  TERNERO:   { label: "Ternero",   color: "#ed8936", bg: "rgba(237,137,54,0.2)",  icon: "🐂" },
-  TORETE:    { label: "Torete",    color: "#3182ce", bg: "rgba(49,130,206,0.2)",  icon: "🐃" },
-  SEMENTAL:  { label: "Semental",  color: "#2c7a7b", bg: "rgba(44,122,123,0.2)",  icon: "💪" },
+function categoriaAnimal(a) {
+  if (!a.fechaNacimiento) {
+    return a.sexo === "HEMBRA" ? "Vaca" : "Toro";
+  }
+  const meses = Math.floor((Date.now() - new Date(a.fechaNacimiento)) / (1000 * 60 * 60 * 24 * 30));
+  if (a.sexo === "HEMBRA") {
+    if (meses < 6) return "Ternera";
+    if (meses < 24) return "Novilla";
+    return "Vaca";
+  } else {
+    if (meses < 6) return "Ternero";
+    if (meses < 24) return "Novillo";
+    return "Toro";
+  }
+}
+
+const ESTADO_CONFIG = {
+  ACTIVO:   { label: "Activo",   color: "#16a34a", bg: "rgba(22,163,74,0.15)" },
+  VENDIDO:  { label: "Vendido",  color: "#6b7280", bg: "rgba(107,114,128,0.15)" },
+  MUERTO:   { label: "Muerto",   color: "#dc2626", bg: "rgba(220,38,38,0.15)" },
+  ELIMINADO:{ label: "Eliminado",color: "#dc2626", bg: "rgba(220,38,38,0.15)" },
 };
 
+const COMERCIAL_CONFIG = {
+  NO_DISPONIBLE:    { label: "Sin publicar",      color: "#6b7280", bg: "rgba(107,114,128,0.15)" },
+  EN_VENTA:         { label: "En venta",           color: "#2563eb", bg: "rgba(37,99,235,0.15)" },
+  RESERVADO:        { label: "Reservado",          color: "#ea580c", bg: "rgba(234,88,12,0.15)" },
+  VENTA_EN_PROCESO: { label: "Venta en proceso",   color: "#d97706", bg: "rgba(217,119,6,0.15)" },
+  VENTA_COMPLETADA: { label: "Venta completada",   color: "#6b7280", bg: "rgba(107,114,128,0.15)" },
+};
+
+const glass = { background: "rgba(5,25,12,0.65)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.12)" };
+const gi = { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" };
+
+function Badge({ text, color, bg }) {
+  return (
+    <span style={{ background: bg, color, border: `1px solid ${color}40`, borderRadius: 8, padding: "2px 8px", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
+      {text}
+    </span>
+  );
+}
+
+function IconAnimal() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>;
+}
+function IconX() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
+}
+function IconSearch() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+}
+function IconChevron() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6"/></svg>;
+}
+
+const TABS = [
+  { key: "TODOS", label: "Todos" },
+  { key: "ACTIVO", label: "Activos" },
+  { key: "EN_VENTA", label: "En venta" },
+  { key: "RESERVADO", label: "Reservados" },
+  { key: "VENDIDO", label: "Vendidos" },
+  { key: "BAJA", label: "Bajas" },
+];
+
+const PER_PAGE = 10;
+
+// ─── Modal Poner en venta ─────────────────────────────────────────────────────
+function ModalPonerEnVenta({ animal, onClose, onSuccess }) {
+  const [form, setForm] = useState({ precio: "", moneda: "NIO", modalidad: "TOTAL", descripcion: "", negociable: false, publicada: true, whatsapp: "", ubicacion: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await api(`/animales/${animal.id}/poner-en-venta`, { method: "POST", body: form });
+      onSuccess();
+      onClose();
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)" }}>
+      <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-3xl p-6 space-y-3 shadow-2xl" style={glass}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-white font-black text-xl">Poner en venta</h3>
+          <button type="button" onClick={onClose} className="text-white/50 hover:text-white"><IconX /></button>
+        </div>
+        <p className="text-white/60 text-sm">{animal.nombre || animal.identificador}</p>
+        {error && <p className="text-red-400 text-sm bg-red-900/20 rounded-xl p-2">{error}</p>}
+        <div>
+          <label className="text-white/50 text-xs">Precio *</label>
+          <input type="number" required className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi}
+            value={form.precio} onChange={e => setForm({ ...form, precio: e.target.value })} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-white/50 text-xs">Moneda</label>
+            <select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.moneda} onChange={e => setForm({ ...form, moneda: e.target.value })}>
+              <option value="NIO">NIO (C$)</option>
+              <option value="USD">USD ($)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-white/50 text-xs">Modalidad</label>
+            <select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.modalidad} onChange={e => setForm({ ...form, modalidad: e.target.value })}>
+              <option value="TOTAL">Precio total</option>
+              <option value="POR_KG">Por kg</option>
+              <option value="POR_LIBRA">Por libra</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="text-white/50 text-xs">Descripcion</label>
+          <textarea className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} rows={2}
+            value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} />
+        </div>
+        <div>
+          <label className="text-white/50 text-xs">WhatsApp de contacto</label>
+          <input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi}
+            value={form.whatsapp} onChange={e => setForm({ ...form, whatsapp: e.target.value })} />
+        </div>
+        <div className="flex items-center gap-3">
+          <input type="checkbox" id="negociable" checked={form.negociable} onChange={e => setForm({ ...form, negociable: e.target.checked })} />
+          <label htmlFor="negociable" className="text-white/70 text-sm">Precio negociable</label>
+        </div>
+        <div className="flex items-center gap-3">
+          <input type="checkbox" id="publicada" checked={form.publicada} onChange={e => setForm({ ...form, publicada: e.target.checked })} />
+          <label htmlFor="publicada" className="text-white/70 text-sm">Publicar en web de ventas</label>
+        </div>
+        <button type="submit" disabled={loading} className="w-full text-white font-black py-3 rounded-2xl disabled:opacity-50 transition-all"
+          style={{ background: "linear-gradient(135deg,#1a5c2a,#2d9e3f)" }}>
+          {loading ? "Guardando..." : "Poner en venta"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ─── Modal Reservar ───────────────────────────────────────────────────────────
+function ModalReservar({ animal, onClose, onSuccess }) {
+  const [form, setForm] = useState({ cliente: "", telefono: "", precioAcordado: animal.publicacion?.precio || "", adelanto: "", metodoPago: "EFECTIVO", fechaVencimiento: "", notas: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await api("/reservas", { method: "POST", body: { ...form, animalId: animal.id } });
+      onSuccess();
+      onClose();
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)" }}>
+      <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-3xl p-6 space-y-3 shadow-2xl" style={glass}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-white font-black text-xl">Registrar reserva</h3>
+          <button type="button" onClick={onClose} className="text-white/50 hover:text-white"><IconX /></button>
+        </div>
+        <p className="text-white/60 text-sm">{animal.nombre || animal.identificador}</p>
+        {error && <p className="text-red-400 text-sm bg-red-900/20 rounded-xl p-2">{error}</p>}
+        <div>
+          <label className="text-white/50 text-xs">Cliente *</label>
+          <input required className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.cliente} onChange={e => setForm({ ...form, cliente: e.target.value })} />
+        </div>
+        <div>
+          <label className="text-white/50 text-xs">Telefono</label>
+          <input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-white/50 text-xs">Precio acordado *</label>
+            <input type="number" required className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.precioAcordado} onChange={e => setForm({ ...form, precioAcordado: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-white/50 text-xs">Adelanto</label>
+            <input type="number" className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.adelanto} onChange={e => setForm({ ...form, adelanto: e.target.value })} />
+          </div>
+        </div>
+        <div>
+          <label className="text-white/50 text-xs">Metodo de pago adelanto</label>
+          <select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.metodoPago} onChange={e => setForm({ ...form, metodoPago: e.target.value })}>
+            <option value="EFECTIVO">Efectivo</option>
+            <option value="TRANSFERENCIA">Transferencia</option>
+            <option value="CHEQUE">Cheque</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-white/50 text-xs">Fecha de vencimiento</label>
+          <input type="date" className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.fechaVencimiento} onChange={e => setForm({ ...form, fechaVencimiento: e.target.value })} />
+        </div>
+        <div>
+          <label className="text-white/50 text-xs">Notas</label>
+          <textarea className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} rows={2} value={form.notas} onChange={e => setForm({ ...form, notas: e.target.value })} />
+        </div>
+        <button type="submit" disabled={loading} className="w-full text-white font-black py-3 rounded-2xl disabled:opacity-50 transition-all"
+          style={{ background: "linear-gradient(135deg,#1a5c2a,#2d9e3f)" }}>
+          {loading ? "Guardando..." : "Registrar reserva"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ─── Modal Completar Venta ────────────────────────────────────────────────────
+function ModalCompletarVenta({ animal, onClose, onSuccess }) {
+  const [form, setForm] = useState({
+    tipoVenta: "EN_PIE", moneda: "NIO", tipoCambio: "36.5",
+    precioNIO: animal.publicacion?.precio || "", precioUSD: "",
+    pesoKg: "", unidadPeso: "LB", precioKg: "",
+    metodoPago: "EFECTIVO", estadoPago: "PAGADO",
+    comprador: "", telefonoComprador: "", notas: "",
+    fechaSalida: "", pesoFinal: "", adelantoAplicado: "0", saldoPendiente: "0",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  function calcUSD() {
+    if (form.precioNIO && form.tipoCambio) {
+      const usd = (Number(form.precioNIO) / Number(form.tipoCambio)).toFixed(2);
+      setForm(f => ({ ...f, precioUSD: usd }));
+    }
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await api(`/animales/${animal.id}/completar-venta`, { method: "POST", body: form });
+      onSuccess();
+      onClose();
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)" }}>
+      <form onSubmit={handleSubmit} className="w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-3 shadow-2xl overflow-y-auto" style={{ ...glass, maxHeight: "90vh" }}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-white font-black text-xl">Completar venta</h3>
+          <button type="button" onClick={onClose} className="text-white/50 hover:text-white"><IconX /></button>
+        </div>
+        <p className="text-white/60 text-sm">{animal.nombre || animal.identificador}</p>
+        {error && <p className="text-red-400 text-sm bg-red-900/20 rounded-xl p-2">{error}</p>}
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-white/50 text-xs">Tipo de venta</label>
+            <select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.tipoVenta} onChange={e => setForm({ ...form, tipoVenta: e.target.value })}>
+              <option value="EN_PIE">En pie</option>
+              <option value="POR_PESO">Por peso</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-white/50 text-xs">Moneda</label>
+            <select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.moneda} onChange={e => setForm({ ...form, moneda: e.target.value })}>
+              <option value="NIO">NIO (C$)</option>
+              <option value="USD">USD ($)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-white/50 text-xs">Precio NIO (C$) *</label>
+            <input type="number" required className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi}
+              value={form.precioNIO} onChange={e => setForm({ ...form, precioNIO: e.target.value })} onBlur={calcUSD} />
+          </div>
+          <div>
+            <label className="text-white/50 text-xs">Precio USD ($) *</label>
+            <input type="number" required className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi}
+              value={form.precioUSD} onChange={e => setForm({ ...form, precioUSD: e.target.value })} />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-white/50 text-xs">Comprador</label>
+          <input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.comprador} onChange={e => setForm({ ...form, comprador: e.target.value })} />
+        </div>
+        <div>
+          <label className="text-white/50 text-xs">Telefono del comprador</label>
+          <input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.telefonoComprador} onChange={e => setForm({ ...form, telefonoComprador: e.target.value })} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-white/50 text-xs">Metodo de pago</label>
+            <select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.metodoPago} onChange={e => setForm({ ...form, metodoPago: e.target.value })}>
+              <option value="EFECTIVO">Efectivo</option>
+              <option value="TRANSFERENCIA">Transferencia</option>
+              <option value="CHEQUE">Cheque</option>
+              <option value="CREDITO">Credito</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-white/50 text-xs">Estado de pago</label>
+            <select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.estadoPago} onChange={e => setForm({ ...form, estadoPago: e.target.value })}>
+              <option value="PAGADO">Pagado</option>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="PARCIAL">Parcial</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="text-white/50 text-xs">Fecha de salida</label>
+          <input type="date" className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.fechaSalida} onChange={e => setForm({ ...form, fechaSalida: e.target.value })} />
+        </div>
+        <div>
+          <label className="text-white/50 text-xs">Notas</label>
+          <textarea className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} rows={2} value={form.notas} onChange={e => setForm({ ...form, notas: e.target.value })} />
+        </div>
+
+        <div className="rounded-2xl p-3 text-sm" style={{ background: "rgba(22,163,74,0.15)", border: "1px solid rgba(22,163,74,0.3)" }}>
+          <p className="text-green-300 font-semibold">Al completar la venta, el animal cambiara a estado VENDIDO y se retirara del hato activo.</p>
+        </div>
+
+        <button type="submit" disabled={loading} className="w-full text-white font-black py-3 rounded-2xl disabled:opacity-50"
+          style={{ background: "linear-gradient(135deg,#1a5c2a,#2d9e3f)" }}>
+          {loading ? "Procesando..." : "Confirmar venta"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ─── Panel lateral ────────────────────────────────────────────────────────────
+function PanelAnimal({ animal, onClose, onRefresh }) {
+  const [modal, setModal] = useState(null); // "venta" | "reserva" | "completar"
+  const [quitandoVenta, setQuitandoVenta] = useState(false);
+
+  if (!animal) return null;
+
+  const foto = animal.media?.find(m => m.tipo === "FOTO")?.url;
+  const cat = categoriaAnimal(animal);
+  const ec = ESTADO_CONFIG[animal.estado] || ESTADO_CONFIG.ACTIVO;
+  const cc = COMERCIAL_CONFIG[animal.estadoComercial] || COMERCIAL_CONFIG.NO_DISPONIBLE;
+  const enVenta = ["EN_VENTA", "RESERVADO", "VENTA_EN_PROCESO"].includes(animal.estadoComercial);
+
+  async function quitarDeVenta() {
+    if (!confirm("¿Quitar este animal de la lista de venta?")) return;
+    setQuitandoVenta(true);
+    try {
+      await api(`/animales/${animal.id}/quitar-de-venta`, { method: "POST" });
+      onRefresh();
+      onClose();
+    } catch (err) { alert(err.message); } finally { setQuitandoVenta(false); }
+  }
+
+  return (
+    <>
+      {/* Overlay */}
+      <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={onClose} />
+
+      {/* Panel */}
+      <div className="fixed right-0 top-0 bottom-0 z-50 flex flex-col overflow-y-auto shadow-2xl"
+        style={{ width: "min(100vw, 380px)", background: "#0a1f0f", borderLeft: "1px solid rgba(255,255,255,0.1)" }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-white/10 sticky top-0 z-10" style={{ background: "#0a1f0f" }}>
+          <span className="text-white font-black text-lg">Detalle del animal</span>
+          <button onClick={onClose} className="text-white/50 hover:text-white p-1"><IconX /></button>
+        </div>
+
+        {/* Foto */}
+        <div className="relative overflow-hidden" style={{ height: 200, background: "rgba(255,255,255,0.05)" }}>
+          {foto ? (
+            <img src={foto} alt="animal" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-white/20 text-6xl">
+              <IconAnimal />
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 flex-1 space-y-4">
+          {/* Nombre y badges */}
+          <div>
+            <h2 className="text-white font-black text-2xl">{animal.nombre || animal.identificador}</h2>
+            {animal.nombre && <p className="text-white/50 text-sm mb-2">{animal.identificador}</p>}
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Badge text={ec.label} color={ec.color} bg={ec.bg} />
+              <Badge text={cc.label} color={cc.color} bg={cc.bg} />
+              <Badge text={cat} color="#a3e635" bg="rgba(163,230,53,0.1)" />
+            </div>
+          </div>
+
+          {/* Datos */}
+          <div className="rounded-2xl p-4 space-y-2" style={glass}>
+            <Row label="Arete" value={animal.identificador} />
+            <Row label="Categoria" value={cat} />
+            <Row label="Raza" value={animal.raza || "—"} />
+            <Row label="Nacimiento" value={animal.fechaNacimiento ? new Date(animal.fechaNacimiento).toLocaleDateString("es-NI") : "—"} />
+            <Row label="Edad" value={calcularEdad(animal.fechaNacimiento)} />
+            <Row label="Peso" value={animal.pesoActual ? `${animal.pesoActual} kg` : "—"} />
+            <Row label="Potrero" value={animal.potrero || "—"} />
+            <Row label="Madre" value={animal.madre ? (animal.madre.nombre || animal.madre.identificador) : "—"} />
+            <Row label="Fierro" value={animal.fierro || "—"} />
+            {animal.costoBase && <Row label="Costo base" value={`C$ ${animal.costoBase.toLocaleString()}`} />}
+          </div>
+
+          {/* Seccion comercial */}
+          {enVenta && animal.publicacion && (
+            <div className="rounded-2xl p-4 space-y-3" style={{ background: "rgba(37,99,235,0.1)", border: "1px solid rgba(37,99,235,0.3)" }}>
+              <p className="text-blue-300 font-bold text-sm">Informacion de venta</p>
+              <Row label="Precio" value={`${animal.publicacion.moneda === "USD" ? "$" : "C$"} ${Number(animal.publicacion.precio).toLocaleString()}`} />
+              <Row label="Modalidad" value={{ TOTAL: "Precio total", POR_KG: "Por kg", POR_LIBRA: "Por libra" }[animal.publicacion.modalidad] || animal.publicacion.modalidad} />
+              <Row label="Negociable" value={animal.publicacion.negociable ? "Si" : "No"} />
+              <Row label="Publicado en web" value={animal.publicacion.publicada ? "Si" : "No"} />
+              {animal.publicacion.descripcion && <Row label="Descripcion" value={animal.publicacion.descripcion} />}
+              {animal.publicacion.whatsapp && <Row label="WhatsApp" value={animal.publicacion.whatsapp} />}
+
+              <div className="rounded-xl p-3 text-xs" style={{ background: "rgba(22,163,74,0.15)", border: "1px solid rgba(22,163,74,0.3)" }}>
+                <p className="text-green-300 font-semibold">Este animal continua contando como activo hasta completar la venta.</p>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-1">
+                {animal.estadoComercial === "EN_VENTA" && (
+                  <button onClick={() => setModal("reserva")} className="w-full text-white font-bold py-2 rounded-xl text-sm"
+                    style={{ background: "rgba(234,88,12,0.3)", border: "1px solid rgba(234,88,12,0.5)" }}>
+                    Registrar reserva
+                  </button>
+                )}
+                <button onClick={() => setModal("completar")} className="w-full text-white font-bold py-2 rounded-xl text-sm"
+                  style={{ background: "rgba(22,163,74,0.3)", border: "1px solid rgba(22,163,74,0.5)" }}>
+                  Completar venta
+                </button>
+                <button onClick={quitarDeVenta} disabled={quitandoVenta} className="w-full text-white/70 font-bold py-2 rounded-xl text-sm disabled:opacity-50"
+                  style={{ background: "rgba(220,38,38,0.15)", border: "1px solid rgba(220,38,38,0.3)" }}>
+                  {quitandoVenta ? "..." : "Quitar de venta"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Boton poner en venta */}
+          {!enVenta && animal.estado === "ACTIVO" && animal.estadoComercial !== "VENTA_COMPLETADA" && (
+            <button onClick={() => setModal("venta")} className="w-full text-white font-black py-3 rounded-2xl text-sm transition-all"
+              style={{ background: "linear-gradient(135deg,#1a5c2a,#2563eb)", border: "1px solid rgba(37,99,235,0.4)" }}>
+              Poner en venta
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Modales */}
+      {modal === "venta" && <ModalPonerEnVenta animal={animal} onClose={() => setModal(null)} onSuccess={() => { onRefresh(); onClose(); }} />}
+      {modal === "reserva" && <ModalReservar animal={animal} onClose={() => setModal(null)} onSuccess={() => { onRefresh(); onClose(); }} />}
+      {modal === "completar" && <ModalCompletarVenta animal={animal} onClose={() => setModal(null)} onSuccess={() => { onRefresh(); onClose(); }} />}
+    </>
+  );
+}
+
+function Row({ label, value }) {
+  return (
+    <div className="flex justify-between items-start gap-2">
+      <span className="text-white/40 text-xs flex-shrink-0">{label}</span>
+      <span className="text-white text-xs text-right font-medium">{value}</span>
+    </div>
+  );
+}
+
+// ─── Página principal ─────────────────────────────────────────────────────────
 export default function InventarioPage() {
   const router = useRouter();
   const [animales, setAnimales] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [showParto, setShowParto] = useState(null);
-  const [enviando, setEnviando] = useState(false);
-  const [archivos, setArchivos] = useState([]);
-  const [filtro, setFiltro] = useState("TODOS");
+  const [tab, setTab] = useState("TODOS");
   const [busqueda, setBusqueda] = useState("");
-  const [filtroFierro, setFiltroFierro] = useState(null);
-  const [form, setForm] = useState({ identificador:"",nombre:"",raza:"",fierro:"",sexo:"HEMBRA",pesoActual:"",observacion:"",estadoReproductivo:"",madreId:"",fechaNacimiento:"" });
-  const [formParto, setFormParto] = useState({ identificadorCria:"",nombreCria:"",sexoCria:"HEMBRA",pesoNacimiento:"" });
-  const [archivosParto, setArchivosParto] = useState([]);
-  const [editAnimal, setEditAnimal] = useState(null);
-  const [formEdit, setFormEdit] = useState({});
-  const [enviandoEdit, setEnviandoEdit] = useState(false);
+  const [filtroPotrero, setFiltroPotrero] = useState("");
+  const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [pagina, setPagina] = useState(1);
+  const [animalSeleccionado, setAnimalSeleccionado] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [form, setForm] = useState({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", pesoActual: "", observacion: "", estadoReproductivo: "", madreId: "", fechaNacimiento: "", potrero: "", costoBase: "", origen: "FINCA" });
+  const [archivos, setArchivos] = useState([]);
 
-  function abrirEditar(a, e) {
-    e.stopPropagation();
-    setEditAnimal(a);
-    setFormEdit({
-      nombre: a.nombre||"",
-      raza: a.raza||"",
-      fierro: a.fierro||"",
-      pesoActual: a.pesoActual||"",
-      observacion: a.observacion||"",
-      estadoReproductivo: a.estadoReproductivo||"",
-      fechaNacimiento: a.fechaNacimiento ? a.fechaNacimiento.split("T")[0] : "",
-    });
-  }
-
-  async function handleEdit(e) {
-    e.preventDefault(); setEnviandoEdit(true);
-    try {
-      const res = await fetch(`${API_URL}/animales/${editAnimal.id}`, {
-        method:"PATCH",
-        headers:{"Content-Type":"application/json", Authorization:`Bearer ${getToken()}`},
-        body: JSON.stringify({
-          nombre: formEdit.nombre||null,
-          raza: formEdit.raza||null,
-          fierro: formEdit.fierro||null,
-          pesoActual: formEdit.pesoActual||null,
-          fechaNacimiento: formEdit.fechaNacimiento||null,
-          observacion: formEdit.observacion||null,
-          estadoReproductivo: formEdit.estadoReproductivo||null,
-        }),
-      });
-      const d = await res.json();
-      if(!res.ok) throw new Error(d.error||"Error");
-      setEditAnimal(null);
-      load();
-    } catch(err){ alert("Error: "+err.message); } finally{ setEnviandoEdit(false); }
-  }
-
-  async function archivarAnimal(id, e) {
-    e.stopPropagation();
-    if (!confirm("¿Eliminar este animal del inventario? Se borrará completamente del sistema. El registro en Incidentes se conserva.")) return;
-    try {
-      await api(`/animales/${id}`, { method: "DELETE" });
-      load();
-    } catch(err) { alert("Error: " + err.message); }
-  }
-
-  async function load() {
+  const load = useCallback(async () => {
     try {
       const data = await api("/animales");
       setAnimales(Array.isArray(data) ? data : []);
       setError("");
-    } catch(err) {
-      // Solo mostrar error si es de auth, ignorar errores de red temporales
-      if(err.message.includes("autenticado")||err.message.includes("inválido")) router.push("/");
-      else if(err.message !== "Failed to fetch") setError(err.message);
-    }
-  }
+    } catch (err) {
+      if (err.message.includes("autenticado") || err.message.includes("inválido")) router.push("/");
+      else if (err.message !== "Failed to fetch") setError(err.message);
+    } finally { setLoading(false); }
+  }, [router]);
 
-  useEffect(() => { load(); const i=setInterval(load,15000); return ()=>clearInterval(i); }, []);
+  useEffect(() => {
+    load();
+    const i = setInterval(load, 15000);
+    return () => clearInterval(i);
+  }, [load]);
+
+  // Cuando cambia el animal seleccionado, actualizarlo con los datos frescos
+  useEffect(() => {
+    if (animalSeleccionado) {
+      const fresco = animales.find(a => a.id === animalSeleccionado.id);
+      if (fresco) setAnimalSeleccionado(fresco);
+    }
+  }, [animales]);
+
+  // Conteos
+  const activos = animales.filter(a => a.estado === "ACTIVO");
+  const enVenta = animales.filter(a => ["EN_VENTA", "RESERVADO", "VENTA_EN_PROCESO"].includes(a.estadoComercial) && a.estado === "ACTIVO");
+  const reservados = animales.filter(a => a.estadoComercial === "RESERVADO" && a.estado === "ACTIVO");
+  const vendidos = animales.filter(a => a.estado === "VENDIDO");
+
+  // Potreros únicos
+  const potreros = [...new Set(animales.map(a => a.potrero).filter(Boolean))];
+  const hembrasActivas = animales.filter(a => a.sexo === "HEMBRA" && a.estado === "ACTIVO");
+
+  // Filtrado
+  const filtrados = animales
+    .filter(a => a.estado !== "ELIMINADO")
+    .filter(a => {
+      if (tab === "TODOS") return true;
+      if (tab === "ACTIVO") return a.estado === "ACTIVO";
+      if (tab === "EN_VENTA") return ["EN_VENTA", "RESERVADO", "VENTA_EN_PROCESO"].includes(a.estadoComercial) && a.estado === "ACTIVO";
+      if (tab === "RESERVADO") return a.estadoComercial === "RESERVADO" && a.estado === "ACTIVO";
+      if (tab === "VENDIDO") return a.estado === "VENDIDO";
+      if (tab === "BAJA") return a.estado === "MUERTO";
+      return true;
+    })
+    .filter(a => {
+      if (!busqueda.trim()) return true;
+      const q = busqueda.toLowerCase();
+      return (a.nombre || "").toLowerCase().includes(q) ||
+        (a.identificador || "").toLowerCase().includes(q) ||
+        (a.raza || "").toLowerCase().includes(q) ||
+        (a.fierro || "").toLowerCase().includes(q);
+    })
+    .filter(a => !filtroPotrero || a.potrero === filtroPotrero)
+    .filter(a => !filtroCategoria || categoriaAnimal(a) === filtroCategoria);
+
+  const totalPags = Math.max(1, Math.ceil(filtrados.length / PER_PAGE));
+  const paginaActual = Math.min(pagina, totalPags);
+  const paginados = filtrados.slice((paginaActual - 1) * PER_PAGE, paginaActual * PER_PAGE);
+
+  function conteoTab(k) {
+    if (k === "TODOS") return animales.filter(a => a.estado !== "ELIMINADO").length;
+    if (k === "ACTIVO") return activos.length;
+    if (k === "EN_VENTA") return enVenta.length;
+    if (k === "RESERVADO") return reservados.length;
+    if (k === "VENDIDO") return vendidos.length;
+    if (k === "BAJA") return animales.filter(a => a.estado === "MUERTO").length;
+    return 0;
+  }
 
   async function handleCreate(e) {
-    e.preventDefault(); setEnviando(true);
+    e.preventDefault();
+    setEnviando(true);
     try {
-      const res = await fetch(`${API_URL}/animales`, {
-        method:"POST", headers:{"Content-Type":"application/json",Authorization:`Bearer ${getToken()}`},
-        body: JSON.stringify({...form, estadoReproductivo: form.sexo==="HEMBRA"?form.estadoReproductivo:undefined, fechaNacimiento: form.fechaNacimiento||undefined }),
-      });
-      const animal = await res.json();
-      if(!res.ok) throw new Error(animal.error||"Error");
-      if(archivos.length>0){
-        const fd=new FormData(); Array.from(archivos).forEach(f=>fd.append("archivos",f));
-        await fetch(`${API_URL}/animales/${animal.id}/media`,{method:"POST",headers:{Authorization:`Bearer ${getToken()}`},body:fd});
+      const body = { ...form, estadoReproductivo: form.sexo === "HEMBRA" ? form.estadoReproductivo : undefined, fechaNacimiento: form.fechaNacimiento || undefined };
+      const res = await api("/animales", { method: "POST", body });
+      if (archivos.length > 0) {
+        const fd = new FormData();
+        Array.from(archivos).forEach(f => fd.append("archivos", f));
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/animales/${res.id}/media`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          body: fd,
+        });
       }
-      setForm({identificador:"",nombre:"",raza:"",fierro:"",sexo:"HEMBRA",pesoActual:"",observacion:"",estadoReproductivo:"",madreId:"",fechaNacimiento:""});
-      setArchivos([]); setShowForm(false); load();
-    } catch(err){ setError(err.message); } finally{ setEnviando(false); }
-  }
-
-  async function handleParto(e) {
-    e.preventDefault(); setEnviando(true);
-    try {
-      const fd = new FormData();
-      fd.append("identificadorCria", formParto.identificadorCria);
-      if(formParto.nombreCria) fd.append("nombreCria", formParto.nombreCria);
-      fd.append("sexoCria", formParto.sexoCria);
-      if(formParto.pesoNacimiento) fd.append("pesoNacimiento", formParto.pesoNacimiento);
-      Array.from(archivosParto).forEach(f => fd.append("archivos", f));
-      const res = await fetch(`${API_URL}/animales/${showParto}/parto`,{
-        method:"POST", headers:{Authorization:`Bearer ${getToken()}`}, body:fd,
-      });
-      const d = await res.json();
-      if(!res.ok) throw new Error(d.error||"Error");
-      setShowParto(null);
-      setFormParto({identificadorCria:"",nombreCria:"",sexoCria:"HEMBRA",pesoNacimiento:""});
-      setArchivosParto([]);
+      setForm({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", pesoActual: "", observacion: "", estadoReproductivo: "", madreId: "", fechaNacimiento: "", potrero: "", costoBase: "", origen: "FINCA" });
+      setArchivos([]);
+      setShowForm(false);
       load();
-    } catch(err){ setError(err.message); } finally{ setEnviando(false); }
+    } catch (err) { setError(err.message); } finally { setEnviando(false); }
   }
-
-  const activos=animales.filter(a=>a.estado==="ACTIVO");
-  const vendidos=animales.filter(a=>a.estado==="VENDIDO");
-  const muertos=animales.filter(a=>a.estado==="MUERTO");
-  const visibles=animales.filter(a=>a.estado!=="ELIMINADO");
-  const hembras=activos.filter(a=>a.sexo==="HEMBRA");
-  const crias=activos.filter(a=>a.madreId);
-
-  const METRICAS=[
-    {label:"Preñadas",valor:hembras.filter(a=>a.estadoReproductivo==="PREÑADA").length,img:"https://images.unsplash.com/photo-1570042225831-d98fa7577f1e?w=120&q=70",color:"#e53e3e",filtroKey:"PREÑADA"},
-    {label:"Paridas",valor:hembras.filter(a=>a.estadoReproductivo==="PARIDA").length,img:"https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=120&q=70",color:"#d69e2e",filtroKey:"PARIDA"},
-    {label:"Crías",valor:crias.length,img:"https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=120&q=70",color:"#38b2ac",filtroKey:"CRIAS"},
-    {label:"Lactancia",valor:hembras.filter(a=>a.estadoReproductivo==="LACTANCIA").length,img:"https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=120&q=70",color:"#38a169",filtroKey:"LACTANCIA"},
-    {label:"Secas",valor:hembras.filter(a=>a.estadoReproductivo==="SECA").length,img:"https://images.unsplash.com/photo-1596733430284-f7437764b1a9?w=120&q=70",color:"#718096",filtroKey:"SECA"},
-    {label:"Sementales",valor:activos.filter(a=>a.sexo==="MACHO").length,img:"https://images.unsplash.com/photo-1527153098-02c5b5b29c9d?w=120&q=70",color:"#3182ce",filtroKey:"SEMENTALES"},
-    {label:"Activos",valor:activos.length,img:"https://images.unsplash.com/photo-1493962853295-0fd70327578a?w=120&q=70",color:"#2d9e3f",filtroKey:"ACTIVOS"},
-    {label:"Total",valor:activos.length,img:"https://images.unsplash.com/photo-1466721591366-2d5fba72006d?w=120&q=70",color:"#553c9a",filtroKey:"TODOS"},
-    {label:"Vendidos",valor:vendidos.length,img:"https://images.unsplash.com/photo-1472396961693-142e6e269027?w=120&q=70",color:"#b7791f",filtroKey:"VENDIDOS"},
-    {label:"Muertos",valor:muertos.length,img:"https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=120&q=70",color:"#742a2a",filtroKey:"MUERTOS"},
-  ];
-
-  const filtrados=visibles.filter(a=>{
-    if(filtro==="TODOS") return true;
-    if(filtro==="ACTIVOS") return a.estado==="ACTIVO";
-    if(filtro==="VENDIDOS") return a.estado==="VENDIDO";
-    if(filtro==="MUERTOS") return a.estado==="MUERTO";
-    if(filtro==="SEMENTALES") return a.sexo==="MACHO"&&a.estado==="ACTIVO";
-    if(filtro==="CRIAS") return !!a.madreId&&a.estado==="ACTIVO";
-    return a.estadoReproductivo===filtro&&a.estado==="ACTIVO";
-  }).filter(a=>{
-    if(!filtroFierro) return true;
-    return (a.fierro||"Sin fierro")===filtroFierro;
-  }).filter(a=>{
-    if(!busqueda.trim()) return true;
-    const q=busqueda.toLowerCase();
-    return (a.nombre||"").toLowerCase().includes(q)||(a.identificador||"").toLowerCase().includes(q)||(a.raza||"").toLowerCase().includes(q)||(a.fierro||"").toLowerCase().includes(q);
-  });
-
-  const porFierro=Object.entries(
-    activos.reduce((acc,a)=>{
-      const key=a.fierro?.trim()||"Sin fierro";
-      acc[key]=(acc[key]||0)+1;
-      return acc;
-    },{})
-  ).sort((a,b)=>b[1]-a[1]);
-
-  const hembrasActivas=animales.filter(a=>a.sexo==="HEMBRA"&&a.estado==="ACTIVO");
-  const glass={background:"rgba(5,25,12,0.65)",backdropFilter:"blur(16px)",border:"1px solid rgba(255,255,255,0.12)"};
-  const gi={background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff"};
-
-  function etiqueta(a){
-    if(a.madreId&&a.madre) return `Cría de ${a.madre.nombre||a.madre.identificador}`;
-    if((a.estadoReproductivo==="LACTANCIA"||a.estadoReproductivo==="PARIDA")&&a.crias?.length>0){
-      const c=a.crias[a.crias.length-1];
-      return `${a.estadoReproductivo==="LACTANCIA"?"Lactancia":"Parida"} - Cría ${c.nombre||c.identificador}`;
-    }
-    if(a.estadoReproductivo==="PREÑADA"&&a.fechaParto){
-      return `Preñada - Prev. ${new Date(a.fechaParto).toLocaleDateString("es",{month:"long",year:"numeric"})}`;
-    }
-    return null;
-  }
-
-  const conFoto=[];
-  const resto=filtrados;
 
   return (
-    <AppLayout title="Inventario Animal" subtitle="Gestión de Ganado">
-      {error&&<div className="mb-4 text-red-300 text-sm p-3 rounded-xl flex items-center justify-between" style={{background:"rgba(220,38,38,0.2)",border:"1px solid rgba(220,38,38,0.4)"}}>
-        {error}<button onClick={()=>setError("")} className="text-red-400 ml-4">✕</button></div>}
-
-      {/* Buscador */}
-      <div className="relative mb-4">
-        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-lg">🔍</span>
-        <input
-          className="w-full rounded-2xl pl-11 pr-4 py-3 text-white text-base"
-          style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",outline:"none"}}
-          placeholder="Buscar por nombre, arete, raza o fierro..."
-          value={busqueda}
-          onChange={e=>setBusqueda(e.target.value)}
-        />
-        {busqueda&&<button onClick={()=>setBusqueda("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 text-lg">✕</button>}
-      </div>
-
-      {/* MÉTRICAS — 3 columnas en móvil, scroll horizontal en tablet/desktop */}
-      <div className="grid grid-cols-3 gap-2 mb-5 md:flex md:gap-3 md:overflow-x-auto md:pb-2">
-        {METRICAS.map(m=>(
-          <button key={m.filtroKey} onClick={()=>setFiltro(m.filtroKey)}
-            className="rounded-2xl overflow-hidden transition-all active:scale-95 relative"
-            style={{
-              minHeight:90,
-              border:filtro===m.filtroKey?`3px solid ${m.color}`:"2px solid rgba(255,255,255,0.15)",
-              flex:"0 0 auto",
-            }}>
-            <img src={m.img} alt={m.label} className="absolute inset-0 w-full h-full object-cover"/>
-            <div className="absolute inset-0" style={{background:filtro===m.filtroKey?`${m.color}aa`:"rgba(0,0,0,0.6)"}}/>
-            <div className="relative z-10 flex flex-col items-center justify-center h-full py-3 px-1">
-              <p className="text-white font-black leading-none" style={{fontSize:28,textShadow:"0 2px 8px rgba(0,0,0,0.9)"}}>{m.valor}</p>
-              <p className="text-white font-bold text-center leading-tight mt-1 w-full truncate px-1" style={{fontSize:9,textShadow:"0 1px 4px rgba(0,0,0,0.9)"}}>{m.label}</p>
-              {filtro===m.filtroKey&&<div className="mt-1 rounded-full px-1.5 py-0.5" style={{background:m.color,fontSize:7,color:"white",fontWeight:900}}>✓ activo</div>}
+    <AppLayout title="Inventario" subtitle="Gestion de animales">
+      <div className="flex gap-4 relative">
+        {/* Contenido principal */}
+        <div className="flex-1 min-w-0">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h1 className="text-white font-black text-2xl">Inventario de animales</h1>
+              <p className="text-white/50 text-sm mt-0.5">Gestion completa del hato ganadero</p>
             </div>
-          </button>
-        ))}
-      </div>
+            <button onClick={() => setShowForm(s => !s)}
+              className="text-white font-bold px-4 py-2 rounded-xl text-sm transition-all hidden sm:flex items-center gap-2"
+              style={{ background: showForm ? "rgba(100,100,100,0.3)" : "linear-gradient(135deg,#1a5c2a,#2d9e3f)", border: "1px solid rgba(255,255,255,0.2)" }}>
+              {showForm ? "Cancelar" : "+ Registrar animal"}
+            </button>
+          </div>
 
-      {/* Resumen por Fierro */}
-      {porFierro.length>0&&(
-        <div className="rounded-2xl p-4 mb-5" style={glass}>
-          <p className="text-white/70 font-bold text-sm mb-3">🔥 Animales por Fierro</p>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {porFierro.map(([fierro,cantidad])=>(
-              <button key={fierro} onClick={()=>setFiltroFierro(f=>f===fierro?null:fierro)}
-                className="flex-shrink-0 rounded-xl px-4 py-2.5 text-left transition-all"
+          {error && (
+            <div className="mb-4 text-red-300 text-sm p-3 rounded-xl flex items-center justify-between"
+              style={{ background: "rgba(220,38,38,0.2)", border: "1px solid rgba(220,38,38,0.4)" }}>
+              {error}<button onClick={() => setError("")} className="text-red-400 ml-4"><IconX /></button>
+            </div>
+          )}
+
+          {/* Tarjetas resumen */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            {[
+              { label: "Animales activos", valor: activos.length, color: "#16a34a", sub: null },
+              { label: "En venta", valor: enVenta.length, color: "#2563eb", sub: "Siguen activos en el hato" },
+              { label: "Reservados", valor: reservados.length, color: "#ea580c", sub: null },
+              { label: "Vendidos", valor: vendidos.length, color: "#6b7280", sub: null },
+            ].map(m => (
+              <div key={m.label} className="rounded-2xl p-4" style={{ background: `${m.color}18`, border: `1px solid ${m.color}40` }}>
+                <p className="font-black text-3xl" style={{ color: m.color }}>{m.valor}</p>
+                <p className="text-white/80 text-sm font-semibold mt-1">{m.label}</p>
+                {m.sub && <p className="text-white/40 text-xs mt-0.5">{m.sub}</p>}
+              </div>
+            ))}
+          </div>
+
+          {/* Formulario registrar */}
+          {showForm && (
+            <form onSubmit={handleCreate} className="rounded-3xl p-5 mb-5 space-y-3" style={glass}>
+              <h3 className="text-white font-black text-lg">Nuevo Animal</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div><label className="text-white/50 text-xs">Arete/ID *</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} required value={form.identificador} onChange={e => setForm({ ...form, identificador: e.target.value })} /></div>
+                <div><label className="text-white/50 text-xs">Nombre</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} /></div>
+                <div><label className="text-white/50 text-xs">Sexo *</label><select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.sexo} onChange={e => setForm({ ...form, sexo: e.target.value })}><option value="HEMBRA">Hembra</option><option value="MACHO">Macho</option></select></div>
+                <div><label className="text-white/50 text-xs">Raza</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.raza} onChange={e => setForm({ ...form, raza: e.target.value })} /></div>
+                <div><label className="text-white/50 text-xs">Fierro</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.fierro} onChange={e => setForm({ ...form, fierro: e.target.value })} /></div>
+                <div><label className="text-white/50 text-xs">Potrero</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="Ej: Potrero Norte" value={form.potrero} onChange={e => setForm({ ...form, potrero: e.target.value })} /></div>
+                <div><label className="text-white/50 text-xs">Peso actual (kg)</label><input type="number" className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.pesoActual} onChange={e => setForm({ ...form, pesoActual: e.target.value })} /></div>
+                <div><label className="text-white/50 text-xs">Costo base (C$)</label><input type="number" className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.costoBase} onChange={e => setForm({ ...form, costoBase: e.target.value })} /></div>
+                <div><label className="text-white/50 text-xs">Fecha nacimiento</label><input type="date" className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.fechaNacimiento} onChange={e => setForm({ ...form, fechaNacimiento: e.target.value })} /></div>
+                <div><label className="text-white/50 text-xs">Origen</label><select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.origen} onChange={e => setForm({ ...form, origen: e.target.value })}><option value="FINCA">Nacido en finca</option><option value="COMPRADO">Comprado</option></select></div>
+                <div className="sm:col-span-2"><label className="text-white/50 text-xs">Madre (si es cria)</label><select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={form.madreId} onChange={e => setForm({ ...form, madreId: e.target.value })}><option value="">Sin madre</option>{hembrasActivas.map(h => <option key={h.id} value={h.id}>{h.nombre || h.identificador}</option>)}</select></div>
+                <div className="sm:col-span-2"><textarea className="w-full rounded-xl px-3 py-2 text-sm" style={gi} placeholder="Observacion..." rows={2} value={form.observacion} onChange={e => setForm({ ...form, observacion: e.target.value })} /></div>
+              </div>
+              <div className="rounded-2xl p-3" style={{ background: "rgba(255,255,255,0.06)", border: "1px dashed rgba(255,255,255,0.2)" }}>
+                <p className="text-white/50 text-xs mb-2">Fotos y videos</p>
+                <input type="file" accept="image/*,video/*" multiple className="w-full text-white/60 text-sm" onChange={e => setArchivos(e.target.files)} />
+              </div>
+              <button type="submit" disabled={enviando} className="w-full text-white font-black py-3 rounded-2xl disabled:opacity-50" style={{ background: "linear-gradient(135deg,#1a5c2a,#2d9e3f)" }}>
+                {enviando ? "Guardando..." : "Registrar Animal"}
+              </button>
+            </form>
+          )}
+
+          {/* Pestañas */}
+          <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
+            {TABS.map(t => (
+              <button key={t.key} onClick={() => { setTab(t.key); setPagina(1); }}
+                className="flex-shrink-0 px-3 py-1.5 rounded-xl text-sm font-bold transition-all flex items-center gap-1"
                 style={{
-                  background:filtroFierro===fierro?"rgba(45,158,63,0.3)":"rgba(255,255,255,0.06)",
-                  border:filtroFierro===fierro?"2px solid #2d9e3f":"1px solid rgba(255,255,255,0.15)",
-                  minWidth:90,
+                  background: tab === t.key ? "rgba(45,158,63,0.3)" : "rgba(255,255,255,0.06)",
+                  border: tab === t.key ? "2px solid #2d9e3f" : "1px solid rgba(255,255,255,0.12)",
+                  color: tab === t.key ? "#a3e635" : "rgba(255,255,255,0.6)",
                 }}>
-                <p className="text-white font-black text-xl leading-none">{cantidad}</p>
-                <p className="text-white/60 text-xs mt-1 truncate">{fierro}</p>
+                {t.label}
+                <span className="text-xs font-normal opacity-70">({conteoTab(t.key)})</span>
               </button>
             ))}
           </div>
-          {filtroFierro&&<button onClick={()=>setFiltroFierro(null)} className="text-green-400 text-xs mt-2 font-bold">✕ Quitar filtro de fierro</button>}
-        </div>
-      )}
 
-      {/* Botón */}
-      <button onClick={()=>setShowForm(s=>!s)}
-        className="w-full text-white rounded-2xl py-3 font-black text-lg mb-4 flex items-center justify-center gap-2 shadow-xl hover:scale-[1.01] transition-transform"
-        style={{background:showForm?"rgba(100,100,100,0.4)":"linear-gradient(135deg,#1a6b2a,#2d9e3f)",border:"1px solid rgba(255,255,255,0.2)"}}>
-        {showForm?"✕ Cancelar":"+ Registrar Animal"}
-      </button>
-
-      {/* Formulario */}
-      {showForm&&(
-        <form onSubmit={handleCreate} className="rounded-3xl p-5 mb-4 space-y-3" style={glass}>
-          <h3 className="text-white font-black text-lg">Nuevo Animal</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div><label className="text-white/50 text-xs">Arete/ID *</label><input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="M001" value={form.identificador} onChange={e=>setForm({...form,identificador:e.target.value})} required/></div>
-            <div><label className="text-white/50 text-xs">Nombre</label><input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="Paloma" value={form.nombre} onChange={e=>setForm({...form,nombre:e.target.value})}/></div>
-            <div><label className="text-white/50 text-xs">Sexo *</label><select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.sexo} onChange={e=>setForm({...form,sexo:e.target.value})}><option value="HEMBRA">Hembra</option><option value="MACHO">Macho</option></select></div>
-            <div><label className="text-white/50 text-xs">Raza</label><input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="Brahman" value={form.raza} onChange={e=>setForm({...form,raza:e.target.value})}/></div>
-            <div><label className="text-white/50 text-xs">Fierro</label><input className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="M20" value={form.fierro} onChange={e=>setForm({...form,fierro:e.target.value})}/></div>
-            <div><label className="text-white/50 text-xs">Peso (kg)</label><input type="number" className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} placeholder="350" value={form.pesoActual} onChange={e=>setForm({...form,pesoActual:e.target.value})}/></div>
-            <div><label className="text-white/50 text-xs">Fecha de Nacimiento</label><input type="date" className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.fechaNacimiento} onChange={e=>setForm({...form,fechaNacimiento:e.target.value})}/></div>
-            <div><label className="text-white/50 text-xs">Edad calculada</label><div className="w-full rounded-xl px-3 py-3 text-base mt-0.5 text-green-400 font-bold" style={gi}>{form.fechaNacimiento ? calcularEdad(form.fechaNacimiento) : "—"}</div></div>
-            <div className="sm:col-span-2"><label className="text-white/50 text-xs">Categoría / Estado</label><select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.estadoReproductivo} onChange={e=>setForm({...form,estadoReproductivo:e.target.value})}><option value="">Sin definir</option>{ESTADOS_REPRO.map(e=><option key={e} value={e}>{REPRO_CONFIG[e].icon} {REPRO_CONFIG[e].label}</option>)}</select></div>
-            <div className="sm:col-span-2"><label className="text-white/50 text-xs">Madre (si es cría)</label><select className="w-full rounded-xl px-3 py-3 text-base mt-0.5" style={gi} value={form.madreId} onChange={e=>setForm({...form,madreId:e.target.value})}><option value="">Sin madre</option>{hembrasActivas.map(h=><option key={h.id} value={h.id}>{h.nombre||h.identificador}</option>)}</select></div>
-          </div>
-          <textarea className="w-full rounded-xl px-3 py-2 text-sm" style={gi} placeholder="Observación..." rows={2} value={form.observacion} onChange={e=>setForm({...form,observacion:e.target.value})}/>
-          <div className="rounded-2xl p-3" style={{background:"rgba(255,255,255,0.06)",border:"1px dashed rgba(255,255,255,0.2)"}}>
-            <p className="text-white/50 text-xs mb-2">📷 Fotos y 🎬 Videos — puedes seleccionar varios a la vez</p>
-            <input type="file" accept="image/*,video/*" multiple className="w-full text-white/60 text-sm" onChange={e=>setArchivos(e.target.files)}/>
-            {archivos.length>0&&(
-              <p className="text-green-400 text-xs mt-2 font-bold">✅ {archivos.length} archivo{archivos.length>1?"s":""} seleccionado{archivos.length>1?"s":""}</p>
+          {/* Buscador y filtros */}
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40"><IconSearch /></span>
+              <input className="w-full rounded-xl pl-9 pr-4 py-2 text-sm" style={gi}
+                placeholder="Buscar por nombre, arete, raza o fierro..."
+                value={busqueda} onChange={e => { setBusqueda(e.target.value); setPagina(1); }} />
+            </div>
+            <select className="rounded-xl px-3 py-2 text-sm" style={gi} value={filtroCategoria} onChange={e => { setFiltroCategoria(e.target.value); setPagina(1); }}>
+              <option value="">Categoria</option>
+              {["Vaca", "Toro", "Novillo", "Novilla", "Ternero", "Ternera"].map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            {potreros.length > 0 && (
+              <select className="rounded-xl px-3 py-2 text-sm" style={gi} value={filtroPotrero} onChange={e => { setFiltroPotrero(e.target.value); setPagina(1); }}>
+                <option value="">Potrero</option>
+                {potreros.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
             )}
           </div>
-          <button type="submit" disabled={enviando} className="w-full text-white font-black py-3 rounded-2xl disabled:opacity-50" style={{background:"linear-gradient(135deg,#1a6b2a,#2d9e3f)"}}>
-            {enviando?"Guardando...":"✅ Registrar Animal"}
-          </button>
-        </form>
-      )}
 
-      {/* Modal Parto */}
-      {showParto&&(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)"}}>
-          <form onSubmit={handleParto} className="w-full max-w-sm rounded-3xl p-6 space-y-3 shadow-2xl" style={glass}>
-            <h3 className="text-white font-black text-xl">Registrar Parto</h3>
-            <p className="text-white/50 text-sm">La madre pasará automáticamente a Lactancia.</p>
-            <div><label className="text-white/50 text-xs">Arete/ID de la cría *</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="C001" required value={formParto.identificadorCria} onChange={e=>setFormParto({...formParto,identificadorCria:e.target.value})}/></div>
-            <div><label className="text-white/50 text-xs">Nombre de la cría</label><input className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="Opcional" value={formParto.nombreCria} onChange={e=>setFormParto({...formParto,nombreCria:e.target.value})}/></div>
-            <div><label className="text-white/50 text-xs">Sexo *</label><select className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} value={formParto.sexoCria} onChange={e=>setFormParto({...formParto,sexoCria:e.target.value})}><option value="HEMBRA">Hembra</option><option value="MACHO">Macho</option></select></div>
-            <div><label className="text-white/50 text-xs">Peso al nacer (kg)</label><input type="number" className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} placeholder="Opcional" value={formParto.pesoNacimiento} onChange={e=>setFormParto({...formParto,pesoNacimiento:e.target.value})}/></div>
-            <div>
-              <label className="text-white/50 text-xs">📷 Fotos y 🎥 Videos de la cría</label>
-              <input type="file" accept="image/*,video/*" multiple className="w-full mt-1 text-white/70 text-xs file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-green-900 file:text-white hover:file:bg-green-800" onChange={e=>setArchivosParto(e.target.files)}/>
-              {archivosParto.length>0&&<p className="text-green-400 text-xs mt-1">{archivosParto.length} archivo(s) seleccionado(s)</p>}
-            </div>
-            <div className="flex gap-3"><button type="button" onClick={()=>{setShowParto(null);setArchivosParto([]);}} className="flex-1 text-white/50 py-2 rounded-xl" style={{border:"1px solid rgba(255,255,255,0.2)"}}>Cancelar</button>
-            <button type="submit" disabled={enviando} className="flex-1 text-white font-black py-2 rounded-xl disabled:opacity-50" style={{background:"linear-gradient(135deg,#1a6b2a,#2d9e3f)"}}>{enviando?"...":"Registrar"}</button></div>
-          </form>
-        </div>
-      )}
-
-      {/* Modal Editar Animal */}
-      {editAnimal&&(
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{background:"rgba(0,0,0,0.8)",backdropFilter:"blur(4px)"}}>
-          <form onSubmit={handleEdit} className="w-full max-w-sm rounded-3xl p-6 space-y-3 shadow-2xl max-h-[90vh] overflow-y-auto" style={glass}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-white font-black text-xl">✏️ Editar Animal</h3>
-              <button type="button" onClick={()=>setEditAnimal(null)} className="text-white/40 text-2xl leading-none">✕</button>
-            </div>
-            <p className="text-white/40 text-xs">Arete: <span className="text-white font-bold">{editAnimal.identificador}</span> · {editAnimal.sexo==="HEMBRA"?"♀ Hembra":"♂ Macho"}</p>
-            <div><label className="text-white/50 text-xs">Nombre</label>
-              <input className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.nombre} onChange={e=>setFormEdit({...formEdit,nombre:e.target.value})} placeholder="Nombre del animal"/></div>
-            <div><label className="text-white/50 text-xs">Raza</label>
-              <input className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.raza} onChange={e=>setFormEdit({...formEdit,raza:e.target.value})} placeholder="Brahman, Holstein..."/></div>
-            <div><label className="text-white/50 text-xs">Fierro</label>
-              <input className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.fierro} onChange={e=>setFormEdit({...formEdit,fierro:e.target.value})} placeholder="M20"/></div>
-            <div><label className="text-white/50 text-xs">Peso actual (kg)</label>
-              <input type="number" className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.pesoActual} onChange={e=>setFormEdit({...formEdit,pesoActual:e.target.value})} placeholder="350"/></div>
-            <div><label className="text-white/50 text-xs">Fecha de Nacimiento</label>
-              <input type="date" className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.fechaNacimiento} onChange={e=>setFormEdit({...formEdit,fechaNacimiento:e.target.value})}/></div>
-            <div><label className="text-white/50 text-xs">Edad calculada</label>
-              <div className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5 text-green-400 font-bold" style={gi}>{formEdit.fechaNacimiento ? calcularEdad(formEdit.fechaNacimiento) : "—"}</div></div>
-            <div>
-              <label className="text-white/50 text-xs">Categoría / Estado</label>
-              <select className="w-full rounded-xl px-3 py-2.5 text-sm mt-0.5" style={gi} value={formEdit.estadoReproductivo} onChange={e=>setFormEdit({...formEdit,estadoReproductivo:e.target.value})}>
-                <option value="">Sin definir</option>
-                {ESTADOS_REPRO.map(s=><option key={s} value={s}>{REPRO_CONFIG[s].icon} {REPRO_CONFIG[s].label}</option>)}
-              </select>
-            </div>
-            <div><label className="text-white/50 text-xs">Observación</label>
-              <textarea className="w-full rounded-xl px-3 py-2 text-sm mt-0.5" style={gi} rows={2} value={formEdit.observacion} onChange={e=>setFormEdit({...formEdit,observacion:e.target.value})} placeholder="Notas adicionales..."/></div>
-            <div className="flex gap-3 pt-1">
-              <button type="button" onClick={()=>setEditAnimal(null)} className="flex-1 text-white/50 py-2.5 rounded-xl text-sm font-bold" style={{border:"1px solid rgba(255,255,255,0.2)"}}>Cancelar</button>
-              <button type="submit" disabled={enviandoEdit} className="flex-1 text-white font-black py-2.5 rounded-xl text-sm disabled:opacity-50" style={{background:"linear-gradient(135deg,#1a6b2a,#2d9e3f)"}}>
-                {enviandoEdit?"Guardando...":"✅ Guardar"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      <p className="text-white/30 text-xs mb-3">{METRICAS.find(m=>m.filtroKey===filtro)?.label||"Todos"} — {filtrados.length} registros</p>
-
-      {/* Tarjetas grandes */}
-      {conFoto.length>0&&(
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {conFoto.map(a=>{
-            const foto=a.media?.find(m=>m.tipo==="FOTO");
-            const et=etiqueta(a); const repro=a.estadoReproductivo?REPRO_CONFIG[a.estadoReproductivo]:null;
-            return (
-              <div key={a.id} className="rounded-2xl overflow-hidden shadow-xl relative cursor-pointer hover:scale-[1.02] transition-all" onClick={()=>router.push(`/inventario/${a.id}`)}>
-                {foto&&<img src={foto.url} className="w-full h-44 object-cover"/>}
-                {a.estado==="VENDIDO"&&<div className="absolute top-3 right-3 text-white text-xs font-black px-3 py-1 rounded-full" style={{background:"#d69e2e"}}>VENDIDO</div>}
-                {a.estado==="MUERTO"&&<div className="absolute top-3 right-3 text-white text-xs font-black px-3 py-1 rounded-full" style={{background:"#742a2a"}}>💀 MUERTO</div>}
-                <div className="p-4" style={{background:"rgba(5,20,10,0.88)",backdropFilter:"blur(8px)"}}>
-                  <div className="flex items-start justify-between">
-                    <div><p className="text-white font-black text-lg">{a.nombre||a.identificador}</p>
-                    <p className="text-white/40 text-xs">{a.raza||""} · Tag: {a.identificador}</p></div>
-                    <span style={{color:a.sexo==="HEMBRA"?"#f687b3":"#63b3ed",fontSize:18}}>{a.sexo==="HEMBRA"?"♀":"♂"}</span>
-                  </div>
-                  {a.fierro&&<p className="text-white/40 text-xs mt-1">Fierro: {a.fierro}</p>}
-                  {a.pesoActual&&<p className="text-green-400 text-sm font-bold mt-1">⚖️ {a.pesoActual} kg</p>}
-                  {a.fechaNacimiento&&<p className="text-blue-300 text-xs mt-1">🎂 {new Date(a.fechaNacimiento).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"})} · {calcularEdad(a.fechaNacimiento)}</p>}
-                  {(et||repro)&&<p className="text-xs mt-2 px-2 py-1 rounded-lg font-semibold inline-block" style={{background:repro?.bg||"rgba(255,255,255,0.1)",color:repro?.color||"white"}}>{repro?.icon} {et||repro?.label}</p>}
-                  <div className="flex gap-2 mt-2">
-                    <button onClick={ev=>abrirEditar(a,ev)} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(49,130,206,0.25)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
-                      ✏️ Editar
-                    </button>
-                    <button onClick={ev=>{ev.stopPropagation();router.push(`/inventario/${a.id}`);}} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(26,58,108,0.5)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
-                      📋 Informe
-                    </button>
-                    {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
-                      <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
-                        🐮 Parto
-                      </button>
-                    )}
-                    {a.estado==="MUERTO"&&(
-                      <button onClick={ev=>archivarAnimal(a.id,ev)} className="flex-1 text-xs px-3 py-1.5 rounded-lg font-bold" style={{background:"rgba(116,42,42,0.5)",border:"1px solid rgba(229,62,62,0.4)",color:"#fc8181"}}>
-                        🗑️ Quitar
-                      </button>
-                    )}
-                  </div>
+          {/* Tabla — escritorio */}
+          {loading ? (
+            <div className="text-white/40 text-center py-12">Cargando inventario...</div>
+          ) : (
+            <>
+              <div className="hidden sm:block rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ background: "rgba(255,255,255,0.05)" }}>
+                        <th className="text-left text-white/50 font-semibold px-4 py-3 w-12"></th>
+                        <th className="text-left text-white/50 font-semibold px-4 py-3">Animal</th>
+                        <th className="text-left text-white/50 font-semibold px-4 py-3">Arete</th>
+                        <th className="text-left text-white/50 font-semibold px-4 py-3">Categoria</th>
+                        <th className="text-left text-white/50 font-semibold px-4 py-3">Peso</th>
+                        <th className="text-left text-white/50 font-semibold px-4 py-3">Potrero</th>
+                        <th className="text-left text-white/50 font-semibold px-4 py-3">Estado</th>
+                        <th className="text-left text-white/50 font-semibold px-4 py-3">Comercial</th>
+                        <th className="text-left text-white/50 font-semibold px-4 py-3">Precio</th>
+                        <th className="text-left text-white/50 font-semibold px-4 py-3">Acc.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginados.length === 0 ? (
+                        <tr><td colSpan={10} className="text-center text-white/30 py-12">Sin resultados</td></tr>
+                      ) : paginados.map(a => {
+                        const foto = a.media?.find(m => m.tipo === "FOTO")?.url;
+                        const ec = ESTADO_CONFIG[a.estado] || ESTADO_CONFIG.ACTIVO;
+                        const cc = COMERCIAL_CONFIG[a.estadoComercial] || COMERCIAL_CONFIG.NO_DISPONIBLE;
+                        const isSelected = animalSeleccionado?.id === a.id;
+                        return (
+                          <tr key={a.id}
+                            onClick={() => setAnimalSeleccionado(isSelected ? null : a)}
+                            className="cursor-pointer transition-all"
+                            style={{ background: isSelected ? "rgba(45,158,63,0.15)" : "transparent", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                            <td className="px-4 py-3">
+                              <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0" style={{ background: "rgba(255,255,255,0.08)" }}>
+                                {foto ? <img src={foto} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-white/20 text-xs"><IconAnimal /></div>}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <p className="text-white font-semibold">{a.nombre || "—"}</p>
+                              <p className="text-white/40 text-xs">{a.raza || "Sin raza"}</p>
+                            </td>
+                            <td className="px-4 py-3 text-white/80 font-mono text-xs">{a.identificador}</td>
+                            <td className="px-4 py-3 text-white/70">{categoriaAnimal(a)}</td>
+                            <td className="px-4 py-3 text-white/70">{a.pesoActual ? `${a.pesoActual} kg` : "—"}</td>
+                            <td className="px-4 py-3 text-white/70">{a.potrero || "—"}</td>
+                            <td className="px-4 py-3"><Badge text={ec.label} color={ec.color} bg={ec.bg} /></td>
+                            <td className="px-4 py-3"><Badge text={cc.label} color={cc.color} bg={cc.bg} /></td>
+                            <td className="px-4 py-3 text-white/70 text-xs">
+                              {a.publicacion?.precio ? `${a.publicacion.moneda === "USD" ? "$" : "C$"} ${Number(a.publicacion.precio).toLocaleString()}` : "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              <button onClick={e => { e.stopPropagation(); setAnimalSeleccionado(isSelected ? null : a); }}
+                                className="text-white/40 hover:text-white p-1 transition-all">
+                                <IconChevron />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
 
-      {/* Tarjetas — grid con foto grande */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {resto.map(a=>{
-          const et=etiqueta(a); const repro=a.estadoReproductivo?REPRO_CONFIG[a.estadoReproductivo]:null;
-          const foto=a.media?.find(m=>m.tipo==="FOTO");
-          return (
-            <div key={a.id} className="rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.03] active:scale-[0.98] transition-all shadow-xl"
-              style={{background:"rgba(5,25,12,0.75)",backdropFilter:"blur(12px)",border:"1px solid rgba(255,255,255,0.12)"}}
-              onClick={()=>router.push(`/inventario/${a.id}`)}>
-              {/* Foto grande arriba */}
-              <div className="relative w-full" style={{height:160}}>
-                {foto
-                  ? <img src={foto.url} className="w-full h-full object-cover"/>
-                  : <div className="w-full h-full flex items-center justify-center text-5xl"
-                      style={{background:"linear-gradient(135deg,rgba(45,158,63,0.2),rgba(26,107,42,0.3))"}}>
-                      {a.sexo==="HEMBRA"?"🐄":"🐂"}
+              {/* Tarjetas — movil */}
+              <div className="sm:hidden space-y-3">
+                {paginados.length === 0 ? (
+                  <div className="text-center text-white/30 py-12">Sin resultados</div>
+                ) : paginados.map(a => {
+                  const foto = a.media?.find(m => m.tipo === "FOTO")?.url;
+                  const ec = ESTADO_CONFIG[a.estado] || ESTADO_CONFIG.ACTIVO;
+                  const cc = COMERCIAL_CONFIG[a.estadoComercial] || COMERCIAL_CONFIG.NO_DISPONIBLE;
+                  return (
+                    <div key={a.id} onClick={() => setAnimalSeleccionado(a)}
+                      className="rounded-2xl p-4 flex gap-3 cursor-pointer transition-all active:scale-[0.98]"
+                      style={{ ...glass }}>
+                      <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0" style={{ background: "rgba(255,255,255,0.08)" }}>
+                        {foto ? <img src={foto} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-white/20"><IconAnimal /></div>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-white font-bold truncate">{a.nombre || a.identificador}</p>
+                          <IconChevron />
+                        </div>
+                        <p className="text-white/40 text-xs">{a.identificador} · {categoriaAnimal(a)}</p>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          <Badge text={ec.label} color={ec.color} bg={ec.bg} />
+                          <Badge text={cc.label} color={cc.color} bg={cc.bg} />
+                        </div>
+                        {a.publicacion?.precio && (
+                          <p className="text-blue-400 text-xs font-bold mt-1">
+                            {a.publicacion.moneda === "USD" ? "$" : "C$"} {Number(a.publicacion.precio).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                }
-                {/* Badge sexo */}
-                <div className="absolute top-2 left-2">
-                  <span className="text-white font-black px-2 py-0.5 rounded-full text-xs"
-                    style={{background: a.sexo==="HEMBRA"?"rgba(246,135,179,0.85)":"rgba(99,179,237,0.85)"}}>
-                    {a.sexo==="HEMBRA"?"♀":"♂"}
-                  </span>
-                </div>
-                {a.estado==="VENDIDO"&&(
-                  <div className="absolute top-2 right-2">
-                    <span className="text-white font-black px-2 py-0.5 rounded-full text-xs" style={{background:"#d69e2e"}}>💰</span>
-                  </div>
-                )}
-                {a.estado==="MUERTO"&&(
-                  <div className="absolute top-2 right-2">
-                    <span className="text-white font-black px-2 py-0.5 rounded-full text-xs" style={{background:"#742a2a"}}>💀</span>
-                  </div>
-                )}
-                {repro&&(
-                  <div className="absolute bottom-2 right-2">
-                    <span className="text-white font-black px-2 py-0.5 rounded-full text-xs" style={{background:repro.bg,color:repro.color,border:`1px solid ${repro.color}`}}>
-                      {repro.icon} {repro.label}
-                    </span>
-                  </div>
-                )}
+                  );
+                })}
               </div>
-              {/* Info abajo */}
-              <div className="p-3">
-                <p className="text-white font-black text-sm truncate">{a.nombre||a.identificador}</p>
-                <p className="text-white/40 text-xs truncate">{a.raza||"Sin raza"} · {a.identificador}</p>
-                {a.pesoActual&&<p className="text-green-400 text-xs font-bold mt-1">⚖️ {a.pesoActual} kg</p>}
-                {a.fechaNacimiento&&<p className="text-blue-300 text-xs mt-1">🎂 {calcularEdad(a.fechaNacimiento)}</p>}
-                <div className="flex gap-1.5 mt-2 flex-wrap">
-                  <button onClick={ev=>abrirEditar(a,ev)}
-                    className="flex-1 text-xs py-1.5 rounded-xl font-bold"
-                    style={{background:"rgba(49,130,206,0.25)",border:"1px solid rgba(99,179,237,0.4)",color:"#90cdf4"}}>
-                    ✏️ Editar
+
+              {/* Paginación */}
+              {totalPags > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-4">
+                  <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={paginaActual === 1}
+                    className="px-3 py-1.5 rounded-xl text-sm text-white/60 disabled:opacity-30 hover:text-white"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                    Anterior
                   </button>
-                  <button onClick={ev=>{ev.stopPropagation();router.push(`/inventario/${a.id}`);}}
-                    className="flex-1 text-xs py-1.5 rounded-xl font-bold"
-                    style={{background:"rgba(26,58,108,0.5)",border:"1px solid rgba(147,197,253,0.4)",color:"#bfdbfe"}}>
-                    📋 Informe
+                  <span className="text-white/50 text-sm">{paginaActual} / {totalPags}</span>
+                  <button onClick={() => setPagina(p => Math.min(totalPags, p + 1))} disabled={paginaActual === totalPags}
+                    className="px-3 py-1.5 rounded-xl text-sm text-white/60 disabled:opacity-30 hover:text-white"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                    Siguiente
                   </button>
-                  {a.sexo==="HEMBRA"&&a.estado==="ACTIVO"&&a.estadoReproductivo==="PREÑADA"&&(
-                    <button onClick={ev=>{ev.stopPropagation();setShowParto(a.id);}}
-                      className="w-full text-xs py-1.5 rounded-xl font-bold mt-0.5"
-                      style={{background:"rgba(229,62,62,0.3)",border:"1px solid rgba(229,62,62,0.5)",color:"#fc8181"}}>
-                      🐮 Parto
-                    </button>
-                  )}
-                  {a.estado==="MUERTO"&&(
-                    <button onClick={ev=>archivarAnimal(a.id,ev)}
-                      className="w-full text-xs py-1.5 rounded-xl font-bold mt-0.5"
-                      style={{background:"rgba(116,42,42,0.5)",border:"1px solid rgba(229,62,62,0.4)",color:"#fc8181"}}>
-                      🗑️ Quitar
-                    </button>
-                  )}
                 </div>
-              </div>
-            </div>
-          );
-        })}
-        {filtrados.length===0&&(
-          <div className="col-span-4 text-center py-20 text-white/30">
-            <p className="text-6xl mb-4">🐄</p>
-            <p className="text-lg font-bold text-white/40">Aún no hay animales registrados</p>
-            <p className="text-sm mt-1">Toca el botón verde de arriba para agregar tu primer animal</p>
-          </div>
-        )}
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Panel lateral — escritorio */}
+        <div className="hidden lg:block" style={{ width: animalSeleccionado ? 380 : 0, transition: "width 0.2s ease", overflow: "hidden" }} />
       </div>
+
+      {/* Panel lateral */}
+      {animalSeleccionado && (
+        <PanelAnimal
+          animal={animalSeleccionado}
+          onClose={() => setAnimalSeleccionado(null)}
+          onRefresh={load}
+        />
+      )}
+
+      {/* FAB movil */}
+      <button onClick={() => setShowForm(s => !s)}
+        className="sm:hidden fixed bottom-6 right-6 z-30 text-white font-black w-14 h-14 rounded-full flex items-center justify-center shadow-2xl"
+        style={{ background: showForm ? "rgba(100,100,100,0.8)" : "linear-gradient(135deg,#1a5c2a,#2d9e3f)" }}>
+        {showForm ? <IconX /> : "+"}
+      </button>
     </AppLayout>
   );
 }

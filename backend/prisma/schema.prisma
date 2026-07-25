@@ -105,6 +105,10 @@ model Animal {
   fechaNacimiento DateTime?
   pesoActual      Float?
   observacion     String?
+  estadoComercial String    @default("NO_DISPONIBLE") // NO_DISPONIBLE, EN_VENTA, RESERVADO, VENTA_EN_PROCESO, VENTA_COMPLETADA
+  potrero         String?
+  costoBase       Float?
+  origen          String    @default("FINCA") // FINCA, COMPRADO
   estado          String    @default("ACTIVO")
   // Estado reproductivo (solo hembras)
   estadoReproductivo String? // PREÑADA, PARIDA, LACTANCIA, SECA, VACIA - sync v2
@@ -122,6 +126,8 @@ model Animal {
   ventas     Venta[]
   incidentes Incidente[]
   tareas     TareaAnimal[]
+  publicacion PublicacionVenta?
+  reservas    Reserva[]
 }
 
 model Evento {
@@ -223,6 +229,13 @@ model Venta {
   telefonoComprador String?
   direccionComprador String?
   notas         String?
+  fechaSalida       DateTime?
+  pesoFinal         Float?
+  adelantoAplicado  Float?    @default(0)
+  saldoPendiente    Float?    @default(0)
+  estadoVenta       String    @default("CONFIRMADA") // PROCESO, CONFIRMADA, REVERSADA
+  reservaId         String?
+  motivoRevision    String?
   fecha         DateTime   @default(now())
   animalId      String
   animal        Animal     @relation(fields: [animalId], references: [id])
@@ -278,6 +291,46 @@ model TareaAnimal {
   tarea    Tarea  @relation(fields: [tareaId], references: [id], onDelete: Cascade)
   animalId String
   animal   Animal @relation(fields: [animalId], references: [id])
+}
+
+model PublicacionVenta {
+  id              String   @id @default(uuid())
+  animalId        String   @unique
+  animal          Animal   @relation(fields: [animalId], references: [id])
+  precio          Float
+  moneda          String   @default("NIO")
+  modalidad       String   @default("TOTAL") // TOTAL, POR_KG, POR_LIBRA
+  precioPorUnidad Float?
+  negociable      Boolean  @default(false)
+  descripcion     String?
+  publicada       Boolean  @default(true)
+  fechaPublicacion DateTime?
+  contacto        String?
+  whatsapp        String?
+  ubicacion       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Reserva {
+  id               String   @id @default(uuid())
+  animalId         String
+  animal           Animal   @relation(fields: [animalId], references: [id])
+  cliente          String
+  telefono         String?
+  identificacion   String?
+  precioAcordado   Float
+  adelanto         Float    @default(0)
+  metodoPago       String   @default("EFECTIVO")
+  fechaReserva     DateTime @default(now())
+  fechaVencimiento DateTime?
+  estado           String   @default("ACTIVA") // ACTIVA, CANCELADA, VENCIDA, COMPLETADA
+  motivoCancelacion String?
+  adelantoDevuelto Boolean  @default(false)
+  responsableId    String?
+  notas            String?
+  fincaId          String
+  createdAt        DateTime @default(now())
 }
 
 model ActividadLog {

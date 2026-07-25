@@ -16,6 +16,8 @@ const equipoRoutes = require("./routes/equipo");
 const anuncioRoutes = require("./routes/anuncios");
 const actividadRoutes = require("./routes/actividad");
 const tareasRoutes = require("./routes/tareas");
+const publicacionesRoutes = require("./routes/publicaciones");
+const reservasRoutes = require("./routes/reservas");
 
 const app = express();
 app.use(cors());
@@ -38,6 +40,8 @@ app.use("/api/ventas", ventaRoutes);
 app.use("/api/anuncios", anuncioRoutes);
 app.use("/api/actividad", actividadRoutes);
 app.use("/api/tareas", tareasRoutes);
+app.use("/api/publicaciones", publicacionesRoutes);
+app.use("/api/reservas", reservasRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);
