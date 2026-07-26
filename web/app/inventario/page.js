@@ -368,6 +368,219 @@ function ModalCompletarVenta({ animal, onClose, onSuccess }) {
   );
 }
 
+// ─── Modal Editar Animal ──────────────────────────────────────────────────────
+function ModalEditarAnimal({ animal, hembrasActivas, onClose, onSuccess }) {
+  const [form, setForm] = useState({
+    nombre:            animal.nombre            || "",
+    raza:              animal.raza              || "",
+    fierro:            animal.fierro            || "",
+    pesoActual:        animal.pesoActual        || "",
+    potrero:           animal.potrero           || "",
+    costoBase:         animal.costoBase         || "",
+    observacion:       animal.observacion       || "",
+    estadoReproductivo:animal.estadoReproductivo|| "",
+    fechaNacimiento:   animal.fechaNacimiento ? animal.fechaNacimiento.slice(0, 10) : "",
+    origen:            animal.origen            || "FINCA",
+    madreId:           animal.madreId           || "",
+  });
+  const [archivos, setArchivos] = useState([]);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await api(`/animales/${animal.id}`, {
+        method: "PATCH",
+        body: {
+          ...form,
+          pesoActual:  form.pesoActual  ? Number(form.pesoActual)  : undefined,
+          costoBase:   form.costoBase   ? Number(form.costoBase)   : undefined,
+          fechaNacimiento: form.fechaNacimiento || undefined,
+          estadoReproductivo: animal.sexo === "HEMBRA" ? form.estadoReproductivo : undefined,
+        },
+      });
+      if (archivos.length > 0) {
+        const fd = new FormData();
+        Array.from(archivos).forEach(f => fd.append("archivos", f));
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://ganaderosg-backend.up.railway.app/api"}/animales/${animal.id}/media`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          body: fd,
+        });
+      }
+      onSuccess();
+      onClose();
+    } catch (err) { setError(err.message); } finally { setLoading(false); }
+  }
+
+  const F = (label, key, type = "text", opts = {}) => (
+    <div>
+      <label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>{label}</label>
+      <input type={type} style={{ ...li, width: "100%", boxSizing: "border-box" }}
+        value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })} {...opts} />
+    </div>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: T.white, borderRadius: 20, width: "100%", maxWidth: 540, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.25)" }}>
+        <div style={{ padding: "18px 20px 14px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: T.white, zIndex: 1 }}>
+          <div>
+            <p style={{ color: T.textLight, fontSize: 11, margin: 0 }}>Editando</p>
+            <h3 style={{ color: T.text, fontWeight: 800, fontSize: 17, margin: 0 }}>{animal.nombre || animal.identificador}</h3>
+          </div>
+          <button type="button" onClick={onClose} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "4px 8px", cursor: "pointer", color: T.textSec }}><IconX /></button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ padding: 20 }}>
+          {error && <div style={{ background: "#FEE2E2", border: "1px solid #FCA5A5", borderRadius: 8, padding: "10px 14px", color: "#DC2626", fontSize: 13, marginBottom: 14 }}>{error}</div>}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+            <div>
+              <label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Arete / ID</label>
+              <input style={{ ...li, width: "100%", boxSizing: "border-box", background: T.bg, color: T.textLight }} value={animal.identificador} disabled />
+            </div>
+            {F("Nombre", "nombre")}
+            {F("Raza", "raza")}
+            {F("Fierro / marca", "fierro")}
+            {F("Peso actual (kg)", "pesoActual", "number")}
+            {F("Potrero", "potrero")}
+            {F("Costo base (C$)", "costoBase", "number")}
+            {F("Fecha de nacimiento", "fechaNacimiento", "date")}
+            <div>
+              <label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Origen</label>
+              <select style={{ ...li, width: "100%", boxSizing: "border-box" }} value={form.origen} onChange={e => setForm({ ...form, origen: e.target.value })}>
+                <option value="FINCA">Nacido en finca</option>
+                <option value="COMPRADO">Comprado</option>
+              </select>
+            </div>
+            {animal.sexo === "HEMBRA" && (
+              <div>
+                <label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Estado reproductivo</label>
+                <select style={{ ...li, width: "100%", boxSizing: "border-box" }} value={form.estadoReproductivo} onChange={e => setForm({ ...form, estadoReproductivo: e.target.value })}>
+                  <option value="">Sin registrar</option>
+                  <option value="PREÑADA">Preñada</option>
+                  <option value="PARIDA">Parida</option>
+                  <option value="LACTANCIA">Lactancia</option>
+                  <option value="SECA">Seca</option>
+                  <option value="VACIA">Vacía</option>
+                </select>
+              </div>
+            )}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Madre (si es cría)</label>
+              <select style={{ ...li, width: "100%", boxSizing: "border-box" }} value={form.madreId} onChange={e => setForm({ ...form, madreId: e.target.value })}>
+                <option value="">Sin madre registrada</option>
+                {hembrasActivas.filter(h => h.id !== animal.id).map(h => <option key={h.id} value={h.id}>{h.nombre || h.identificador}</option>)}
+              </select>
+            </div>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Observación</label>
+              <textarea style={{ ...li, width: "100%", boxSizing: "border-box", resize: "vertical" }} rows={3} value={form.observacion} onChange={e => setForm({ ...form, observacion: e.target.value })} />
+            </div>
+          </div>
+
+          <div style={{ background: T.bg, border: `1px dashed ${T.border}`, borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
+            <p style={{ color: T.textSec, fontSize: 12, marginBottom: 6, marginTop: 0 }}>📷 Agregar fotos / videos</p>
+            <input type="file" accept="image/*,video/*" multiple style={{ fontSize: 13, color: T.textSec }} onChange={e => setArchivos(e.target.files)} />
+            {archivos.length > 0 && <p style={{ color: "#16a34a", fontSize: 12, marginTop: 6, marginBottom: 0 }}>{archivos.length} archivo{archivos.length > 1 ? "s" : ""} seleccionado{archivos.length > 1 ? "s" : ""}</p>}
+          </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <button type="button" onClick={onClose} style={{ flex: 1, background: T.white, border: `1px solid ${T.border}`, color: T.textSec, borderRadius: 10, padding: "10px 0", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>
+              Cancelar
+            </button>
+            <button type="submit" disabled={loading} style={{ flex: 2, background: "#16a34a", color: "#fff", border: "none", borderRadius: 10, padding: "10px 0", fontWeight: 800, fontSize: 14, cursor: "pointer", opacity: loading ? 0.6 : 1 }}>
+              {loading ? "Guardando..." : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Modal Galería (todas las fotos y videos) ─────────────────────────────────
+function ModalGaleria({ animal, onClose }) {
+  const [idx, setIdx] = useState(0);
+  const media = animal.media || [];
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") setIdx(i => Math.min(i + 1, media.length - 1));
+      if (e.key === "ArrowLeft")  setIdx(i => Math.max(i - 1, 0));
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose, media.length]);
+
+  if (media.length === 0) {
+    return (
+      <div style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(0,0,0,0.85)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ color: "#fff", fontSize: 16, marginBottom: 16 }}>Este animal no tiene fotos ni videos aún.</p>
+        <button onClick={onClose} style={{ background: "#fff", color: "#172033", borderRadius: 10, padding: "10px 24px", fontWeight: 700, border: "none", cursor: "pointer" }}>Cerrar</button>
+      </div>
+    );
+  }
+
+  const actual = media[idx];
+  const esVideo = actual.tipo === "video" || actual.tipo === "VIDEO";
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(0,0,0,0.92)", display: "flex", flexDirection: "column" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", flexShrink: 0 }}>
+        <div>
+          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, margin: 0 }}>{animal.nombre || animal.identificador}</p>
+          <p style={{ color: "#fff", fontSize: 14, fontWeight: 700, margin: 0 }}>{idx + 1} / {media.length}</p>
+        </div>
+        <button onClick={onClose} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 10px", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+          <IconX /> Cerrar
+        </button>
+      </div>
+
+      {/* Visor principal */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+        {idx > 0 && (
+          <button onClick={() => setIdx(i => i - 1)}
+            style={{ position: "absolute", left: 16, zIndex: 2, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "50%", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 20 }}>
+            ‹
+          </button>
+        )}
+        {esVideo
+          ? <video src={actual.url} controls style={{ maxWidth: "90%", maxHeight: "100%", borderRadius: 12 }} />
+          : <img src={actual.url} alt="" style={{ maxWidth: "90%", maxHeight: "100%", objectFit: "contain", borderRadius: 12 }} />}
+        {idx < media.length - 1 && (
+          <button onClick={() => setIdx(i => i + 1)}
+            style={{ position: "absolute", right: 16, zIndex: 2, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "50%", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 20 }}>
+            ›
+          </button>
+        )}
+      </div>
+
+      {/* Miniaturas */}
+      {media.length > 1 && (
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "12px 20px 20px", flexShrink: 0 }}>
+          {media.map((m, i) => {
+            const esVid = m.tipo === "video" || m.tipo === "VIDEO";
+            return (
+              <div key={m.id || i} onClick={() => setIdx(i)}
+                style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", flexShrink: 0, cursor: "pointer", border: i === idx ? "3px solid #16a34a" : "3px solid transparent", opacity: i === idx ? 1 : 0.6, transition: "all 0.15s", background: "rgba(255,255,255,0.1)", position: "relative" }}>
+                {esVid
+                  ? <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 22 }}>▶</div>
+                  : <img src={m.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Fila de datos del panel ──────────────────────────────────────────────────
 function Row({ label, value }) {
   return (
@@ -379,19 +592,20 @@ function Row({ label, value }) {
 }
 
 // ─── Panel de detalle (columna derecha) ───────────────────────────────────────
-function PanelAnimal({ animal, onClose, onRefresh, isMobile }) {
+function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
   const [modal, setModal] = useState(null);
   const [quitandoVenta, setQuitandoVenta] = useState(false);
 
   useEffect(() => {
-    function onKey(e) { if (e.key === "Escape") onClose(); }
+    function onKey(e) { if (e.key === "Escape" && !modal) onClose(); }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, modal]);
 
   if (!animal) return null;
 
-  const foto = animal.media?.find(m => m.tipo === "FOTO" || m.tipo === "imagen")?.url;
+  const todasMedia = animal.media || [];
+  const foto = todasMedia.find(m => m.tipo === "FOTO" || m.tipo === "imagen")?.url;
   const cat = categoriaAnimal(animal);
   const ec = ESTADO_CONFIG[animal.estado] || ESTADO_CONFIG.ACTIVO;
   const cc = COMERCIAL_CONFIG[animal.estadoComercial] || COMERCIAL_CONFIG.NO_DISPONIBLE;
@@ -409,24 +623,42 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile }) {
 
   const panelContent = (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Foto */}
-      <div style={{ position: "relative", height: 200, background: T.border, borderRadius: "12px 12px 0 0", overflow: "hidden", flexShrink: 0 }}>
+      {/* Foto — toca para abrir galería */}
+      <div onClick={() => setModal("galeria")}
+        style={{ position: "relative", height: 210, background: T.border, overflow: "hidden", flexShrink: 0, cursor: "pointer" }}>
         {foto
-          ? <img src={foto} alt="animal" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: T.textLight }}><IconAnimal /></div>}
-        {/* X button */}
-        <button onClick={onClose}
-          style={{ position: "absolute", top: 10, right: 10, background: "rgba(255,255,255,0.9)", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: T.text }}>
-          <IconX />
-        </button>
+          ? <img src={foto} alt="animal" style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.2s" }}
+              onMouseEnter={e => e.target.style.transform = "scale(1.03)"}
+              onMouseLeave={e => e.target.style.transform = "scale(1)"} />
+          : <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: T.textLight, gap: 8 }}>
+              <IconAnimal />
+              <span style={{ fontSize: 12 }}>Sin fotografía</span>
+            </div>}
+        {/* Indicador de galería */}
+        {todasMedia.length > 0 && (
+          <div style={{ position: "absolute", bottom: 10, left: 10, background: "rgba(0,0,0,0.55)", borderRadius: 20, padding: "3px 10px", color: "#fff", fontSize: 11, fontWeight: 600 }}>
+            📷 {todasMedia.length} {todasMedia.length === 1 ? "archivo" : "archivos"} — toca para ver
+          </div>
+        )}
+        {/* Botones top */}
+        <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 6 }}>
+          <button type="button" onClick={e => { e.stopPropagation(); setModal("editar"); }}
+            style={{ background: "rgba(255,255,255,0.92)", border: "none", borderRadius: 8, padding: "5px 10px", cursor: "pointer", color: T.text, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+            ✏️ Editar
+          </button>
+          <button type="button" onClick={e => { e.stopPropagation(); onClose(); }}
+            style={{ background: "rgba(255,255,255,0.92)", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: T.text }}>
+            <IconX />
+          </button>
+        </div>
       </div>
 
       {/* Contenido scrollable */}
       <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
         {/* Nombre + badges */}
         <div style={{ marginBottom: 14 }}>
-          <h2 style={{ color: T.text, fontWeight: 800, fontSize: 20, marginBottom: 2 }}>{animal.nombre || animal.identificador}</h2>
-          {animal.nombre && <p style={{ color: T.textLight, fontSize: 13, marginBottom: 8 }}>{animal.identificador}</p>}
+          <h2 style={{ color: T.text, fontWeight: 800, fontSize: 20, margin: "0 0 2px" }}>{animal.nombre || animal.identificador}</h2>
+          {animal.nombre && <p style={{ color: T.textLight, fontSize: 13, margin: "0 0 8px" }}>{animal.identificador}</p>}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             <Badge text={ec.label} color={ec.color} bg={ec.bg} border={ec.border} />
             <Badge text={cc.label} color={cc.color} bg={cc.bg} border={cc.border} />
@@ -491,9 +723,11 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile }) {
       </div>
 
       {/* Modales */}
-      {modal === "venta" && <ModalPonerEnVenta animal={animal} onClose={() => setModal(null)} onSuccess={() => { onRefresh(); onClose(); }} />}
-      {modal === "reserva" && <ModalReservar animal={animal} onClose={() => setModal(null)} onSuccess={() => { onRefresh(); onClose(); }} />}
-      {modal === "completar" && <ModalCompletarVenta animal={animal} onClose={() => setModal(null)} onSuccess={() => { onRefresh(); onClose(); }} />}
+      {modal === "venta"    && <ModalPonerEnVenta    animal={animal} onClose={() => setModal(null)} onSuccess={() => { onRefresh(); onClose(); }} />}
+      {modal === "reserva"  && <ModalReservar         animal={animal} onClose={() => setModal(null)} onSuccess={() => { onRefresh(); onClose(); }} />}
+      {modal === "completar"&& <ModalCompletarVenta   animal={animal} onClose={() => setModal(null)} onSuccess={() => { onRefresh(); onClose(); }} />}
+      {modal === "editar"   && <ModalEditarAnimal      animal={animal} hembrasActivas={hembrasActivas} onClose={() => setModal(null)} onSuccess={() => { onRefresh(); setModal(null); }} />}
+      {modal === "galeria"  && <ModalGaleria           animal={animal} onClose={() => setModal(null)} />}
     </div>
   );
 
@@ -912,6 +1146,7 @@ export default function InventarioPage() {
             onClose={() => setAnimalSeleccionado(null)}
             onRefresh={load}
             isMobile={false}
+            hembrasActivas={hembrasActivas}
           />
         )}
 
@@ -922,6 +1157,7 @@ export default function InventarioPage() {
             onClose={() => setAnimalSeleccionado(null)}
             onRefresh={load}
             isMobile={true}
+            hembrasActivas={hembrasActivas}
           />
         )}
 
