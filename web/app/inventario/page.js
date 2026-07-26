@@ -508,9 +508,22 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile }) {
     );
   }
 
-  // Desktop: columna inline
+  // Desktop: panel fijo a la derecha de la ventana visible
   return (
-    <div style={{ width: 420, flexShrink: 0, background: T.white, border: `1px solid ${T.border}`, borderRadius: 12, overflowY: "auto", maxHeight: "calc(100vh - 80px)", boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
+    <div style={{
+      position: "fixed",
+      right: 0,
+      top: 60,           // debajo del header sticky (~60px)
+      bottom: 0,
+      width: 440,
+      zIndex: 9,
+      background: T.white,
+      borderLeft: `1px solid ${T.border}`,
+      boxShadow: "-4px 0 20px rgba(0,0,0,0.08)",
+      display: "flex",
+      flexDirection: "column",
+      overflowY: "auto",
+    }}>
       {panelContent}
     </div>
   );
@@ -742,18 +755,16 @@ export default function InventarioPage() {
               {potreros.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           )}
-          <select style={inputStyle} value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPagina(1); }}>
-            <option value={10}>10 por página</option>
-            <option value={25}>25 por página</option>
-            <option value={50}>50 por página</option>
-            <option value={0}>Todos</option>
+          <select style={inputStyle} value={String(perPage)} onChange={e => { setPerPage(Number(e.target.value)); setPagina(1); }}>
+            <option value="0">Mostrar todos</option>
+            <option value="10">10 por página</option>
+            <option value="25">25 por página</option>
+            <option value="50">50 por página</option>
           </select>
         </div>
 
-        {/* Layout 2 columnas */}
-        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
-
-          {/* Columna izquierda: tabla + tarjetas */}
+        {/* Contenido: se reduce cuando el panel está abierto */}
+        <div style={{ marginRight: panelAbierto ? 448 : 0, transition: "margin-right 0.2s ease" }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             {loading ? (
               <div style={{ textAlign: "center", color: T.textLight, padding: "48px 0", fontSize: 14 }}>Cargando inventario...</div>
@@ -796,10 +807,15 @@ export default function InventarioPage() {
                               }}
                               onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = T.rowHover; }}
                               onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = "transparent"; }}>
-                              <td style={{ padding: "10px 12px" }}>
-                                <div style={{ width: 36, height: 36, borderRadius: 8, overflow: "hidden", background: T.border }}>
-                                  {foto ? <img src={foto} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
-                                    : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: T.textLight }}><IconAnimal /></div>}
+                              <td style={{ padding: "8px 12px" }}>
+                                <div style={{ width: 64, height: 64, borderRadius: 10, overflow: "hidden", background: T.border, flexShrink: 0 }}>
+                                  {foto
+                                    ? <img src={foto} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} alt="animal" onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }} />
+                                    : null}
+                                  <div style={{ width: "100%", height: "100%", display: foto ? "none" : "flex", alignItems: "center", justifyContent: "center", color: T.textLight, flexDirection: "column", gap: 2 }}>
+                                    <IconAnimal />
+                                    <span style={{ fontSize: 9, color: T.textLight }}>Sin foto</span>
+                                  </div>
                                 </div>
                               </td>
                               <td style={{ padding: "10px 12px", maxWidth: 160 }}>
@@ -887,17 +903,17 @@ export default function InventarioPage() {
               </>
             )}
           </div>
-
-          {/* Panel detalle — columna derecha (desktop) */}
-          {panelAbierto && (
-            <PanelAnimal
-              animal={animalSeleccionado}
-              onClose={() => setAnimalSeleccionado(null)}
-              onRefresh={load}
-              isMobile={false}
-            />
-          )}
         </div>
+
+        {/* Panel detalle — fijo a la derecha (desktop) */}
+        {panelAbierto && (
+          <PanelAnimal
+            animal={animalSeleccionado}
+            onClose={() => setAnimalSeleccionado(null)}
+            onRefresh={load}
+            isMobile={false}
+          />
+        )}
 
         {/* Panel — overlay móvil */}
         {animalSeleccionado && isMobile && (
