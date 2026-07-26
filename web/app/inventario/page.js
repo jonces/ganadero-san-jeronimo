@@ -79,7 +79,7 @@ const TABS = [
   { key: "BAJA", label: "Bajas" },
 ];
 
-const PER_PAGE = 10;
+const OPCIONES_PAGINA = [25, 50, 100];
 
 // ─── Modal Poner en venta ─────────────────────────────────────────────────────
 function ModalPonerEnVenta({ animal, onClose, onSuccess }) {
@@ -491,6 +491,7 @@ export default function InventarioPage() {
   const [filtroPotrero, setFiltroPotrero] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [pagina, setPagina] = useState(1);
+  const [perPage, setPerPage] = useState(25);
   const [animalSeleccionado, setAnimalSeleccionado] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -555,9 +556,9 @@ export default function InventarioPage() {
     .filter(a => !filtroPotrero || a.potrero === filtroPotrero)
     .filter(a => !filtroCategoria || categoriaAnimal(a) === filtroCategoria);
 
-  const totalPags = Math.max(1, Math.ceil(filtrados.length / PER_PAGE));
+  const totalPags = Math.max(1, Math.ceil(filtrados.length / perPage));
   const paginaActual = Math.min(pagina, totalPags);
-  const paginados = filtrados.slice((paginaActual - 1) * PER_PAGE, paginaActual * PER_PAGE);
+  const paginados = perPage === 0 ? filtrados : filtrados.slice((paginaActual - 1) * perPage, paginaActual * perPage);
 
   function conteoTab(k) {
     if (k === "TODOS") return animales.filter(a => a.estado !== "ELIMINADO").length;
@@ -677,7 +678,7 @@ export default function InventarioPage() {
           </div>
 
           {/* Buscador y filtros */}
-          <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          <div className="flex flex-col sm:flex-row gap-2 mb-4" style={{ alignItems: "flex-start" }}>
             <div className="relative flex-1">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40"><IconSearch /></span>
               <input className="w-full rounded-xl pl-9 pr-4 py-2 text-sm" style={gi}
@@ -694,6 +695,12 @@ export default function InventarioPage() {
                 {potreros.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             )}
+            <select className="rounded-xl px-3 py-2 text-sm" style={gi} value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPagina(1); }}>
+              <option value={25}>25 por página</option>
+              <option value={50}>50 por página</option>
+              <option value={100}>100 por página</option>
+              <option value={0}>Ver todos</option>
+            </select>
           </div>
 
           {/* Tabla — escritorio */}
@@ -703,55 +710,54 @@ export default function InventarioPage() {
             <>
               <div className="hidden sm:block rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.1)" }}>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
                     <thead>
                       <tr style={{ background: "rgba(255,255,255,0.05)" }}>
-                        <th className="text-left text-white/50 font-semibold px-4 py-3 w-12"></th>
-                        <th className="text-left text-white/50 font-semibold px-4 py-3">Animal</th>
-                        <th className="text-left text-white/50 font-semibold px-4 py-3">Arete</th>
-                        <th className="text-left text-white/50 font-semibold px-4 py-3">Categoria</th>
-                        <th className="text-left text-white/50 font-semibold px-4 py-3">Peso</th>
-                        <th className="text-left text-white/50 font-semibold px-4 py-3">Potrero</th>
-                        <th className="text-left text-white/50 font-semibold px-4 py-3">Estado</th>
-                        <th className="text-left text-white/50 font-semibold px-4 py-3">Comercial</th>
-                        <th className="text-left text-white/50 font-semibold px-4 py-3">Precio</th>
-                        <th className="text-left text-white/50 font-semibold px-4 py-3">Acc.</th>
+                        <th style={{ width: 44, padding: "10px 12px" }}></th>
+                        <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Animal</th>
+                        <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Arete</th>
+                        <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Categoría</th>
+                        <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Peso</th>
+                        {!animalSeleccionado && <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Potrero</th>}
+                        <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Estado</th>
+                        {!animalSeleccionado && <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Comercial</th>}
+                        {!animalSeleccionado && <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Precio</th>}
+                        <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px" }}></th>
                       </tr>
                     </thead>
                     <tbody>
                       {paginados.length === 0 ? (
-                        <tr><td colSpan={10} className="text-center text-white/30 py-12">Sin resultados</td></tr>
+                        <tr><td colSpan={9} style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", padding: "48px 0" }}>Sin resultados</td></tr>
                       ) : paginados.map(a => {
-                        const foto = a.media?.find(m => m.tipo === "FOTO")?.url;
+                        const foto = a.media?.find(m => m.tipo === "FOTO" || m.tipo === "imagen")?.url;
                         const ec = ESTADO_CONFIG[a.estado] || ESTADO_CONFIG.ACTIVO;
                         const cc = COMERCIAL_CONFIG[a.estadoComercial] || COMERCIAL_CONFIG.NO_DISPONIBLE;
                         const isSelected = animalSeleccionado?.id === a.id;
                         return (
                           <tr key={a.id}
                             onClick={() => setAnimalSeleccionado(isSelected ? null : a)}
-                            className="cursor-pointer transition-all"
-                            style={{ background: isSelected ? "rgba(45,158,63,0.15)" : "transparent", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                            <td className="px-4 py-3">
-                              <div className="w-9 h-9 rounded-lg overflow-hidden flex-shrink-0" style={{ background: "rgba(255,255,255,0.08)" }}>
-                                {foto ? <img src={foto} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-white/20 text-xs"><IconAnimal /></div>}
+                            style={{ background: isSelected ? "rgba(45,158,63,0.15)" : "transparent", borderTop: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" }}>
+                            <td style={{ padding: "10px 12px" }}>
+                              <div style={{ width: 36, height: 36, borderRadius: 8, overflow: "hidden", background: "rgba(255,255,255,0.08)", flexShrink: 0 }}>
+                                {foto ? <img src={foto} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.2)" }}><IconAnimal /></div>}
                               </div>
                             </td>
-                            <td className="px-4 py-3">
-                              <p className="text-white font-semibold">{a.nombre || "—"}</p>
-                              <p className="text-white/40 text-xs">{a.raza || "Sin raza"}</p>
+                            <td style={{ padding: "10px 12px", maxWidth: 160 }}>
+                              <p style={{ color: "#fff", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.nombre || <span style={{ color: "rgba(255,255,255,0.35)" }}>Sin nombre</span>}</p>
+                              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 1 }}>{a.raza || "Sin raza"}</p>
                             </td>
-                            <td className="px-4 py-3 text-white/80 font-mono text-xs">{a.identificador}</td>
-                            <td className="px-4 py-3 text-white/70">{categoriaAnimal(a)}</td>
-                            <td className="px-4 py-3 text-white/70">{a.pesoActual ? `${a.pesoActual} kg` : "—"}</td>
-                            <td className="px-4 py-3 text-white/70">{a.potrero || "—"}</td>
-                            <td className="px-4 py-3"><Badge text={ec.label} color={ec.color} bg={ec.bg} /></td>
-                            <td className="px-4 py-3"><Badge text={cc.label} color={cc.color} bg={cc.bg} /></td>
-                            <td className="px-4 py-3 text-white/70 text-xs">
+                            <td style={{ padding: "10px 12px", color: "rgba(255,255,255,0.85)", fontFamily: "monospace", whiteSpace: "nowrap" }}>{a.identificador}</td>
+                            <td style={{ padding: "10px 12px", color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>{categoriaAnimal(a)}</td>
+                            <td style={{ padding: "10px 12px", color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>{a.pesoActual ? `${a.pesoActual} kg` : "—"}</td>
+                            {!animalSeleccionado && <td style={{ padding: "10px 12px", color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>{a.potrero || "—"}</td>}
+                            <td style={{ padding: "10px 12px" }}><Badge text={ec.label} color={ec.color} bg={ec.bg} /></td>
+                            {!animalSeleccionado && <td style={{ padding: "10px 12px" }}><Badge text={cc.label} color={cc.color} bg={cc.bg} /></td>}
+                            {!animalSeleccionado && <td style={{ padding: "10px 12px", color: "rgba(255,255,255,0.7)", fontSize: 12, whiteSpace: "nowrap" }}>
                               {a.publicacion?.precio ? `${a.publicacion.moneda === "USD" ? "$" : "C$"} ${Number(a.publicacion.precio).toLocaleString()}` : "—"}
-                            </td>
-                            <td className="px-4 py-3">
+                            </td>}
+                            <td style={{ padding: "10px 12px" }}>
                               <button onClick={e => { e.stopPropagation(); setAnimalSeleccionado(isSelected ? null : a); }}
-                                className="text-white/40 hover:text-white p-1 transition-all">
+                                style={{ color: "rgba(255,255,255,0.4)", padding: 4, background: "none", border: "none", cursor: "pointer" }}>
                                 <IconChevron />
                               </button>
                             </td>
@@ -799,22 +805,27 @@ export default function InventarioPage() {
                 })}
               </div>
 
-              {/* Paginación */}
-              {totalPags > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-4">
-                  <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={paginaActual === 1}
-                    className="px-3 py-1.5 rounded-xl text-sm text-white/60 disabled:opacity-30 hover:text-white"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                    Anterior
-                  </button>
-                  <span className="text-white/50 text-sm">{paginaActual} / {totalPags}</span>
-                  <button onClick={() => setPagina(p => Math.min(totalPags, p + 1))} disabled={paginaActual === totalPags}
-                    className="px-3 py-1.5 rounded-xl text-sm text-white/60 disabled:opacity-30 hover:text-white"
-                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                    Siguiente
-                  </button>
-                </div>
-              )}
+              {/* Conteo y paginación */}
+              <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
+                <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>
+                  {filtrados.length === 0 ? "Sin resultados" : perPage === 0
+                    ? `${filtrados.length} animales`
+                    : `${Math.min((paginaActual - 1) * perPage + 1, filtrados.length)}–${Math.min(paginaActual * perPage, filtrados.length)} de ${filtrados.length}`}
+                </span>
+                {perPage > 0 && totalPags > 1 && (
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={paginaActual === 1}
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "6px 14px", color: "rgba(255,255,255,0.6)", fontSize: 13, cursor: "pointer", opacity: paginaActual === 1 ? 0.3 : 1 }}>
+                      Anterior
+                    </button>
+                    <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>{paginaActual} / {totalPags}</span>
+                    <button onClick={() => setPagina(p => Math.min(totalPags, p + 1))} disabled={paginaActual === totalPags}
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "6px 14px", color: "rgba(255,255,255,0.6)", fontSize: 13, cursor: "pointer", opacity: paginaActual === totalPags ? 0.3 : 1 }}>
+                      Siguiente
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
