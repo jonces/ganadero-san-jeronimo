@@ -46,8 +46,8 @@ const COMERCIAL_CONFIG = {
   VENTA_COMPLETADA: { label: "Venta completada",   color: "#6b7280", bg: "rgba(107,114,128,0.15)" },
 };
 
-const glass = { background: "rgba(5,25,12,0.65)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.12)" };
-const gi = { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", color: "#fff" };
+const glass = { background: "rgba(5,25,12,0.85)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.18)" };
+const gi = { background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff" };
 
 function Badge({ text, color, bg }) {
   return (
@@ -474,8 +474,8 @@ function PanelAnimal({ animal, onClose, onRefresh }) {
 function Row({ label, value }) {
   return (
     <div className="flex justify-between items-start gap-2">
-      <span className="text-white/40 text-xs flex-shrink-0">{label}</span>
-      <span className="text-white text-xs text-right font-medium">{value}</span>
+      <span style={{ color: "#9ca3af", fontSize: 12, flexShrink: 0 }}>{label}</span>
+      <span style={{ color: "#ffffff", fontSize: 13, textAlign: "right", fontWeight: 600 }}>{value}</span>
     </div>
   );
 }
@@ -714,15 +714,15 @@ export default function InventarioPage() {
                     <thead>
                       <tr style={{ background: "rgba(255,255,255,0.05)" }}>
                         <th style={{ width: 44, padding: "10px 12px" }}></th>
-                        <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Animal</th>
-                        <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Arete</th>
-                        <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Categoría</th>
-                        <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Peso</th>
-                        {!animalSeleccionado && <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Potrero</th>}
-                        <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Estado</th>
-                        {!animalSeleccionado && <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Comercial</th>}
-                        {!animalSeleccionado && <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px", whiteSpace: "nowrap" }}>Precio</th>}
-                        <th style={{ textAlign: "left", color: "rgba(255,255,255,0.5)", fontWeight: 600, padding: "10px 12px" }}></th>
+                        <th style={{ textAlign: "left", color: "#d1d5db", fontWeight: 700, padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Animal</th>
+                        <th style={{ textAlign: "left", color: "#d1d5db", fontWeight: 700, padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Arete</th>
+                        <th style={{ textAlign: "left", color: "#d1d5db", fontWeight: 700, padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Categoría</th>
+                        <th style={{ textAlign: "left", color: "#d1d5db", fontWeight: 700, padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Peso</th>
+                        {!animalSeleccionado && <th style={{ textAlign: "left", color: "#d1d5db", fontWeight: 700, padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Potrero</th>}
+                        <th style={{ textAlign: "left", color: "#d1d5db", fontWeight: 700, padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Estado</th>
+                        {!animalSeleccionado && <th style={{ textAlign: "left", color: "#d1d5db", fontWeight: 700, padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Comercial</th>}
+                        {!animalSeleccionado && <th style={{ textAlign: "left", color: "#d1d5db", fontWeight: 700, padding: "10px 12px", whiteSpace: "nowrap", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em" }}>Precio</th>}
+                        <th style={{ textAlign: "left", color: "#d1d5db", fontWeight: 700, padding: "10px 12px" }}></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -736,23 +736,23 @@ export default function InventarioPage() {
                         return (
                           <tr key={a.id}
                             onClick={() => setAnimalSeleccionado(isSelected ? null : a)}
-                            style={{ background: isSelected ? "rgba(45,158,63,0.15)" : "transparent", borderTop: "1px solid rgba(255,255,255,0.05)", cursor: "pointer" }}>
+                            style={{ background: isSelected ? "rgba(45,158,63,0.2)" : "transparent", borderTop: "1px solid rgba(255,255,255,0.08)", cursor: "pointer" }}>
                             <td style={{ padding: "10px 12px" }}>
-                              <div style={{ width: 36, height: 36, borderRadius: 8, overflow: "hidden", background: "rgba(255,255,255,0.08)", flexShrink: 0 }}>
-                                {foto ? <img src={foto} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.2)" }}><IconAnimal /></div>}
+                              <div style={{ width: 36, height: 36, borderRadius: 8, overflow: "hidden", background: "rgba(255,255,255,0.12)", flexShrink: 0 }}>
+                                {foto ? <img src={foto} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.5)" }}><IconAnimal /></div>}
                               </div>
                             </td>
                             <td style={{ padding: "10px 12px", maxWidth: 160 }}>
-                              <p style={{ color: "#fff", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.nombre || <span style={{ color: "rgba(255,255,255,0.35)" }}>Sin nombre</span>}</p>
-                              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, marginTop: 1 }}>{a.raza || "Sin raza"}</p>
+                              <p style={{ color: "#ffffff", fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.nombre || <span style={{ color: "rgba(255,255,255,0.5)" }}>Sin nombre</span>}</p>
+                              <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 11, marginTop: 1 }}>{a.raza || "Sin raza"}</p>
                             </td>
-                            <td style={{ padding: "10px 12px", color: "rgba(255,255,255,0.85)", fontFamily: "monospace", whiteSpace: "nowrap" }}>{a.identificador}</td>
-                            <td style={{ padding: "10px 12px", color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>{categoriaAnimal(a)}</td>
-                            <td style={{ padding: "10px 12px", color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>{a.pesoActual ? `${a.pesoActual} kg` : "—"}</td>
-                            {!animalSeleccionado && <td style={{ padding: "10px 12px", color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>{a.potrero || "—"}</td>}
+                            <td style={{ padding: "10px 12px", color: "#ffffff", fontFamily: "monospace", whiteSpace: "nowrap", fontWeight: 600 }}>{a.identificador}</td>
+                            <td style={{ padding: "10px 12px", color: "#e5e7eb", whiteSpace: "nowrap" }}>{categoriaAnimal(a)}</td>
+                            <td style={{ padding: "10px 12px", color: "#e5e7eb", whiteSpace: "nowrap" }}>{a.pesoActual ? `${a.pesoActual} kg` : "—"}</td>
+                            {!animalSeleccionado && <td style={{ padding: "10px 12px", color: "#e5e7eb", whiteSpace: "nowrap" }}>{a.potrero || "—"}</td>}
                             <td style={{ padding: "10px 12px" }}><Badge text={ec.label} color={ec.color} bg={ec.bg} /></td>
                             {!animalSeleccionado && <td style={{ padding: "10px 12px" }}><Badge text={cc.label} color={cc.color} bg={cc.bg} /></td>}
-                            {!animalSeleccionado && <td style={{ padding: "10px 12px", color: "rgba(255,255,255,0.7)", fontSize: 12, whiteSpace: "nowrap" }}>
+                            {!animalSeleccionado && <td style={{ padding: "10px 12px", color: "#e5e7eb", fontSize: 12, whiteSpace: "nowrap", fontWeight: 600 }}>
                               {a.publicacion?.precio ? `${a.publicacion.moneda === "USD" ? "$" : "C$"} ${Number(a.publicacion.precio).toLocaleString()}` : "—"}
                             </td>}
                             <td style={{ padding: "10px 12px" }}>
