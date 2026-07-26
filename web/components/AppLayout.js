@@ -180,7 +180,7 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
           {navItems.map((item) => {
-            const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href.split("?")[0]));
+            const active = pathname === item.href || (item.href !== "/dashboard" && !item.href.includes("?") && pathname?.startsWith(item.href));
             const notifBadge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
             const badgeCount = item.notifActividad ? nuevasActividades : nuevos;
             return (
@@ -251,7 +251,7 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-3 shadow-lg"
           style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}>🐂</div>
         {navItems.map((item) => {
-          const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href.split("?")[0]));
+          const active = pathname === item.href || (item.href !== "/dashboard" && !item.href.includes("?") && pathname?.startsWith(item.href));
           const notifBadge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
           const badgeCount = item.notifActividad ? nuevasActividades : nuevos;
           return (
