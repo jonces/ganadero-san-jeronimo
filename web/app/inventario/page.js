@@ -602,6 +602,10 @@ function Row({ label, value }) {
 function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
   const [modal, setModal] = useState(null);
   const [quitandoVenta, setQuitandoVenta] = useState(false);
+  const [fotoIdx, setFotoIdx] = useState(0);
+
+  // Resetear índice cuando cambia el animal
+  useEffect(() => { setFotoIdx(0); }, [animal?.id]);
 
   useEffect(() => {
     function onKey(e) { if (e.key === "Escape" && !modal) onClose(); }
@@ -612,7 +616,8 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
   if (!animal) return null;
 
   const todasMedia = animal.media || [];
-  const foto = todasMedia.find(m => m.tipo === "FOTO" || m.tipo === "imagen")?.url;
+  const mediaActual = todasMedia[fotoIdx];
+  const esVideoActual = mediaActual && (mediaActual.tipo === "video" || mediaActual.tipo === "VIDEO");
   const cat = categoriaAnimal(animal);
   const ec = ESTADO_CONFIG[animal.estado] || ESTADO_CONFIG.ACTIVO;
   const cc = COMERCIAL_CONFIG[animal.estadoComercial] || COMERCIAL_CONFIG.NO_DISPONIBLE;
@@ -630,23 +635,50 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
 
   const panelContent = (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Foto — toca para abrir galería */}
-      <div onClick={() => setModal("galeria")}
-        style={{ position: "relative", height: 210, background: T.border, overflow: "hidden", flexShrink: 0, cursor: "pointer" }}>
-        {foto
-          ? <img src={foto} alt="animal" style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.2s" }}
-              onMouseEnter={e => e.target.style.transform = "scale(1.03)"}
-              onMouseLeave={e => e.target.style.transform = "scale(1)"} />
-          : <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: T.textLight, gap: 8 }}>
-              <IconAnimal />
-              <span style={{ fontSize: 12 }}>Sin fotografía</span>
-            </div>}
-        {/* Indicador de galería */}
-        {todasMedia.length > 0 && (
+      {/* Foto con flechas de navegación */}
+      <div style={{ position: "relative", height: 210, background: T.border, overflow: "hidden", flexShrink: 0 }}>
+
+        {/* Imagen o video actual */}
+        {todasMedia.length === 0
+          ? <div onClick={() => setModal("galeria")} style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: T.textLight, gap: 8, cursor: "pointer" }}>
+              <IconAnimal /><span style={{ fontSize: 12 }}>Sin fotografía</span>
+            </div>
+          : esVideoActual
+            ? <video src={mediaActual.url} onClick={() => setModal("galeria")} style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer" }} />
+            : <img src={mediaActual.url} alt="animal" onClick={() => setModal("galeria")}
+                style={{ width: "100%", height: "100%", objectFit: "cover", cursor: "pointer", transition: "transform 0.2s" }}
+                onMouseEnter={e => e.target.style.transform = "scale(1.03)"}
+                onMouseLeave={e => e.target.style.transform = "scale(1)"} />
+        }
+
+        {/* Flecha izquierda */}
+        {fotoIdx > 0 && (
+          <button type="button" onClick={e => { e.stopPropagation(); setFotoIdx(i => i - 1); }}
+            style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 20, zIndex: 2 }}>
+            ‹
+          </button>
+        )}
+
+        {/* Flecha derecha */}
+        {fotoIdx < todasMedia.length - 1 && (
+          <button type="button" onClick={e => { e.stopPropagation(); setFotoIdx(i => i + 1); }}
+            style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.45)", border: "none", borderRadius: "50%", width: 34, height: 34, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 20, zIndex: 2 }}>
+            ›
+          </button>
+        )}
+
+        {/* Contador de fotos */}
+        {todasMedia.length > 1 && (
           <div style={{ position: "absolute", bottom: 10, left: 10, background: "rgba(0,0,0,0.55)", borderRadius: 20, padding: "3px 10px", color: "#fff", fontSize: 11, fontWeight: 600 }}>
-            📷 {todasMedia.length} {todasMedia.length === 1 ? "archivo" : "archivos"} — toca para ver
+            📷 {fotoIdx + 1} / {todasMedia.length}
           </div>
         )}
+        {todasMedia.length === 1 && (
+          <div style={{ position: "absolute", bottom: 10, left: 10, background: "rgba(0,0,0,0.55)", borderRadius: 20, padding: "3px 10px", color: "#fff", fontSize: 11, fontWeight: 600 }}>
+            📷 toca para ver
+          </div>
+        )}
+
         {/* Botones top */}
         <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 6 }}>
           <button type="button" onClick={e => { e.stopPropagation(); setModal("editar"); }}
