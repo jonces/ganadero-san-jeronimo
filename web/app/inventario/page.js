@@ -502,7 +502,7 @@ function ModalEditarAnimal({ animal, hembrasActivas, onClose, onSuccess }) {
   );
 }
 
-// ─── Modal Galería (todas las fotos y videos) ─────────────────────────────────
+// ─── Modal Galería ────────────────────────────────────────────────────────────
 function ModalGaleria({ animal, onClose }) {
   const [idx, setIdx] = useState(0);
   const media = animal.media || [];
@@ -519,56 +519,63 @@ function ModalGaleria({ animal, onClose }) {
 
   if (media.length === 0) {
     return (
-      <div style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(0,0,0,0.85)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <p style={{ color: "#fff", fontSize: 16, marginBottom: 16 }}>Este animal no tiene fotos ni videos aún.</p>
+      <div style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(0,0,0,0.9)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+        <p style={{ color: "#fff", fontSize: 15 }}>Este animal no tiene fotos ni videos aún.</p>
         <button onClick={onClose} style={{ background: "#fff", color: "#172033", borderRadius: 10, padding: "10px 24px", fontWeight: 700, border: "none", cursor: "pointer" }}>Cerrar</button>
       </div>
     );
   }
 
-  const actual = media[idx];
+  const actual  = media[idx];
   const esVideo = actual.tipo === "video" || actual.tipo === "VIDEO";
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 70, background: "rgba(0,0,0,0.92)", display: "flex", flexDirection: "column" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", flexShrink: 0 }}>
-        <div>
-          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, margin: 0 }}>{animal.nombre || animal.identificador}</p>
-          <p style={{ color: "#fff", fontSize: 14, fontWeight: 700, margin: 0 }}>{idx + 1} / {media.length}</p>
-        </div>
-        <button onClick={onClose} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 10px", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-          <IconX /> Cerrar
+
+      {/* Botón regresar + contador */}
+      <div style={{ position: "absolute", top: 16, left: 16, zIndex: 2, display: "flex", alignItems: "center", gap: 10 }}>
+        <button onClick={onClose}
+          style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 8, padding: "7px 14px", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          ← Regresar
         </button>
+        {media.length > 1 && (
+          <span style={{ background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 12, padding: "4px 10px", borderRadius: 20, fontWeight: 600 }}>
+            {idx + 1} / {media.length}
+          </span>
+        )}
       </div>
 
-      {/* Visor principal */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+      {/* Foto / video centrado */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+        {/* Flecha izquierda */}
         {idx > 0 && (
           <button onClick={() => setIdx(i => i - 1)}
-            style={{ position: "absolute", left: 16, zIndex: 2, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "50%", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 20 }}>
+            style={{ position: "absolute", left: 20, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "50%", width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 26, zIndex: 2 }}>
             ‹
           </button>
         )}
+
         {esVideo
-          ? <video src={actual.url} controls style={{ maxWidth: "90%", maxHeight: "100%", borderRadius: 12 }} />
-          : <img src={actual.url} alt="" style={{ maxWidth: "90%", maxHeight: "100%", objectFit: "contain", borderRadius: 12 }} />}
+          ? <video src={actual.url} controls style={{ maxWidth: "80%", maxHeight: "85vh", borderRadius: 12 }} />
+          : <img src={actual.url} alt="" style={{ maxWidth: "80%", maxHeight: "85vh", objectFit: "contain", borderRadius: 12 }} />}
+
+        {/* Flecha derecha */}
         {idx < media.length - 1 && (
           <button onClick={() => setIdx(i => i + 1)}
-            style={{ position: "absolute", right: 16, zIndex: 2, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: "50%", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 20 }}>
+            style={{ position: "absolute", right: 20, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: "50%", width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#fff", fontSize: 26, zIndex: 2 }}>
             ›
           </button>
         )}
       </div>
 
-      {/* Miniaturas */}
+      {/* Miniaturas en la parte inferior */}
       {media.length > 1 && (
-        <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "12px 20px 20px", flexShrink: 0 }}>
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "12px 20px 20px", flexShrink: 0, justifyContent: "center" }}>
           {media.map((m, i) => {
             const esVid = m.tipo === "video" || m.tipo === "VIDEO";
             return (
               <div key={m.id || i} onClick={() => setIdx(i)}
-                style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", flexShrink: 0, cursor: "pointer", border: i === idx ? "3px solid #16a34a" : "3px solid transparent", opacity: i === idx ? 1 : 0.6, transition: "all 0.15s", background: "rgba(255,255,255,0.1)", position: "relative" }}>
+                style={{ width: 64, height: 64, borderRadius: 8, overflow: "hidden", flexShrink: 0, cursor: "pointer", border: i === idx ? "3px solid #16a34a" : "3px solid transparent", opacity: i === idx ? 1 : 0.5, transition: "all 0.15s", background: "rgba(255,255,255,0.1)" }}>
                 {esVid
                   ? <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 22 }}>▶</div>
                   : <img src={m.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />}
