@@ -449,7 +449,7 @@ function ModalEditarAnimal({ animal, hembrasActivas, onClose, onSuccess }) {
             {F("Fierro / marca", "fierro")}
             {F("Peso actual (kg)", "pesoActual", "number")}
             {F("Potrero", "potrero")}
-            {F("Costo de compra (C$)", "costoCompra", "number")}
+            {!animal.madreId && F("Costo de compra (C$)", "costoCompra", "number")}
             {F("Precio de venta (C$)", "precioVenta", "number")}
             {F("Fecha de nacimiento", "fechaNacimiento", "date")}
             <div>
@@ -718,7 +718,7 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
           <Row label="Peso" value={animal.pesoActual ? `${animal.pesoActual} kg` : "—"} />
           <Row label="Potrero" value={animal.potrero || "—"} />
           <Row label="Fierro" value={animal.fierro || "—"} />
-          {animal.costoCompra && <Row label="Costo de compra" value={`C$ ${Number(animal.costoCompra).toLocaleString("es-NI")}`} />}
+          {!animal.madreId && animal.costoCompra && <Row label="Costo de compra" value={`C$ ${Number(animal.costoCompra).toLocaleString("es-NI")}`} />}
           {animal.precioVenta && <Row label="Precio de venta" value={`C$ ${Number(animal.precioVenta).toLocaleString("es-NI")}`} />}
         </div>
 
@@ -979,7 +979,7 @@ export default function InventarioPage() {
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Fierro</label><input style={{ ...li, width: "100%" }} value={form.fierro} onChange={e => setForm({ ...form, fierro: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Potrero</label><input style={{ ...li, width: "100%" }} placeholder="Ej: Potrero Norte" value={form.potrero} onChange={e => setForm({ ...form, potrero: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Peso actual (kg)</label><input type="number" style={{ ...li, width: "100%" }} value={form.pesoActual} onChange={e => setForm({ ...form, pesoActual: e.target.value })} /></div>
-              <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Costo de compra (C$)</label><input type="number" style={{ ...li, width: "100%" }} value={form.costoCompra} onChange={e => setForm({ ...form, costoCompra: e.target.value })} /></div>
+              {(form.origen === "COMPRADO" && !form.madreId) && <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Costo de compra (C$)</label><input type="number" style={{ ...li, width: "100%" }} value={form.costoCompra} onChange={e => setForm({ ...form, costoCompra: e.target.value })} /></div>}
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Precio de venta (C$)</label><input type="number" style={{ ...li, width: "100%" }} value={form.precioVenta} onChange={e => setForm({ ...form, precioVenta: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Fecha nacimiento</label><input type="date" style={{ ...li, width: "100%" }} value={form.fechaNacimiento} onChange={e => setForm({ ...form, fechaNacimiento: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Origen</label><select style={{ ...li, width: "100%" }} value={form.origen} onChange={e => setForm({ ...form, origen: e.target.value })}><option value="FINCA">Nacido en finca</option><option value="COMPRADO">Comprado</option></select></div>
