@@ -19,18 +19,23 @@ const C = {
 };
 
 const NAV_ITEMS_ADMIN = [
-  { icon: "⊞",  label: "Dashboard",    href: "/dashboard" },
-  { icon: "🐄", label: "Animales",     href: "/inventario" },
-  { icon: "💰", label: "Ventas",       href: "/ventas", badge: "Nuevo" },
-  { icon: "💸", label: "Gastos",       href: "/gastos" },
-  { icon: "🤰", label: "Reproducción", href: "/inventario?filtro=PREÑADA" },
-  { icon: "📋", label: "Eventos",      href: "/eventos" },
-  { icon: "🚨", label: "Salud",        href: "/incidentes" },
-  { icon: "📄", label: "Documentos",   href: "/documentos" },
-  { icon: "👥", label: "Empleados",    href: "/equipo" },
-  { icon: "📢", label: "Tablón",       href: "/anuncios", notif: true },
-  { icon: "📊", label: "Reportes",     href: "/reportes" },
-  { icon: "🕐", label: "Actividad",    href: "/actividad", notifActividad: true },
+  { icon: "⊞",  label: "Dashboard",          href: "/dashboard" },
+  { icon: "🐄", label: "Animales",            href: "/inventario" },
+  { icon: "💰", label: "Ventas",              href: "/ventas", badge: "Nuevo" },
+  { icon: "💸", label: "Gastos",              href: "/gastos" },
+  { icon: "🤰", label: "Reproducción",        href: "/reproduccion" },
+  { icon: "📋", label: "Eventos",             href: "/eventos" },
+  { icon: "🚨", label: "Salud",               href: "/incidentes" },
+  { icon: "📄", label: "Documentos",          href: "/documentos" },
+  { icon: "📢", label: "Tablón",              href: "/anuncios", notif: true },
+  { icon: "🛒", label: "Compras",             href: "/compras" },
+  { icon: "🏭", label: "Proveedores",         href: "/proveedores" },
+  { icon: "💳", label: "Finanzas",            href: "/finanzas" },
+  { icon: "📑", label: "Cuentas por pagar",   href: "/cuentas-pagar" },
+  { icon: "📦", label: "Insumos",             href: "/insumos" },
+  { icon: "👥", label: "Personal y nómina",   href: "/equipo" },
+  { icon: "📊", label: "Reportes",            href: "/reportes" },
+  { icon: "🕐", label: "Actividad",           href: "/actividad", notifActividad: true },
 ];
 
 const NAV_MOBILE_PRIMARY = ["/dashboard", "/inventario", "/ventas", "/anuncios", "/incidentes"];

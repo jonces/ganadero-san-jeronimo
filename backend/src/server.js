@@ -18,6 +18,11 @@ const actividadRoutes = require("./routes/actividad");
 const tareasRoutes = require("./routes/tareas");
 const publicacionesRoutes = require("./routes/publicaciones");
 const reservasRoutes = require("./routes/reservas");
+const dashboardRoutes = require("./routes/dashboard");
+const comprasRoutes = require("./routes/compras");
+const proveedoresRoutes = require("./routes/proveedores");
+const finanzasRoutes = require("./routes/finanzas");
+const insumosRoutes = require("./routes/insumos");
 
 const app = express();
 app.use(cors());
@@ -42,6 +47,11 @@ app.use("/api/actividad", actividadRoutes);
 app.use("/api/tareas", tareasRoutes);
 app.use("/api/publicaciones", publicacionesRoutes);
 app.use("/api/reservas", reservasRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/compras", comprasRoutes);
+app.use("/api/proveedores", proveedoresRoutes);
+app.use("/api/finanzas", finanzasRoutes);
+app.use("/api/insumos", insumosRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

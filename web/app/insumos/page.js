@@ -2,10 +2,10 @@
 import AppLayout from "@/components/AppLayout";
 export default function Page() {
   return (
-    <AppLayout title="Reportes" subtitle="HENRIQUEZ CATTLE MANAGEMENT">
+    <AppLayout title="Insumos" subtitle="HENRIQUEZ CATTLE MANAGEMENT">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400, flexDirection: "column", gap: 16 }}>
-        <div style={{ fontSize: 48 }}>📊</div>
-        <h2 style={{ color: "#172033", fontWeight: 800, fontSize: 22, margin: 0 }}>Reportes</h2>
+        <div style={{ fontSize: 48 }}>📦</div>
+        <h2 style={{ color: "#172033", fontWeight: 800, fontSize: 22, margin: 0 }}>Insumos</h2>
         <p style={{ color: "#64748B", fontSize: 14, margin: 0 }}>Este módulo está en desarrollo. Estará disponible próximamente.</p>
       </div>
     </AppLayout>

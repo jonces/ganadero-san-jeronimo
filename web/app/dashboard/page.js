@@ -1,616 +1,562 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api, getUsuario } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
-const HERO_BG = "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1920&q=85";
-
-const C = {
-  primary: "#145A32", secondary: "#1E8449", text: "#2C3E50",
-  textLight: "#7F8C8D", border: "#E2E8F0", white: "#FFFFFF", bg: "#F8F9FA",
+// ── Colores ──
+const COLOR = {
+  green:   "#16a34a",
+  greenDk: "#14532d",
+  bg:      "#F8FAFC",
+  white:   "#ffffff",
+  text:    "#172033",
+  muted:   "#64748B",
+  border:  "#E2E8F0",
+  blue:    "#2563EB",
+  red:     "#DC2626",
+  orange:  "#EA580C",
+  purple:  "#7C3AED",
 };
 
-function fmt(n, d = 0) { return (n || 0).toLocaleString("es", { minimumFractionDigits: d, maximumFractionDigits: d }); }
+// ── Keyframes CSS ──
+const CSS = `
+@keyframes pulse {
+  0%,100% { opacity:1; }
+  50% { opacity:0.4; }
+}
+@keyframes fadeIn {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+`;
 
-/* ── Mini sparkline (light mode) ── */
-function Spark({ data = [], color = "#145A32" }) {
-  if (data.filter(Boolean).length < 2) return <div style={{ height: 40 }} />;
-  const clean = data.map(v => v || 0);
-  const max = Math.max(...clean, 1);
-  const W = 100, H = 40;
-  const pts = clean.map((v, i) => `${(i / (clean.length - 1)) * W},${H - (v / max) * H * 0.85 + 3}`).join(" ");
-  const area = `${pts} ${W},${H} 0,${H}`;
-  const id = `sp${color.replace(/[^a-z0-9]/gi, "")}`;
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none">
-      <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={area} fill={`url(#${id})`} />
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+// ── Skeleton loader ──
+function Sk({ w = "100%", h = 20, r = 6 }) {
+  return <div style={{ width: w, height: h, background: "#E2E8F0", borderRadius: r, animation: "pulse 1.5s ease-in-out infinite" }} />;
 }
 
-/* ── Gráfica líneas doble eje (light mode) ── */
-function LineChart({ datos = [], tipoCambio = 36.5 }) {
-  if (!datos?.length) return <div className="h-40 flex items-center justify-center text-sm" style={{ color: C.textLight }}>Sin datos</div>;
-  const W = 520, H = 160, PL = 52, PR = 52, PT = 16, PB = 28;
+// ── Formateador ──
+function fmt(valor, tipo = "moneda", mon = "NIO") {
+  if (valor === null || valor === undefined || isNaN(valor)) return "—";
+  if (tipo === "numero") return Number(valor).toLocaleString("es-NI");
+  const sym = mon === "USD" ? "$ " : "C$ ";
+  return sym + Number(valor).toLocaleString("es-NI", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
+// ── Badge de categoría ──
+const CAT_LABEL = {
+  ALIMENTACION: "Alimentación", MEDICAMENTO: "Medicamento",
+  MANTENIMIENTO: "Mantenimiento", SALARIO: "Salario",
+  COMBUSTIBLE: "Combustible", OTRO: "Otro",
+};
+
+// ── Gráfica financiera SVG ──
+function GraficaFinanciera({ datos = [] }) {
+  const [hover, setHover] = useState(null);
+  if (!datos.length) return <div style={{ height: 160, display:"flex", alignItems:"center", justifyContent:"center", color: COLOR.muted, fontSize: 13 }}>Sin datos</div>;
+
+  const W = 540, H = 180, PL = 50, PR = 16, PT = 16, PB = 28;
   const IW = W - PL - PR, IH = H - PT - PB;
-  const maxNIO = Math.max(...datos.map(d => d.ventas), 1);
+
+  const allVals = datos.flatMap(d => [d.ingresos, d.gastos]);
+  const maxVal = Math.max(...allVals, 1);
+
   const px = i => PL + (i / (datos.length - 1)) * IW;
-  const py = (v, max) => PT + IH - (v / max) * IH;
-  const ptsV = datos.map((d, i) => `${px(i)},${py(d.ventas, maxNIO)}`).join(" ");
-  const ptsG = datos.map((d, i) => `${px(i)},${py(d.gastos, maxNIO)}`).join(" ");
-  const nioTicks = [0, 0.25, 0.5, 0.75, 1].map(f => Math.round(maxNIO * f / 1000));
-  const usdTicks = nioTicks.map(v => Math.round((v * 1000) / tipoCambio / 1000));
+  const py = v => PT + IH - (v / maxVal) * IH * 0.9;
+
+  const ptsI = datos.map((d, i) => `${px(i)},${py(d.ingresos)}`).join(" ");
+  const ptsG = datos.map((d, i) => `${px(i)},${py(d.gastos)}`).join(" ");
+
+  const ticks = [0, 0.25, 0.5, 0.75, 1];
+
   return (
-    <div>
-      <div className="flex items-center gap-4 mb-2">
-        <span className="flex items-center gap-1.5 text-xs" style={{ color: C.textLight }}>
-          <span className="w-4 h-0.5 rounded-full inline-block" style={{ background: C.primary }} />Ventas (C$)
-        </span>
-        <span className="flex items-center gap-1.5 text-xs" style={{ color: C.textLight }}>
-          <span className="w-4 h-0.5 rounded-full inline-block" style={{ background: "#E74C3C" }} />Gastos (C$)
-        </span>
-      </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: H }}>
-        {[0, 0.25, 0.5, 0.75, 1].map((f, fi) => {
+    <div style={{ position: "relative" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H }} onMouseLeave={() => setHover(null)}>
+        {ticks.map((f, fi) => {
           const y = PT + IH * (1 - f);
+          const v = Math.round(maxVal * f / 1000);
           return (
             <g key={fi}>
               <line x1={PL} y1={y} x2={W - PR} y2={y} stroke="#E2E8F0" strokeWidth="1" />
-              <text x={PL - 6} y={y + 4} textAnchor="end" fill="#94A3B8" fontSize="9">{fmt(nioTicks[fi])}K</text>
-              <text x={W - PR + 6} y={y + 4} textAnchor="start" fill="#94A3B8" fontSize="9">{usdTicks[fi]}K</text>
+              <text x={PL - 6} y={y + 4} textAnchor="end" fill="#94A3B8" fontSize="9">{v}K</text>
             </g>
           );
         })}
-        <polygon points={`${ptsG} ${W - PR},${PT + IH} ${PL},${PT + IH}`} fill="rgba(231,76,60,0.08)" />
-        <polyline points={ptsG} fill="none" stroke="#E74C3C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        {datos.map((d, i) => <circle key={`g${i}`} cx={px(i)} cy={py(d.gastos, maxNIO)} r="3" fill="#E74C3C" />)}
-        <polygon points={`${ptsV} ${W - PR},${PT + IH} ${PL},${PT + IH}`} fill="rgba(20,90,50,0.08)" />
-        <polyline points={ptsV} fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        {datos.map((d, i) => (
-          <circle key={`v${i}`} cx={px(i)} cy={py(d.ventas, maxNIO)} r="4.5" fill={C.primary} stroke={C.white} strokeWidth="1.5" />
-        ))}
-        {datos.map((d, i) => (
-          <text key={`l${i}`} x={px(i)} y={H - 4} textAnchor="middle" fill="#94A3B8" fontSize="9" fontFamily="sans-serif">
-            {d.label}
-          </text>
-        ))}
-      </svg>
-    </div>
-  );
-}
 
-/* ── Gráfica crecimiento del hato ── */
-function HatoChart({ animales = [] }) {
-  if (!animales.length) return <div className="h-40 flex items-center justify-center text-sm" style={{ color: C.textLight }}>Sin datos</div>;
-
-  // Calcular los últimos 8 meses
-  const ahora = new Date();
-  const meses = [];
-  for (let i = 7; i >= 0; i--) {
-    const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1);
-    const fin = new Date(ahora.getFullYear(), ahora.getMonth() - i + 1, 1);
-    const label = d.toLocaleDateString("es", { month: "short" });
-    // Animales activos al final de ese mes: registrados antes del fin del mes y no eliminados antes
-    const activos = animales.filter(a => {
-      if (!a.createdAt) return false;
-      const creado = new Date(a.createdAt);
-      if (creado >= fin) return false; // no existía aún
-      if (a.estado === "ELIMINADO" || a.estado === "MUERTO") return false; // excluir eliminados/muertos históricos (simplificado)
-      return true;
-    }).length;
-    const entradas = animales.filter(a => {
-      if (!a.createdAt) return false;
-      const creado = new Date(a.createdAt);
-      return creado >= d && creado < fin;
-    }).length;
-    meses.push({ label, activos, entradas });
-  }
-
-  const maxVal = Math.max(...meses.map(m => m.activos), 1);
-  const W = 520, H = 160, PL = 40, PR = 20, PT = 16, PB = 28;
-  const IW = W - PL - PR, IH = H - PT - PB;
-  const px = i => PL + (i / (meses.length - 1)) * IW;
-  const py = v => PT + IH - (v / maxVal) * IH * 0.85;
-  const pts = meses.map((m, i) => `${px(i)},${py(m.activos)}`).join(" ");
-
-  return (
-    <div>
-      <div className="flex items-center gap-4 mb-2">
-        <span className="flex items-center gap-1.5 text-xs" style={{ color: C.textLight }}>
-          <span className="w-4 h-0.5 rounded-full inline-block" style={{ background: C.primary }} />Total activos
-        </span>
-        <span className="flex items-center gap-1.5 text-xs" style={{ color: C.textLight }}>
-          <span className="w-3 h-3 rounded-full inline-block" style={{ background: "#1E8449" }} />Ingresos del mes
-        </span>
-      </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: H }}>
-        {[0, 0.25, 0.5, 0.75, 1].map((f, fi) => {
-          const y = PT + IH * (1 - f);
-          return (
-            <g key={fi}>
-              <line x1={PL} y1={y} x2={W - PR} y2={y} stroke="#E2E8F0" strokeWidth="1" />
-              <text x={PL - 6} y={y + 4} textAnchor="end" fill="#94A3B8" fontSize="9">{Math.round(maxVal * f)}</text>
-            </g>
-          );
+        {/* Barras flujo neto */}
+        {datos.map((d, i) => {
+          const bw = Math.max(IW / datos.length * 0.35, 8);
+          const neto = d.flujoNeto || 0;
+          const bh = Math.abs(neto) / maxVal * IH * 0.9;
+          const col = neto >= 0 ? "rgba(22,163,74,0.18)" : "rgba(220,38,38,0.18)";
+          const baseY = py(0);
+          return <rect key={i} x={px(i) - bw / 2} y={neto >= 0 ? py(neto) : baseY} width={bw} height={bh} fill={col} rx="3" />;
         })}
-        {/* Barras de entradas del mes */}
-        {meses.map((m, i) => {
-          const bw = Math.max(IW / meses.length * 0.4, 8);
-          const bh = (m.entradas / maxVal) * IH * 0.85;
-          return <rect key={`b${i}`} x={px(i) - bw / 2} y={PT + IH - bh} width={bw} height={bh}
-            fill="#1E8449" opacity="0.25" rx="3" />;
-        })}
-        {/* Línea de activos */}
-        <polygon points={`${pts} ${W - PR},${PT + IH} ${PL},${PT + IH}`} fill="rgba(20,90,50,0.08)" />
-        <polyline points={pts} fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        {meses.map((m, i) => (
-          <g key={`p${i}`}>
-            <circle cx={px(i)} cy={py(m.activos)} r="5" fill={C.primary} stroke={C.white} strokeWidth="2" />
-            <text x={px(i)} y={py(m.activos) - 8} textAnchor="middle" fill={C.primary} fontSize="9" fontWeight="bold">{m.activos}</text>
-            <text x={px(i)} y={H - 4} textAnchor="middle" fill="#94A3B8" fontSize="9">{m.label}</text>
+
+        {/* Línea gastos */}
+        <polygon points={`${ptsG} ${W - PR},${PT + IH} ${PL},${PT + IH}`} fill="rgba(220,38,38,0.06)" />
+        <polyline points={ptsG} fill="none" stroke={COLOR.red} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Línea ingresos */}
+        <polygon points={`${ptsI} ${W - PR},${PT + IH} ${PL},${PT + IH}`} fill="rgba(22,163,74,0.08)" />
+        <polyline points={ptsI} fill="none" stroke={COLOR.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Puntos y hover */}
+        {datos.map((d, i) => (
+          <g key={`pt${i}`}>
+            <circle cx={px(i)} cy={py(d.ingresos)} r="4" fill={COLOR.green} stroke="#fff" strokeWidth="1.5"
+              style={{ cursor: "pointer" }}
+              onMouseEnter={() => setHover({ i, x: px(i), d })} />
+            <circle cx={px(i)} cy={py(d.gastos)} r="3" fill={COLOR.red} stroke="#fff" strokeWidth="1.5"
+              style={{ cursor: "pointer" }}
+              onMouseEnter={() => setHover({ i, x: px(i), d })} />
+            <text x={px(i)} y={H - 6} textAnchor="middle" fill="#94A3B8" fontSize="9">{d.mes}</text>
           </g>
         ))}
+
+        {/* Tooltip */}
+        {hover && (() => {
+          const tx = Math.min(hover.x, W - 110);
+          return (
+            <g>
+              <rect x={tx - 4} y={PT} width={115} height={58} rx="6" fill="#172033" opacity="0.92" />
+              <text x={tx + 53} y={PT + 14} textAnchor="middle" fill="#fff" fontSize="9" fontWeight="bold">{hover.d.mes?.toUpperCase()}</text>
+              <text x={tx + 4} y={PT + 27} fill="#4ade80" fontSize="9">Ingresos: C${Math.round((hover.d.ingresos || 0) / 1000)}K</text>
+              <text x={tx + 4} y={PT + 39} fill="#f87171" fontSize="9">Gastos: C${Math.round((hover.d.gastos || 0) / 1000)}K</text>
+              <text x={tx + 4} y={PT + 51} fill={hover.d.flujoNeto >= 0 ? "#4ade80" : "#f87171"} fontSize="9">Neto: C${Math.round((hover.d.flujoNeto || 0) / 1000)}K</text>
+            </g>
+          );
+        })()}
       </svg>
+      <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 4 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: COLOR.muted }}>
+          <span style={{ width: 14, height: 3, background: COLOR.green, borderRadius: 2, display: "inline-block" }} />Ingresos
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: COLOR.muted }}>
+          <span style={{ width: 14, height: 3, background: COLOR.red, borderRadius: 2, display: "inline-block" }} />Gastos
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: COLOR.muted }}>
+          <span style={{ width: 10, height: 10, background: "rgba(22,163,74,0.3)", borderRadius: 3, display: "inline-block" }} />Flujo neto
+        </span>
+      </div>
     </div>
   );
 }
 
-/* ── Stat card component ── */
-function StatCard({ icon, bg, label, value, usd, delta, deltaPos, spark, sparkColor, href, onClick }) {
+// ── KPI Card ──
+function KpiCard({ icono, label, valor, sub, color, bg, border: brd, loading, onClick }) {
+  const s = {
+    background: bg || COLOR.white, border: `1px solid ${brd || COLOR.border}`,
+    borderRadius: 14, padding: "16px", cursor: onClick ? "pointer" : "default",
+    transition: "box-shadow 0.15s, transform 0.1s", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+    animation: "fadeIn 0.3s ease",
+  };
   return (
-    <button onClick={onClick}
-      className="rounded-2xl p-3 text-left transition-all hover:shadow-lg active:scale-95 relative overflow-hidden"
-      style={{ background: C.white, border: `1px solid ${C.border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-      <div className="flex items-start justify-between mb-2">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shadow-md"
-          style={{ background: bg }}>
-          {icon}
-        </div>
+    <div style={s} onClick={onClick}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)"; e.currentTarget.style.transform = "translateY(0)"; }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+        <span style={{ fontSize: 22 }}>{icono}</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color, background: bg, padding: "2px 8px", borderRadius: 20, border: `1px solid ${brd}` }}>
+          {label}
+        </span>
       </div>
-      <p className="font-black text-lg leading-none mb-0" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>{value}</p>
-      {usd && <p className="text-xs font-bold mb-0.5" style={{ color: "#059669" }}>{usd} USD</p>}
-      <p className="font-semibold text-xs mb-2" style={{ color: C.textLight }}>{label}</p>
-      <div className="mb-1" style={{ height: 28 }}>
-        {spark?.length >= 2 ? <Spark data={spark} color={sparkColor} /> : <div style={{ height: 28 }} />}
-      </div>
-      <p className={`text-xs font-bold`} style={{ color: deltaPos ? C.secondary : "#E74C3C" }}>{delta}</p>
-    </button>
+      {loading ? <><Sk h={28} w="70%" /><Sk h={12} w="50%" /></> : (
+        <>
+          <div style={{ fontSize: 22, fontWeight: 900, color: COLOR.text, lineHeight: 1.1, marginBottom: 4 }}>{valor}</div>
+          <div style={{ fontSize: 12, color: COLOR.muted }}>{sub}</div>
+        </>
+      )}
+    </div>
   );
 }
 
 export default function DashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState(null);
-  const [todosAnimales, setTodosAnimales] = useState([]);
-  const [todosGastos, setTodosGastos] = useState([]);
-  const [todosIncidentes, setTodosIncidentes] = useState([]);
-  const [tareas, setTareas] = useState([]);
-  const [animales, setAnimales] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [periodo, setPeriodo] = useState("mes");
+  const [moneda, setMoneda] = useState("NIO");
   const [usuario, setUsuario] = useState(null);
-  const [busqueda, setBusqueda] = useState("");
   const [saludo, setSaludo] = useState("Buenos días");
-  const [ahora, setAhora] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
-  const [ultimaActualizacion, setUltimaActualizacion] = useState(null);
-  const [tasaLive, setTasaLive] = useState(null); // null = cargando
+  const [busqueda, setBusqueda] = useState("");
+  const [showRegistrar, setShowRegistrar] = useState(false);
+  const [showVistaRapida, setShowVistaRapida] = useState(false);
 
-  useEffect(() => {
-    fetch("https://open.er-api.com/v6/latest/USD")
-      .then(r => r.json())
-      .then(d => { if (d?.rates?.NIO) setTasaLive(Number(d.rates.NIO.toFixed(2))); })
-      .catch(() => setTasaLive(36.50));
-  }, []);
-
-  async function cargarDatos() {
+  const cargar = useCallback(async () => {
+    setLoading(true);
     try {
-      const [s, a, g, inc, tar] = await Promise.all([
-        api("/ventas/stats").catch(() => null),
-        api("/animales").catch(() => []),
-        api("/gastos").catch(() => ({})),
-        api("/incidentes").catch(() => []),
-        api("/tareas").catch(() => []),
-      ]);
-      setStats(s);
-      const lista = Array.isArray(a) ? a : [];
-      setTodosAnimales(lista);
-      setTodosGastos(Array.isArray(g?.gastos) ? g.gastos : []);
-      setTodosIncidentes(Array.isArray(inc) ? inc : Array.isArray(inc?.incidentes) ? inc.incidentes : []);
-      setTareas(Array.isArray(tar) ? tar : []);
-      setAnimales(lista.filter(x => x.estado === "ACTIVO").slice(0, 4));
-      setUltimaActualizacion(new Date());
-    } catch {}
-  }
-
-  async function refrescar() {
-    setRefreshing(true);
-    await cargarDatos();
-    setRefreshing(false);
-  }
+      const data = await api(`/dashboard?periodo=${periodo}&moneda=${moneda}`);
+      setStats(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [periodo, moneda]);
 
   useEffect(() => {
     setUsuario(getUsuario());
     const h = new Date().getHours();
     setSaludo(h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches");
-    setAhora(new Date().toLocaleDateString("es", { weekday: "short", day: "numeric", month: "short" }));
-    cargarDatos();
-    const interval = setInterval(cargarDatos, 10000);
-    return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => { cargar(); }, [cargar]);
 
   function handleBusqueda(e) {
     if (e.key === "Enter" && busqueda.trim()) router.push(`/inventario?q=${encodeURIComponent(busqueda.trim())}`);
   }
 
-  const a = stats?.animales || {};
-  const v = stats?.ventas || {};
-  const gastosMes = stats?.gastosMes || 0;
-  const balance = (v.totalMesNIO || 0) - gastosMes;
-  const tc = tasaLive || stats?.tipoCambio || 36.5;
-  const grafica = stats?.grafica || [];
-  const ventasSpark = grafica.map(d => d.ventas);
-  const gastosSpark = grafica.map(d => d.gastos);
-
-  // Contar directamente desde los animales traídos (fuente confiable, igual que el inventario)
-  const hoy2 = new Date();
-  const inicioMes = new Date(hoy2.getFullYear(), hoy2.getMonth(), 1);
-  const noEliminados = todosAnimales.filter(x => x.estado !== "ELIMINADO");
-  const activosReal = noEliminados.filter(x => x.estado === "ACTIVO").length;
-  const prenadasReal = noEliminados.filter(x =>
-    x.sexo === "HEMBRA" && x.estado === "ACTIVO" && x.estadoReproductivo === "PREÑADA"
-  ).length;
-  // Nacimientos: animales no eliminados con fechaNacimiento este mes, O crías de parto registradas este mes
-  const nacimientosReal = noEliminados.filter(x => {
-    if (x.fechaNacimiento && new Date(x.fechaNacimiento) >= inicioMes) return true;
-    if (x.madreId && x.createdAt && new Date(x.createdAt) >= inicioMes) return true;
-    return false;
-  }).length;
-  // Muertes: incidentes tipo MUERTE registrados este mes
-  const muertesReal = todosIncidentes.filter(x =>
-    x.tipo === "MUERTE" && x.fecha && new Date(x.fecha) >= inicioMes
-  ).length;
-  // Gastos del mes: /gastos devuelve { gastos:[...], total }
-  const gastosMesReal = todosGastos.reduce((sum, g) =>
-    g.fecha && new Date(g.fecha) >= inicioMes ? sum + (g.monto || 0) : sum, 0);
-
-  const CARDS = stats ? [
-    {
-      icon: "🐄", bg: "linear-gradient(135deg,#145A32,#1E8449)", label: "Animales Activos",
-      value: fmt(activosReal || a.activos), delta: `+${nacimientosReal} nacimientos este mes`, deltaPos: true,
-      spark: ventasSpark, sparkColor: C.primary, href: "/inventario",
-    },
-    {
-      icon: "💰", bg: "linear-gradient(135deg,#1565C0,#1E88E5)", label: "Ventas del mes",
-      value: `C$ ${fmt(v.totalMesNIO)}`, usd: v.totalMesNIO > 0 ? `≈ $ ${(v.totalMesNIO / tc).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null,
-      delta: `${fmt(v.cantidadMes || 0)} ventas`, deltaPos: true,
-      spark: ventasSpark, sparkColor: "#1E88E5", href: "/ventas",
-    },
-    {
-      icon: "💸", bg: "linear-gradient(135deg,#B71C1C,#E53935)", label: "Gastos del mes",
-      value: `C$ ${fmt(gastosMesReal)}`, usd: gastosMesReal > 0 ? `≈ $ ${(gastosMesReal / tc).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null,
-      delta: gastosMesReal > 0 ? `${fmt(gastosMesReal)} en gastos` : "Sin gastos este mes", deltaPos: false,
-      spark: gastosSpark, sparkColor: "#E53935", href: "/gastos",
-    },
-    {
-      icon: "📈", bg: "linear-gradient(135deg,#6A1B9A,#8E24AA)", label: "Ganancias",
-      value: `C$ ${fmt(Math.abs(balance))}`, usd: balance !== 0 ? `≈ $ ${(Math.abs(balance) / tc).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null,
-      delta: balance >= 0 ? `+${fmt((balance / Math.max(v.totalMesNIO || 1, 1) * 100), 0)}% margen` : "Revisar gastos",
-      deltaPos: balance >= 0, spark: gastosSpark, sparkColor: "#8E24AA", href: "/gastos",
-    },
-    {
-      icon: "⚖️", bg: "linear-gradient(135deg,#E65100,#F57C00)", label: "Peso Promedio",
-      value: stats.pesoPromedio > 0 ? `${stats.pesoPromedio.toFixed(0)} kg` : "— kg",
-      delta: `Hato activo (${fmt(a.activos)})`, deltaPos: true,
-      spark: [], sparkColor: "#F57C00", href: "/inventario",
-    },
-    {
-      icon: "💉", bg: "linear-gradient(135deg,#00695C,#00897B)", label: "Vacunas",
-      value: fmt(stats.vacunasMes), delta: "Ver calendario",
-      deltaPos: true, spark: [], sparkColor: "#00897B", href: "/incidentes",
-    },
-  ] : [];
-
-  const RESUMEN = todosAnimales.length > 0 || stats ? [
-    { icon: "🍼", label: "Nacimientos", value: nacimientosReal, delta: `+${nacimientosReal}`, pos: true, href: "/inventario" },
-    { icon: "💀", label: "Muertes", value: muertesReal, delta: muertesReal > 0 ? `-${muertesReal}` : "0", pos: false, href: "/inventario" },
-    { icon: "💰", label: "Ventas", value: v.cantidadMes || 0, delta: `+${v.cantidadMes || 0}`, pos: true, href: "/ventas" },
-    { icon: "💸", label: "Gastos", value: `C$ ${fmt(gastosMesReal)}`, delta: gastosMesReal > 0 ? `C$ ${fmt(gastosMesReal)}` : "—", pos: false, href: "/gastos" },
-    { icon: "🐄", label: "Activos", value: activosReal, delta: `${activosReal}`, pos: true, href: "/inventario" },
-    { icon: "🤰", label: "Preñadas", value: prenadasReal, delta: `${prenadasReal}`, pos: prenadasReal > 0, href: "/inventario?filtro=PREÑADA" },
-  ] : [];
-
-  const hoy = new Date(); hoy.setHours(0,0,0,0);
-  const TIPO_DASH = {
-    VACUNACION: { icon: "💉", color: C.primary }, DESPARASITACION: { icon: "🧪", color: "#B7791F" },
-    TRATAMIENTO: { icon: "🩺", color: "#1565C0" }, PESAJE: { icon: "⚖️", color: "#2D6A4F" },
-    INSEMINACION: { icon: "🤰", color: "#6A1B9A" }, DESTETE: { icon: "🐣", color: "#E65100" },
-    OTRO: { icon: "📋", color: "#718096" },
+  const selectStyle = {
+    border: `1px solid ${COLOR.border}`, borderRadius: 8, padding: "8px 10px",
+    fontSize: 13, color: COLOR.text, background: COLOR.white, outline: "none", cursor: "pointer",
   };
-  const proximasTareas = tareas
-    .filter(t => t.estado === "PENDIENTE")
-    .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
-    .slice(0, 4)
-    .map(t => {
-      const ti = TIPO_DASH[t.tipo] || TIPO_DASH.OTRO;
-      const labels = { VACUNACION:"Vacunación",DESPARASITACION:"Desparasitación",TRATAMIENTO:"Tratamiento",PESAJE:"Pesaje",INSEMINACION:"Inseminación",DESTETE:"Destete",OTRO:"Otro" };
-      return { icon: ti.icon, label: labels[t.tipo]||t.tipo, sub: t.animales?.length ? `${t.animales.length} animal(es)` : (t.descripcion||""), color: ti.color, fecha: new Date(t.fecha) };
-    });
 
-  function edadMeses(fecha) {
-    if (!fecha) return null;
-    return Math.round((new Date() - new Date(fecha)) / (1000 * 60 * 60 * 24 * 30.4));
-  }
+  const cardStyle = {
+    background: COLOR.white, border: `1px solid ${COLOR.border}`,
+    borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+  };
 
-  const RAZAS_COLORS = { Brangus: "#E74C3C", Brahman: "#F39C12", Nelore: "#3498DB", Gyr: "#27AE60", default: "#95A5A6" };
+  const hato = stats?.resumenHato || {};
+  const graficaMeses = stats?.graficaMeses || [];
 
-  const cardStyle = { background: C.white, border: `1px solid ${C.border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" };
+  const kpiCards = [
+    { icono: "🐄", label: "Animales activos", valor: fmt(stats?.animalesActivos || 0, "numero"), sub: `${hato.enVenta || 0} en venta`, color: COLOR.green, bg: "#F0FDF4", border: "#BBF7D0", href: "/inventario" },
+    { icono: "💹", label: "Valor del hato", valor: fmt(stats?.valorEstimadoHato || 0, "moneda", moneda), sub: "Estimación por peso", color: COLOR.blue, bg: "#EFF6FF", border: "#BFDBFE", href: "/inventario" },
+    { icono: "💼", label: "Capital invertido", valor: fmt(stats?.capitalInvertido || 0, "moneda", moneda), sub: "Acumulado histórico", color: COLOR.purple, bg: "#F5F3FF", border: "#DDD6FE", href: "/finanzas" },
+    { icono: "💰", label: "Ventas del mes", valor: fmt(stats?.ventasMes?.total || 0, "moneda", moneda), sub: `${stats?.ventasMes?.cantidad || 0} ventas`, color: COLOR.green, bg: "#F0FDF4", border: "#BBF7D0", href: "/ventas" },
+    { icono: "📉", label: "Gastos del mes", valor: fmt(stats?.gastosMes?.total || 0, "moneda", moneda), sub: "Total en gastos", color: COLOR.red, bg: "#FEF2F2", border: "#FECACA", href: "/gastos" },
+    { icono: "📈", label: "Ganancia neta", valor: fmt(stats?.gananciaNeta || 0, "moneda", moneda), sub: `${(stats?.margenGanancia || 0).toFixed(1)}% margen`, color: COLOR.purple, bg: "#F5F3FF", border: "#DDD6FE", href: "/finanzas" },
+  ];
+
+  const filasHato = [
+    { label: "Vacas",        valor: hato.vacas    || 0 },
+    { label: "Toros",        valor: hato.toros    || 0 },
+    { label: "Novillos",     valor: hato.novillos || 0 },
+    { label: "Novillas",     valor: hato.novillas || 0 },
+    { label: "Terneros",     valor: hato.terneros || 0 },
+    { label: "Terneras",     valor: hato.terneras || 0 },
+    { label: "Preñadas",     valor: hato.prenadas || 0 },
+    { label: "En venta",     valor: hato.enVenta  || 0 },
+    { label: "Nacimientos",  valor: hato.nacimientosMes || 0 },
+  ];
+
+  const indicadores = [
+    { label: "Peso promedio", valor: stats?.pesoPromedio ? `${Math.round(stats.pesoPromedio)} kg` : "— kg", icono: "⚖️" },
+    { label: "Tasa de preñez", valor: stats?.tasaPrenez != null ? `${stats.tasaPrenez.toFixed(1)}%` : "—%", icono: "🤰" },
+    { label: "Natalidad", valor: stats?.natalidad != null ? `${stats.natalidad.toFixed(1)}%` : "—%", icono: "🐮" },
+    { label: "Mortalidad", valor: stats?.mortalidad != null ? `${stats.mortalidad.toFixed(2)}%` : "—%", icono: "📊" },
+  ];
+
+  const categorias = stats?.gastosMes?.categorias || [];
+  const totalCat = categorias.reduce((s, c) => s + c.total, 0);
 
   return (
-    <AppLayout
-      title="Dashboard"
-      subtitle="Henriquez Cattle Management"
+    <AppLayout title="Dashboard" subtitle="HENRIQUEZ CATTLE MANAGEMENT"
       searchBar={
-        <div className="relative flex-1 max-w-md hidden md:block">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: C.textLight }}>🔍</span>
+        <div style={{ position: "relative", width: 260 }}>
+          <span style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: COLOR.muted }}>🔍</span>
           <input
-            className="w-full rounded-xl pl-8 pr-4 py-2 text-sm focus:outline-none focus:ring-2 transition-all"
-            style={{ background: C.bg, border: `1px solid ${C.border}`, color: C.text, "--tw-ring-color": C.secondary }}
-            placeholder="Buscar animales, ventas, potreros..."
+            placeholder="Buscar animales, ventas..."
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
             onKeyDown={handleBusqueda}
+            style={{ width: "100%", padding: "7px 10px 7px 30px", border: `1px solid ${COLOR.border}`, borderRadius: 8, fontSize: 13, color: COLOR.text, background: COLOR.bg, outline: "none", boxSizing: "border-box" }}
           />
         </div>
       }
       rightExtra={
-        <div className="hidden md:flex items-center gap-2 text-xs" style={{ color: C.textLight }}>
-          <span className="font-semibold">{ahora}</span>
-          <span className="text-lg">☀️</span>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <select style={selectStyle} value={periodo} onChange={e => setPeriodo(e.target.value)}>
+            <option value="mes">Este mes</option>
+            <option value="hoy">Hoy</option>
+            <option value="7d">Últimos 7 días</option>
+            <option value="30d">Últimos 30 días</option>
+            <option value="mes_anterior">Mes anterior</option>
+            <option value="año">Este año</option>
+          </select>
+          <select style={selectStyle} value={moneda} onChange={e => setMoneda(e.target.value)}>
+            <option value="NIO">C$</option>
+            <option value="USD">USD</option>
+          </select>
+          <button
+            onClick={() => setShowRegistrar(true)}
+            style={{ background: COLOR.green, color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
+            + Registrar
+          </button>
         </div>
       }
     >
+      <style>{CSS}</style>
 
-      {/* ── HERO ── */}
-      <div className="rounded-2xl overflow-hidden mb-6 relative shadow-xl" style={{ height: 220 }}>
-        <img src={HERO_BG} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ filter: "brightness(0.4) saturate(1.2)" }} />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(90deg,rgba(10,50,20,0.92) 0%,rgba(20,90,50,0.6) 55%,rgba(10,30,20,0.2) 100%)" }} />
-        <div className="relative h-full flex items-center px-8">
+      {/* ── BANNER ── */}
+      <div style={{
+        background: "linear-gradient(135deg, #14532d 0%, #166534 50%, #15803d 100%)",
+        borderRadius: 16, padding: "28px 36px", marginBottom: 24, position: "relative", overflow: "hidden", minHeight: 150,
+      }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "url('https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1920&q=80')", backgroundSize: "cover", backgroundPosition: "center", opacity: 0.22 }} />
+        <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
           <div>
-            <p className="font-semibold text-sm mb-1.5" style={{ color: "#86efac" }}>
-              {saludo}, <span className="text-white font-black">{usuario?.nombre || "Usuario"}</span> 👋
-            </p>
-            <p className="font-medium text-base" style={{ color: "rgba(255,255,255,0.7)" }}>Bienvenido a</p>
-            <h2 className="text-white font-black leading-none" style={{ fontSize: "clamp(1.8rem,4vw,2.6rem)", fontFamily: "var(--font-poppins)" }}>Henriquez</h2>
-            <h2 className="font-black leading-none mb-3" style={{
-              fontSize: "clamp(1.8rem,4vw,2.6rem)", fontFamily: "var(--font-poppins)",
-              background: "linear-gradient(90deg,#4ade80,#86efac)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            }}>Cattle Management</h2>
-            <button onClick={() => router.push("/inventario")}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-bold text-sm hover:scale-105 transition-all shadow-lg"
-              style={{ background: "linear-gradient(135deg,#145A32,#27AE60)", border: "1px solid rgba(74,222,128,0.4)" }}>
+            <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 14, margin: "0 0 2px" }}>{saludo}, <strong style={{ color: "#fff" }}>{usuario?.nombre || "Usuario"}</strong> 👋</p>
+            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, margin: "0 0 4px" }}>Bienvenido a</p>
+            <h2 style={{ color: "#fff", fontSize: 30, fontWeight: 900, margin: 0, lineHeight: 1.1 }}>Henriquez</h2>
+            <h2 style={{ color: "#4ade80", fontSize: 30, fontWeight: 900, margin: "0 0 18px", lineHeight: 1.1 }}>Cattle Management</h2>
+            <button
+              onClick={() => setShowVistaRapida(true)}
+              style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 8, padding: "7px 18px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
               🐄 Vista rápida
             </button>
           </div>
+          <div style={{ textAlign: "right", color: "rgba(255,255,255,0.5)", fontSize: 12 }}>
+            <div style={{ fontSize: 36, marginBottom: 4 }}>🐂</div>
+            <p style={{ margin: 0 }}>{new Date().toLocaleDateString("es-NI", { weekday: "short", day: "numeric", month: "short" })}</p>
+          </div>
         </div>
       </div>
 
-      {/* ── STAT CARDS ── */}
-      {stats && (
-        <div className="grid grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
-          {CARDS.map((c) => (
-            <StatCard key={c.label} {...c} onClick={() => router.push(c.href)} />
-          ))}
-        </div>
-      )}
+      {/* ── KPI GRID 6 ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 12, marginBottom: 16 }}>
+        {kpiCards.map(c => (
+          <KpiCard key={c.label} loading={loading} {...c} onClick={() => router.push(c.href)} />
+        ))}
+      </div>
 
-      {/* ── 3 COLUMNAS ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      {/* ── 2 TARJETAS: Cuentas por pagar + Caja ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
+        <KpiCard loading={loading} icono="📑" label="Cuentas por pagar" valor={fmt(stats?.cuentasPagar || 0, "moneda", moneda)} sub="Pagos pendientes" color={COLOR.orange} bg="#FFF7ED" border="#FED7AA" onClick={() => router.push("/cuentas-pagar")} />
+        <KpiCard loading={loading} icono="🏦" label="Caja disponible" valor={fmt(stats?.cajaDisponible || 0, "moneda", moneda)} sub="Ingresos cobrados - gastos" color={COLOR.green} bg="#F0FDF4" border="#BBF7D0" onClick={() => router.push("/finanzas")} />
+      </div>
 
-        {/* Resumen General */}
-        <div className="rounded-2xl shadow overflow-hidden" style={cardStyle}>
-          <div className="flex items-center justify-between px-5 pt-4 pb-3" style={{ borderBottom: `1px solid ${C.border}` }}>
+      {/* ── 3 COLUMNAS: Resumen hato | Gráfica | Alertas ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr", gap: 16, marginBottom: 16 }}>
+
+        {/* Resumen del hato */}
+        <div style={cardStyle}>
+          <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <p className="font-black text-sm" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>Resumen General</p>
-              {ultimaActualizacion && (
-                <p style={{ fontSize: 10, color: C.textLight }}>
-                  Actualizado: {ultimaActualizacion.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                </p>
-              )}
+              <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: COLOR.text }}>Resumen del hato</p>
+              <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>Animales activos por categoría</p>
             </div>
-            <button
-              onClick={refrescar}
-              disabled={refreshing}
-              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all hover:opacity-80 active:scale-95 disabled:opacity-50"
-              style={{ background: C.primary, color: "#fff" }}>
-              <span style={{ display: "inline-block", transform: refreshing ? "rotate(360deg)" : "none", transition: refreshing ? "transform 0.6s linear" : "none" }}>↻</span>
-              {refreshing ? "..." : "Actualizar"}
-            </button>
+            <span style={{ fontSize: 20 }}>🐄</span>
           </div>
-          <div className="px-3 py-2">
-            {RESUMEN.map((r, i) => (
-              <button key={i} onClick={() => router.push(r.href)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-all"
-                style={{ borderBottom: i < RESUMEN.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                <span className="text-base w-5 text-center">{r.icon}</span>
-                <span className="flex-1 text-left font-semibold text-xs" style={{ color: C.textLight }}>{r.label}</span>
-                <span className="font-black text-sm" style={{ color: C.text }}>{r.value}</span>
-                <span className="text-xs font-black px-1.5 py-0.5 rounded-full min-w-[32px] text-center"
-                  style={{
-                    color: r.pos ? C.secondary : "#E74C3C",
-                    background: r.pos ? "#EBF5EB" : "#FDEDEC",
-                  }}>
-                  {r.delta}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Gráfica de Ventas */}
-        <div className="rounded-2xl shadow overflow-hidden" style={cardStyle}>
-          <div className="flex items-center justify-between px-5 pt-4 pb-3" style={{ borderBottom: `1px solid ${C.border}` }}>
-            <p className="font-black text-sm" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>Gráfica de Ventas</p>
-            <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: C.bg, color: C.textLight, border: `1px solid ${C.border}` }}>
-              6 meses ▾
-            </span>
-          </div>
-          <div className="px-4 py-3">
-            <LineChart datos={grafica} tipoCambio={tc} />
-            {grafica.length > 0 && (() => {
-              const ult = grafica[grafica.length - 1];
-              return (
-                <p className="text-xs mt-2 text-center" style={{ color: C.textLight }}>
-                  {ult.label.charAt(0).toUpperCase() + ult.label.slice(1)} ·{" "}
-                  <span style={{ color: C.primary, fontWeight: 700 }}>C$ {fmt(ult.ventas)}</span>
-                  {" · "}<span style={{ color: "#1E88E5", fontWeight: 700 }}>USD ${fmt(ult.ventas / tc, 0)}</span>
-                </p>
-              );
-            })()}
-          </div>
-        </div>
-
-        {/* Próximos Eventos */}
-        <div className="rounded-2xl shadow overflow-hidden" style={cardStyle}>
-          <div className="flex items-center justify-between px-5 pt-4 pb-3" style={{ borderBottom: `1px solid ${C.border}` }}>
-            <p className="font-black text-sm" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>Próximos Eventos</p>
-            <button onClick={() => router.push("/eventos")} className="text-xs font-bold hover:underline" style={{ color: C.secondary }}>
-              Ver todos
-            </button>
-          </div>
-          <div className="px-3 py-2 space-y-1">
-            {proximasTareas.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-2xl mb-1">📋</p>
-                <p className="text-xs font-bold" style={{ color: C.textLight }}>Sin eventos pendientes</p>
-                <button onClick={() => router.push("/eventos")} className="text-xs mt-1 font-bold hover:underline" style={{ color: C.secondary }}>
-                  + Crear evento
+          <div style={{ padding: "8px 0" }}>
+            {loading ? [1,2,3,4,5].map(i => <div key={i} style={{ padding: "8px 16px" }}><Sk h={14} /></div>) :
+              filasHato.map((f, i) => (
+                <button key={i} onClick={() => router.push("/inventario")}
+                  style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 16px", borderBottom: i < filasHato.length - 1 ? `1px solid ${COLOR.border}` : "none", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+                  onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
+                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                  <span style={{ fontSize: 13, color: COLOR.muted }}>{f.label}</span>
+                  <span style={{ fontSize: 15, fontWeight: 900, color: COLOR.text }}>{f.valor}</span>
                 </button>
-              </div>
-            ) : proximasTareas.map((e, i) => (
-              <div key={i} onClick={() => router.push("/eventos")} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-all cursor-pointer">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0"
-                  style={{ background: `${e.color}18`, border: `1px solid ${e.color}30` }}>
-                  {e.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-xs truncate" style={{ color: C.text }}>{e.label}</p>
-                  <p className="text-xs truncate" style={{ color: C.textLight }}>{e.sub}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="font-black text-xs" style={{ color: e.color }}>
-                    {e.fecha.toLocaleDateString("es", { day: "numeric", month: "short" })}
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))
+            }
           </div>
-          <div className="px-4 pb-3">
-            <button onClick={() => router.push("/eventos")}
-              className="w-full py-2.5 rounded-xl font-bold text-xs hover:bg-gray-50 transition-all"
-              style={{ color: C.textLight, border: `1px solid ${C.border}` }}>
-              Ver todos los eventos →
+          <div style={{ padding: "8px 12px 12px" }}>
+            <button onClick={() => router.push("/inventario")} style={{ width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${COLOR.border}`, background: "none", color: COLOR.green, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              Ver inventario completo →
+            </button>
+          </div>
+        </div>
+
+        {/* Gráfica financiera */}
+        <div style={cardStyle}>
+          <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: COLOR.text }}>Gráfica financiera</p>
+              <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>Ingresos, gastos y flujo neto — últimos 6 meses</p>
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: "#F8FAFC", border: `1px solid ${COLOR.border}`, color: COLOR.muted }}>6M</span>
+          </div>
+          <div style={{ padding: "12px 16px 8px" }}>
+            {loading ? <Sk h={160} /> : <GraficaFinanciera datos={graficaMeses} />}
+          </div>
+        </div>
+
+        {/* Pagos y alertas */}
+        <div style={cardStyle}>
+          <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: COLOR.text }}>Alertas</p>
+            <span style={{ fontSize: 20 }}>🚨</span>
+          </div>
+          <div style={{ padding: "8px 12px" }}>
+            {loading ? [1,2,3].map(i => <div key={i} style={{ marginBottom: 8 }}><Sk h={50} r={8} /></div>) :
+              (stats?.alertas?.length > 0 ? stats.alertas.slice(0, 3).map((a, i) => (
+                <div key={i} style={{ padding: "10px 12px", borderRadius: 8, marginBottom: 8, background: "#FEF2F2", border: "1px solid #FECACA" }}>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: COLOR.red }}>{a.titulo}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>{a.descripcion}</p>
+                </div>
+              )) : (
+                <div style={{ textAlign: "center", padding: "24px 0", color: COLOR.muted }}>
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Sin alertas pendientes</p>
+                </div>
+              ))
+            }
+          </div>
+          <div style={{ padding: "0 12px 12px" }}>
+            <button onClick={() => router.push("/cuentas-pagar")} style={{ width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${COLOR.border}`, background: "none", color: COLOR.orange, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              Ver cuentas por pagar →
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── GRÁFICA CRECIMIENTO DEL HATO ── */}
-      {todosAnimales.length > 0 && (
-        <div className="mb-6 rounded-2xl shadow overflow-hidden" style={{ background: C.white, border: `1px solid ${C.border}`, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <div className="flex items-center justify-between px-5 pt-4 pb-3" style={{ borderBottom: `1px solid ${C.border}` }}>
-            <div>
-              <p className="font-black text-sm" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>📈 Crecimiento del Hato</p>
-              <p className="text-xs mt-0.5" style={{ color: C.textLight }}>Evolución del inventario activo — últimos 8 meses</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <p className="font-black text-lg" style={{ color: C.primary, fontFamily: "var(--font-poppins)" }}>{activosReal}</p>
-                <p className="text-xs" style={{ color: C.textLight }}>activos hoy</p>
-              </div>
-              <button onClick={() => router.push("/inventario")}
-                className="text-xs font-bold px-3 py-1.5 rounded-lg"
-                style={{ background: C.bg, color: C.primary, border: `1px solid ${C.border}` }}>
-                Ver inventario →
-              </button>
-            </div>
+      {/* ── 3 COLUMNAS: Capital invertido | Insumos | Indicadores ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
+
+        {/* Capital invertido por categoría */}
+        <div style={cardStyle}>
+          <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}` }}>
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: COLOR.text }}>Capital por categoría</p>
+            <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>Gastos del mes por tipo</p>
           </div>
-          <div className="px-5 py-4">
-            <HatoChart animales={todosAnimales} />
+          <div style={{ padding: "8px 0" }}>
+            {loading ? [1,2,3].map(i => <div key={i} style={{ padding: "8px 16px" }}><Sk h={14} /></div>) :
+              categorias.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "24px 0", color: COLOR.muted, fontSize: 13 }}>Sin gastos registrados</div>
+              ) : categorias.map((c, i) => {
+                const pct = totalCat > 0 ? (c.total / totalCat * 100).toFixed(0) : 0;
+                return (
+                  <div key={i} style={{ padding: "8px 16px", borderBottom: i < categorias.length - 1 ? `1px solid ${COLOR.border}` : "none" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, color: COLOR.text, fontWeight: 600 }}>{CAT_LABEL[c.categoria] || c.categoria}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: COLOR.red }}>{fmt(c.total, "moneda", moneda)}</span>
+                    </div>
+                    <div style={{ height: 4, background: "#F1F5F9", borderRadius: 2 }}>
+                      <div style={{ height: "100%", width: `${pct}%`, background: COLOR.red, borderRadius: 2 }} />
+                    </div>
+                    <span style={{ fontSize: 10, color: COLOR.muted }}>{pct}%</span>
+                  </div>
+                );
+              })
+            }
           </div>
-          <div className="px-5 pb-4 grid grid-cols-3 gap-3">
-            {[
-              { label: "Activos ahora", value: activosReal, color: C.primary, icon: "🐄" },
-              { label: "Preñadas", value: prenadasReal, color: "#E74C3C", icon: "🤰" },
-              { label: "Nacimientos este mes", value: nacimientosReal, color: C.secondary, icon: "🍼" },
-            ].map((s, i) => (
-              <div key={i} className="rounded-xl p-3 text-center" style={{ background: C.bg, border: `1px solid ${C.border}` }}>
-                <p className="text-lg mb-0.5">{s.icon}</p>
-                <p className="font-black text-xl" style={{ color: s.color, fontFamily: "var(--font-poppins)" }}>{s.value}</p>
-                <p className="text-xs" style={{ color: C.textLight }}>{s.label}</p>
+          <div style={{ padding: "8px 12px 12px" }}>
+            <button onClick={() => router.push("/gastos")} style={{ width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${COLOR.border}`, background: "none", color: COLOR.red, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              Ver todos los gastos →
+            </button>
+          </div>
+        </div>
+
+        {/* Inventario e insumos */}
+        <div style={cardStyle}>
+          <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}` }}>
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: COLOR.text }}>Inventario e insumos</p>
+            <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>Stock y estado actual</p>
+          </div>
+          <div style={{ padding: "8px 0" }}>
+            {loading ? [1,2,3].map(i => <div key={i} style={{ padding: "8px 16px" }}><Sk h={30} /></div>) : (
+              <div style={{ textAlign: "center", padding: "24px 0", color: COLOR.muted }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>📦</div>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Sin datos de insumos</p>
+                <p style={{ margin: "4px 0 0", fontSize: 11 }}>Módulo en desarrollo</p>
               </div>
-            ))}
+            )}
+          </div>
+          <div style={{ padding: "8px 12px 12px" }}>
+            <button onClick={() => router.push("/insumos")} style={{ width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${COLOR.border}`, background: "none", color: COLOR.blue, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              Ver insumos →
+            </button>
+          </div>
+        </div>
+
+        {/* Indicadores productivos */}
+        <div style={cardStyle}>
+          <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}` }}>
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: COLOR.text }}>Indicadores productivos</p>
+            <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>Métricas clave del hato</p>
+          </div>
+          <div style={{ padding: "12px" }}>
+            {loading ? [1,2,3,4].map(i => <div key={i} style={{ marginBottom: 10 }}><Sk h={50} r={8} /></div>) :
+              indicadores.map((ind, i) => (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "10px 12px", borderRadius: 10, marginBottom: 8,
+                  background: "#F8FAFC", border: `1px solid ${COLOR.border}`,
+                }}>
+                  <span style={{ fontSize: 22 }}>{ind.icono}</span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>{ind.label}</p>
+                    <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: COLOR.text }}>{ind.valor}</p>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+          <div style={{ padding: "0 12px 12px" }}>
+            <button onClick={() => router.push("/reportes")} style={{ width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${COLOR.border}`, background: "none", color: COLOR.purple, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              Ver todos los reportes →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── MODAL: REGISTRAR MOVIMIENTO ── */}
+      {showRegistrar && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setShowRegistrar(false)}>
+          <div style={{ background: COLOR.white, borderRadius: 20, padding: 28, maxWidth: 480, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", animation: "fadeIn 0.2s ease" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: COLOR.text }}>Registrar movimiento</h3>
+              <button onClick={() => setShowRegistrar(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: COLOR.muted }}>✕</button>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {[
+                { icono: "💰", label: "Registrar venta", href: "/ventas", color: COLOR.green, bg: "#F0FDF4" },
+                { icono: "💸", label: "Registrar gasto", href: "/gastos", color: COLOR.red, bg: "#FEF2F2" },
+                { icono: "🛒", label: "Registrar compra", href: "/compras", color: COLOR.blue, bg: "#EFF6FF" },
+                { icono: "📦", label: "Registrar insumo", href: "/insumos", color: COLOR.orange, bg: "#FFF7ED" },
+                { icono: "👥", label: "Pago nómina", href: "/equipo", color: COLOR.purple, bg: "#F5F3FF" },
+              ].map(op => (
+                <button key={op.href} onClick={() => { setShowRegistrar(false); router.push(op.href); }}
+                  style={{ padding: "16px 12px", borderRadius: 12, border: `1px solid ${COLOR.border}`, background: op.bg, cursor: "pointer", textAlign: "left", transition: "transform 0.1s" }}
+                  onMouseEnter={e => e.currentTarget.style.transform = "scale(1.03)"}
+                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+                  <div style={{ fontSize: 24, marginBottom: 6 }}>{op.icono}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: op.color }}>{op.label}</div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── ANIMALES RECIENTES ── */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <p className="font-black text-sm" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>Animales Recientes</p>
-          <button onClick={() => router.push("/inventario")} className="font-bold text-xs hover:underline" style={{ color: C.secondary }}>Ver todos</button>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {animales.slice(0, 4).map((animal) => {
-            const fotos = (animal.media || []).filter(m => m.tipo === "FOTO");
-            const foto = fotos[0]?.url;
-            const edad = edadMeses(animal.fechaNacimiento);
-            const razaColor = RAZAS_COLORS[animal.raza] || RAZAS_COLORS.default;
-            const isHembra = animal.sexo === "HEMBRA";
-            return (
-              <button key={animal.id} onClick={() => router.push(`/inventario/${animal.id}`)}
-                className="rounded-2xl overflow-hidden hover:shadow-xl active:scale-95 transition-all text-left"
-                style={cardStyle}>
-                <div className="relative" style={{ height: 110 }}>
-                  {foto
-                    ? <img src={foto} alt="" className="w-full h-full object-cover" />
-                    : <div className="w-full h-full flex items-center justify-center text-5xl"
-                        style={{ background: isHembra ? "#FCE4EC" : "#E3F2FD" }}>
-                        {isHembra ? "🐄" : "🐂"}
-                      </div>
-                  }
-                  <div className="absolute top-2 left-2">
-                    <span className="text-white font-black text-xs px-2 py-0.5 rounded-full"
-                      style={{ background: razaColor + "ee" }}>
-                      {animal.sexo === "HEMBRA" ? "♀" : "♂"}{animal.identificador?.slice(-3)}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3">
-                  <p className="font-black text-sm truncate" style={{ color: C.text }}>{animal.raza || "Sin raza"}</p>
-                  <p className="text-xs truncate" style={{ color: C.textLight }}>{animal.nombre || animal.identificador}</p>
-                  <div className="mt-1.5 space-y-0.5">
-                    {animal.pesoActual && <p className="text-xs" style={{ color: C.textLight }}>Peso: {animal.pesoActual} kg</p>}
-                    {edad !== null && <p className="text-xs" style={{ color: C.textLight }}>Edad: {edad} meses</p>}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-          {animales.length === 0 && (
-            <div className="col-span-4 text-center py-12 rounded-2xl" style={{ ...cardStyle, color: C.textLight }}>
-              No hay animales activos registrados
+      {/* ── MODAL: VISTA RÁPIDA ── */}
+      {showVistaRapida && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setShowVistaRapida(false)}>
+          <div style={{ background: COLOR.white, borderRadius: 20, padding: 28, maxWidth: 500, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", animation: "fadeIn 0.2s ease" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: COLOR.text }}>Vista rápida del hato</h3>
+              <button onClick={() => setShowVistaRapida(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: COLOR.muted }}>✕</button>
             </div>
-          )}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+              {[
+                { icono: "🐄", label: "Activos", valor: stats?.animalesActivos || 0, color: COLOR.green },
+                { icono: "🛍️", label: "En venta", valor: hato.enVenta || 0, color: COLOR.blue },
+                { icono: "🤰", label: "Preñadas", valor: hato.prenadas || 0, color: COLOR.purple },
+                { icono: "🍼", label: "Nacimientos", valor: hato.nacimientosMes || 0, color: COLOR.orange },
+                { icono: "💰", label: "Ventas mes", valor: stats?.ventasMes?.cantidad || 0, color: COLOR.green },
+                { icono: "🚨", label: "Alertas", valor: stats?.alertas?.length || 0, color: COLOR.red },
+              ].map((s, i) => (
+                <div key={i} style={{ padding: "14px", borderRadius: 12, background: "#F8FAFC", border: `1px solid ${COLOR.border}`, textAlign: "center" }}>
+                  <div style={{ fontSize: 28, marginBottom: 4 }}>{s.icono}</div>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: s.color }}>{s.valor}</div>
+                  <div style={{ fontSize: 11, color: COLOR.muted }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => { setShowVistaRapida(false); router.push("/inventario"); }}
+              style={{ marginTop: 16, width: "100%", padding: "10px", borderRadius: 10, background: COLOR.green, color: "#fff", fontWeight: 700, fontSize: 14, border: "none", cursor: "pointer" }}>
+              Ir al inventario completo
+            </button>
+          </div>
         </div>
-      </div>
-
+      )}
     </AppLayout>
   );
 }
