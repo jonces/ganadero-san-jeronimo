@@ -70,6 +70,10 @@ model Finca {
   anuncios      Anuncio[]
   actividadLogs ActividadLog[]
   tareas        Tarea[]
+  compras          Compra[]
+  proveedores      Proveedor[]
+  cuentasPorPagar  CuentaPorPagar[]
+  insumos          Insumo[]
 }
 
 model Usuario {
@@ -343,4 +347,68 @@ model ActividadLog {
   usuarioId String
   usuario   Usuario  @relation(fields: [usuarioId], references: [id])
   createdAt DateTime @default(now())
+}
+
+model Compra {
+  id          String   @id @default(cuid())
+  fincaId     String
+  finca       Finca    @relation(fields: [fincaId], references: [id])
+  tipo        String   // ANIMAL, INSUMO, EQUIPO, SERVICIO, OTRO
+  descripcion String
+  proveedor   String?
+  cantidad    Float    @default(1)
+  precioUnit  Float
+  total       Float
+  fecha       DateTime @default(now())
+  factura     String?
+  notas       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Proveedor {
+  id        String   @id @default(cuid())
+  fincaId   String
+  finca     Finca    @relation(fields: [fincaId], references: [id])
+  nombre    String
+  tipo      String   // VETERINARIA, ALIMENTACION, EQUIPO, TRANSPORTE, FINANCIERO, OTRO
+  contacto  String?
+  telefono  String?
+  email     String?
+  direccion String?
+  notas     String?
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CuentaPorPagar {
+  id          String    @id @default(cuid())
+  fincaId     String
+  finca       Finca     @relation(fields: [fincaId], references: [id])
+  descripcion String
+  proveedor   String?
+  monto       Float
+  fechaVence  DateTime
+  estado      String    @default("PENDIENTE")
+  pagadaEn    DateTime?
+  notas       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Insumo {
+  id          String   @id @default(cuid())
+  fincaId     String
+  finca       Finca    @relation(fields: [fincaId], references: [id])
+  nombre      String
+  categoria   String   // MEDICAMENTO, ALIMENTO, EQUIPO, HERRAMIENTA, OTRO
+  unidad      String
+  stockActual Float    @default(0)
+  stockMinimo Float    @default(0)
+  precioUnit  Float?
+  proveedor   String?
+  notas       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

@@ -23,6 +23,8 @@ const comprasRoutes = require("./routes/compras");
 const proveedoresRoutes = require("./routes/proveedores");
 const finanzasRoutes = require("./routes/finanzas");
 const insumosRoutes = require("./routes/insumos");
+const reproduccionRoutes = require("./routes/reproduccion");
+const cuentasPagarRoutes = require("./routes/cuentas-pagar");
 
 const app = express();
 app.use(cors());
@@ -52,6 +54,8 @@ app.use("/api/compras", comprasRoutes);
 app.use("/api/proveedores", proveedoresRoutes);
 app.use("/api/finanzas", finanzasRoutes);
 app.use("/api/insumos", insumosRoutes);
+app.use("/api/reproduccion", reproduccionRoutes);
+app.use("/api/cuentas-pagar", cuentasPagarRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);
