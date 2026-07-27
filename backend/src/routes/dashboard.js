@@ -55,16 +55,9 @@ router.get("/", async (req, res, next) => {
     const gananciaNeta = ventasMesTotal - costoAnimalesVendidos - gastosMesTotal;
     const margenGanancia = ventasMesTotal > 0 ? (gananciaNeta / ventasMesTotal) * 100 : 0;
 
-    // ── Capital invertido histórico (todos los gastos + compras + costoBase animales) ──
-    const [todosGastos, todasCompras, animalesConCosto] = await Promise.all([
-      prisma.gasto.findMany({ where: { fincaId }, select: { monto: true } }),
-      prisma.compra.findMany({ where: { fincaId }, select: { total: true } }),
-      prisma.animal.findMany({ where: { fincaId, estado: "ACTIVO", costoBase: { not: null }, madreId: null }, select: { costoBase: true } }),
-    ]);
-    const totalGastos = todosGastos.reduce((s, g) => s + (g.monto || 0), 0);
-    const totalCompras = todasCompras.reduce((s, c) => s + (c.total || 0), 0);
-    const totalCostoAnimales = animalesConCosto.reduce((s, a) => s + (a.costoBase || 0), 0);
-    const capitalInvertido = totalGastos + totalCompras + totalCostoAnimales;
+    // ── Capital invertido = solo lo registrado en el módulo de Compras ──
+    const todasCompras = await prisma.compra.findMany({ where: { fincaId }, select: { total: true } });
+    const capitalInvertido = todasCompras.reduce((s, c) => s + (c.total || 0), 0);
 
     // ── Caja disponible ──
     const todosGastosPagados = await prisma.gasto.findMany({ where: { fincaId }, select: { monto: true } });
