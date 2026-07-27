@@ -63,7 +63,7 @@ export default function ComprasPage() {
 
   useEffect(() => {
     if (form.tipo === "ANIMAL") {
-      api("/animales?perPage=0&estado=ACTIVO").then(d => setAnimales(d.items || d || [])).catch(() => {});
+      api("/animales").then(d => setAnimales(Array.isArray(d) ? d : (d.items || []))).catch(() => {});
     }
   }, [form.tipo]);
 
@@ -203,7 +203,7 @@ export default function ComprasPage() {
                     <div style={{ padding: 16, color: T.textLight, fontSize: 13, textAlign: "center" }}>No se encontraron animales</div>
                   ) : animalesFiltrados.map(a => {
                     const selec = form.animalId === a.id;
-                    const foto = a.fotos?.[0] || a.foto || null;
+                    const foto = a.media?.find(m => m.tipo === "imagen" || m.tipo === "image" || m.url?.match(/\.(jpg|jpeg|png|webp)/i))?.url || null;
                     return (
                       <div key={a.id} onClick={() => setForm(f => ({ ...f, animalId: a.id, descripcion: f.descripcion || `Compra de animal #${a.arete || a.id.slice(0,6)}` }))}
                         style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", cursor: "pointer", borderBottom: `1px solid ${T.border}`, background: selec ? "#DCFCE7" : T.white, transition: "background .15s" }}>
