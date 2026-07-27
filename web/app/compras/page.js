@@ -193,23 +193,48 @@ export default function ComprasPage() {
             {/* Selector de animal (solo cuando tipo=ANIMAL) */}
             {form.tipo === "ANIMAL" && (
               <div style={{ marginBottom: 14, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 6 }}>Animal comprado * <span style={{ fontWeight: 400, color: T.textLight }}>(actualiza su costo base)</span></div>
-                <input placeholder="Buscar por nombre o arete..." value={busqAnimal} onChange={e => setBusqAnimal(e.target.value)}
-                  style={{ width: "100%", padding: "7px 10px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box" }} />
-                <div style={{ maxHeight: 160, overflowY: "auto", borderRadius: 7, border: `1px solid ${T.border}`, background: T.white }}>
-                  {animalesFiltrados.length === 0 ? (
-                    <div style={{ padding: 12, color: T.textLight, fontSize: 13 }}>No se encontraron animales</div>
-                  ) : animalesFiltrados.slice(0, 20).map(a => (
-                    <div key={a.id} onClick={() => { setForm(f => ({ ...f, animalId: a.id, descripcion: f.descripcion || `Compra de ${a.nombre || a.arete || "animal"}` })); }}
-                      style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: `1px solid ${T.border}`, background: form.animalId === a.id ? "#F0FDF4" : T.white, fontWeight: form.animalId === a.id ? 700 : 400, color: form.animalId === a.id ? T.green : T.text, display: "flex", alignItems: "center", gap: 8 }}>
-                      {form.animalId === a.id && <span>✓</span>}
-                      <span>{a.nombre || "Sin nombre"}</span>
-                      {a.arete && <span style={{ color: T.textLight }}>#{a.arete}</span>}
-                      <span style={{ marginLeft: "auto", color: T.textLight }}>{a.raza || ""}</span>
-                    </div>
-                  ))}
+                <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 6 }}>
+                  Animal comprado * <span style={{ fontWeight: 400, color: T.textLight }}>(actualiza su costo base)</span>
                 </div>
-                {form.animalId && <div style={{ marginTop: 6, fontSize: 12, color: T.green, fontWeight: 600 }}>✓ Animal seleccionado — se actualizará su costo base al guardar</div>}
+                <input placeholder="Buscar por arete o raza..." value={busqAnimal} onChange={e => setBusqAnimal(e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box" }} />
+                <div style={{ maxHeight: 260, overflowY: "auto", borderRadius: 8, border: `1px solid ${T.border}`, background: T.white }}>
+                  {animalesFiltrados.length === 0 ? (
+                    <div style={{ padding: 16, color: T.textLight, fontSize: 13, textAlign: "center" }}>No se encontraron animales</div>
+                  ) : animalesFiltrados.map(a => {
+                    const selec = form.animalId === a.id;
+                    const foto = a.fotos?.[0] || a.foto || null;
+                    return (
+                      <div key={a.id} onClick={() => setForm(f => ({ ...f, animalId: a.id, descripcion: f.descripcion || `Compra de animal #${a.arete || a.id.slice(0,6)}` }))}
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", cursor: "pointer", borderBottom: `1px solid ${T.border}`, background: selec ? "#DCFCE7" : T.white, transition: "background .15s" }}>
+                        {/* Foto */}
+                        <div style={{ width: 52, height: 52, borderRadius: 8, overflow: "hidden", flexShrink: 0, border: `2px solid ${selec ? T.green : T.border}`, background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {foto
+                            ? <img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }} />
+                            : null}
+                          <span style={{ fontSize: 22, display: foto ? "none" : "flex" }}>🐄</span>
+                        </div>
+                        {/* Info */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: selec ? T.green : T.text }}>
+                            #{a.arete || "Sin arete"}
+                          </div>
+                          <div style={{ fontSize: 12, color: T.textSec }}>{a.raza || "Sin raza"} · {a.sexo === "MACHO" ? "Macho" : "Hembra"}</div>
+                          {a.nombre && <div style={{ fontSize: 11, color: T.textLight }}>{a.nombre}</div>}
+                        </div>
+                        {/* Check */}
+                        {selec && <div style={{ width: 22, height: 22, borderRadius: "50%", background: T.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span>
+                        </div>}
+                      </div>
+                    );
+                  })}
+                </div>
+                {form.animalId && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: T.green, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+                    ✓ Animal seleccionado — el precio que ingreses se guardará como su costo base
+                  </div>
+                )}
               </div>
             )}
 
