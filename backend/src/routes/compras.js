@@ -56,22 +56,34 @@ router.get("/", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { tipo, descripcion, proveedor, cantidad, precioUnit, fecha, factura, notas } = req.body;
+    const { tipo, descripcion, proveedor, cantidad, precioUnit, fecha, factura, notas, animalId } = req.body;
     const total = (Number(cantidad) || 1) * Number(precioUnit);
     const compra = await prisma.compra.create({
       data: {
         fincaId: req.user.fincaId,
         tipo,
         descripcion,
-        proveedor,
+        proveedor: proveedor || null,
         cantidad: Number(cantidad) || 1,
         precioUnit: Number(precioUnit),
         total,
         fecha: fecha ? new Date(fecha + "T12:00:00") : new Date(),
-        factura,
-        notas,
+        factura: factura || null,
+        notas: notas || null,
       },
     });
+
+    // Si es compra de animal, actualizar costoBase del animal
+    if (tipo === "ANIMAL" && animalId) {
+      const animal = await prisma.animal.findFirst({ where: { id: animalId, fincaId: req.user.fincaId } });
+      if (animal) {
+        await prisma.animal.update({
+          where: { id: animalId },
+          data: { costoBase: Number(precioUnit) * (Number(cantidad) || 1) },
+        });
+      }
+    }
+
     res.json(compra);
   } catch (err) { next(err); }
 });

@@ -26,7 +26,7 @@ const TIPO_COLORS = {
 
 const FORM_VACIO = {
   tipo: "INSUMO", descripcion: "", proveedor: "", cantidad: "1", precioUnit: "",
-  fecha: new Date().toISOString().slice(0, 10), factura: "", notas: "",
+  fecha: new Date().toISOString().slice(0, 10), factura: "", notas: "", animalId: "",
 };
 
 export default function ComprasPage() {
@@ -39,6 +39,8 @@ export default function ComprasPage() {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
+  const [animales, setAnimales] = useState([]);
+  const [busqAnimal, setBusqAnimal] = useState("");
 
   async function cargar() {
     setLoading(true);
@@ -59,10 +61,21 @@ export default function ComprasPage() {
 
   useEffect(() => { cargar(); }, [filtroTipo, fechaDesde, fechaHasta]);
 
+  useEffect(() => {
+    if (form.tipo === "ANIMAL") {
+      api("/animales?perPage=0&estado=ACTIVO").then(d => setAnimales(d.items || d || [])).catch(() => {});
+    }
+  }, [form.tipo]);
+
+  const animalesFiltrados = animales.filter(a =>
+    !busqAnimal || `${a.nombre || ""} ${a.arete || ""}`.toLowerCase().includes(busqAnimal.toLowerCase())
+  );
+
   const total = Number(form.cantidad || 1) * Number(form.precioUnit || 0);
 
   async function guardar() {
     if (!form.descripcion || !form.precioUnit) return alert("Completa descripción y precio");
+    if (form.tipo === "ANIMAL" && !form.animalId) return alert("Selecciona el animal comprado");
     setGuardando(true);
     try {
       await api("/compras", { method: "POST", body: { ...form, cantidad: Number(form.cantidad), precioUnit: Number(form.precioUnit) } });
@@ -168,24 +181,51 @@ export default function ComprasPage() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ background: T.white, borderRadius: 14, padding: 28, width: 460, maxWidth: "95vw", maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 18, color: T.text }}>Nueva compra</div>
+            {/* Tipo */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 5 }}>Tipo *</div>
+              <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value, animalId: "" }))}
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }}>
+                {TIPOS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </div>
+
+            {/* Selector de animal (solo cuando tipo=ANIMAL) */}
+            {form.tipo === "ANIMAL" && (
+              <div style={{ marginBottom: 14, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: 12 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 6 }}>Animal comprado * <span style={{ fontWeight: 400, color: T.textLight }}>(actualiza su costo base)</span></div>
+                <input placeholder="Buscar por nombre o arete..." value={busqAnimal} onChange={e => setBusqAnimal(e.target.value)}
+                  style={{ width: "100%", padding: "7px 10px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box" }} />
+                <div style={{ maxHeight: 160, overflowY: "auto", borderRadius: 7, border: `1px solid ${T.border}`, background: T.white }}>
+                  {animalesFiltrados.length === 0 ? (
+                    <div style={{ padding: 12, color: T.textLight, fontSize: 13 }}>No se encontraron animales</div>
+                  ) : animalesFiltrados.slice(0, 20).map(a => (
+                    <div key={a.id} onClick={() => { setForm(f => ({ ...f, animalId: a.id, descripcion: f.descripcion || `Compra de ${a.nombre || a.arete || "animal"}` })); }}
+                      style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13, borderBottom: `1px solid ${T.border}`, background: form.animalId === a.id ? "#F0FDF4" : T.white, fontWeight: form.animalId === a.id ? 700 : 400, color: form.animalId === a.id ? T.green : T.text, display: "flex", alignItems: "center", gap: 8 }}>
+                      {form.animalId === a.id && <span>✓</span>}
+                      <span>{a.nombre || "Sin nombre"}</span>
+                      {a.arete && <span style={{ color: T.textLight }}>#{a.arete}</span>}
+                      <span style={{ marginLeft: "auto", color: T.textLight }}>{a.raza || ""}</span>
+                    </div>
+                  ))}
+                </div>
+                {form.animalId && <div style={{ marginTop: 6, fontSize: 12, color: T.green, fontWeight: 600 }}>✓ Animal seleccionado — se actualizará su costo base al guardar</div>}
+              </div>
+            )}
+
+            {/* Resto de campos */}
             {[
-              { label: "Tipo *", field: "tipo", type: "select", options: TIPOS },
               { label: "Descripción *", field: "descripcion", type: "text" },
-              { label: "Proveedor", field: "proveedor", type: "text" },
-              { label: "Cantidad", field: "cantidad", type: "number" },
+              { label: "Proveedor / Vendedor", field: "proveedor", type: "text" },
+              { label: form.tipo === "ANIMAL" ? "Cantidad de animales" : "Cantidad", field: "cantidad", type: "number" },
               { label: "Precio unitario (C$) *", field: "precioUnit", type: "number" },
               { label: "Fecha", field: "fecha", type: "date" },
               { label: "Número de factura", field: "factura", type: "text" },
               { label: "Notas", field: "notas", type: "textarea" },
-            ].map(({ label, field, type, options }) => (
+            ].map(({ label, field, type }) => (
               <div key={field} style={{ marginBottom: 14 }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 5 }}>{label}</div>
-                {type === "select" ? (
-                  <select value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }}>
-                    {options.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                ) : type === "textarea" ? (
+                {type === "textarea" ? (
                   <textarea value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} rows={3}
                     style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, resize: "vertical", boxSizing: "border-box" }} />
                 ) : (
