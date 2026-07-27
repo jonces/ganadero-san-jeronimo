@@ -159,7 +159,7 @@ const REPORTES = [
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
       const gastosRes = await api("/gastos?limit=1000");
-      const gastos = gastosRes.items || gastosRes || [];
+      const gastos = gastosRes.gastos || gastosRes.items || [];
       const doc = new jsPDF();
       addHeader(doc, "Reporte de Gastos");
       autoTable(doc, {
