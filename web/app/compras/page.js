@@ -225,49 +225,45 @@ export default function ComprasPage() {
                     <div style={{ padding: 16, color: T.textLight, fontSize: 13, textAlign: "center" }}>No se encontraron animales</div>
                   ) : animalesFiltrados.map(a => {
                     const yaSelec = (form.animalesIds || []).includes(a.id);
-                    const yaConPrecio = !!a.costoBase;
-                    const foto = a.media?.find(m => m.tipo === "imagen")?.url || null;
+                    const foto = a.media?.find(m => m.tipo === "imagen")?.url
+                      || a.media?.find(m => m.url)?.url
+                      || null;
                     return (
                       <div key={a.id}
-                        onClick={() => !yaConPrecio && toggleAnimal(a.id)}
+                        onClick={() => toggleAnimal(a.id)}
                         style={{
                           display: "flex", alignItems: "center", gap: 10,
                           padding: "9px 12px", borderBottom: `1px solid ${T.border}`,
-                          cursor: yaConPrecio ? "default" : "pointer",
-                          background: yaSelec ? "#DCFCE7" : yaConPrecio ? "#F8FAFC" : T.white,
-                          opacity: yaConPrecio ? 0.65 : 1,
+                          cursor: "pointer",
+                          background: yaSelec ? "#DCFCE7" : T.white,
                           transition: "background .15s",
                         }}>
                         {/* Foto */}
-                        <div style={{ width: 56, height: 56, borderRadius: 8, overflow: "hidden", flexShrink: 0, border: `2px solid ${yaSelec ? T.green : yaConPrecio ? "#CBD5E1" : T.border}`, background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                        <div style={{ width: 60, height: 60, borderRadius: 8, overflow: "hidden", flexShrink: 0, border: `2px solid ${yaSelec ? T.green : T.border}`, background: "#F1F5F9" }}>
                           {foto
-                            ? <img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                            : <span style={{ fontSize: 24 }}>🐄</span>}
+                            ? <img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                                onError={e => { e.target.style.display = "none"; e.target.parentNode.style.background = "#E2E8F0"; }} />
+                            : <div style={{ width: "100%", height: "100%", background: "#E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>SIN<br/>FOTO</div>}
                         </div>
                         {/* Info */}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 800, fontSize: 14, color: yaSelec ? T.green : T.text }}>
+                          <div style={{ fontWeight: 800, fontSize: 15, color: yaSelec ? T.green : T.text }}>
                             #{a.arete || "Sin arete"}
                           </div>
                           <div style={{ fontSize: 12, color: T.textSec }}>{a.raza || "Sin raza"} · {a.sexo === "MACHO" ? "Macho" : "Hembra"}</div>
-                          {yaConPrecio && (
-                            <div style={{ fontSize: 11, color: "#64748B", marginTop: 1 }}>
-                              Precio ya registrado: C$ {Number(a.costoBase).toLocaleString("es-NI")}
+                          {a.costoBase && (
+                            <div style={{ fontSize: 11, color: T.orange, marginTop: 1, fontWeight: 600 }}>
+                              Costo anterior: C$ {Number(a.costoBase).toLocaleString("es-NI")} — se actualizará
                             </div>
                           )}
                         </div>
                         {/* Check */}
-                        {yaConPrecio ? (
-                          <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#1E293B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span>
-                          </div>
-                        ) : yaSelec ? (
-                          <div style={{ width: 24, height: 24, borderRadius: "50%", background: T.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span>
-                          </div>
-                        ) : (
-                          <div style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${T.border}`, flexShrink: 0 }} />
-                        )}
+                        {yaSelec
+                          ? <div style={{ width: 24, height: 24, borderRadius: "50%", background: T.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span>
+                            </div>
+                          : <div style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${T.border}`, flexShrink: 0 }} />
+                        }
                       </div>
                     );
                   })}
