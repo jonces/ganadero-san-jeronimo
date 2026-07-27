@@ -77,7 +77,12 @@ router.get("/", async (req, res, next) => {
     const cajaDisponible = totalVentasCobradas - totalGastosPagados;
 
     // ── Valor estimado del hato ──
-    const valorEstimadoHato = animales.reduce((s, a) => s + (a.pesoActual ? a.pesoActual * 50 : 15000), 0);
+    // Valor hato: usa precioVenta del animal si tiene, sino C$15,000 por defecto
+    const animalesConPrecio = await prisma.animal.findMany({
+      where: { fincaId, estado: "ACTIVO" },
+      select: { precioVenta: true },
+    });
+    const valorEstimadoHato = animalesConPrecio.reduce((s, a) => s + (a.precioVenta || 15000), 0);
 
     // ── Gráfica 6 meses ──
     const graficaMeses = [];

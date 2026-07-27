@@ -447,7 +447,7 @@ function ModalEditarAnimal({ animal, hembrasActivas, onClose, onSuccess }) {
             {F("Nombre", "nombre")}
             {F("Raza", "raza")}
             {F("Fierro / marca", "fierro")}
-            {F("Peso actual (kg)", "pesoActual", "number")}
+            {F("Peso actual (lb)", "pesoActual", "number")}
             {F("Potrero", "potrero")}
             {!animal.madreId && F("Costo de compra (C$)", "costoCompra", "number")}
             {F("Precio de venta (C$)", "precioVenta", "number")}
@@ -715,7 +715,7 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
           <Row label="Raza" value={animal.raza || "—"} />
           <Row label="Nacimiento" value={animal.fechaNacimiento ? new Date(animal.fechaNacimiento).toLocaleDateString("es-NI") : "—"} />
           <Row label="Edad" value={calcularEdad(animal.fechaNacimiento)} />
-          <Row label="Peso" value={animal.pesoActual ? `${animal.pesoActual} kg` : "—"} />
+          <Row label="Peso" value={animal.pesoActual ? `${animal.pesoActual} lb` : "—"} />
           <Row label="Potrero" value={animal.potrero || "—"} />
           <Row label="Fierro" value={animal.fierro || "—"} />
           {!animal.madreId && animal.costoCompra && <Row label="Costo de compra" value={`C$ ${Number(animal.costoCompra).toLocaleString("es-NI")}`} />}
@@ -978,7 +978,7 @@ export default function InventarioPage() {
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Raza</label><input style={{ ...li, width: "100%" }} value={form.raza} onChange={e => setForm({ ...form, raza: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Fierro</label><input style={{ ...li, width: "100%" }} value={form.fierro} onChange={e => setForm({ ...form, fierro: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Potrero</label><input style={{ ...li, width: "100%" }} placeholder="Ej: Potrero Norte" value={form.potrero} onChange={e => setForm({ ...form, potrero: e.target.value })} /></div>
-              <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Peso actual (kg)</label><input type="number" style={{ ...li, width: "100%" }} value={form.pesoActual} onChange={e => setForm({ ...form, pesoActual: e.target.value })} /></div>
+              <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Peso actual (lb)</label><input type="number" style={{ ...li, width: "100%" }} value={form.pesoActual} onChange={e => setForm({ ...form, pesoActual: e.target.value })} /></div>
               {(form.origen === "COMPRADO" && !form.madreId) && <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Costo de compra (C$)</label><input type="number" style={{ ...li, width: "100%" }} value={form.costoCompra} onChange={e => setForm({ ...form, costoCompra: e.target.value })} /></div>}
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Precio de venta (C$)</label><input type="number" style={{ ...li, width: "100%" }} value={form.precioVenta} onChange={e => setForm({ ...form, precioVenta: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Fecha nacimiento</label><input type="date" style={{ ...li, width: "100%" }} value={form.fechaNacimiento} onChange={e => setForm({ ...form, fechaNacimiento: e.target.value })} /></div>
@@ -1102,7 +1102,7 @@ export default function InventarioPage() {
                               </td>
                               <td style={{ padding: "10px 12px", color: "#334155", fontFamily: "monospace", whiteSpace: "nowrap", fontWeight: 600 }}>{a.identificador}</td>
                               <td style={{ padding: "10px 12px", color: T.textSec, whiteSpace: "nowrap" }}>{categoriaAnimal(a)}</td>
-                              <td style={{ padding: "10px 12px", color: T.textSec, whiteSpace: "nowrap" }}>{a.pesoActual ? `${a.pesoActual} kg` : "—"}</td>
+                              <td style={{ padding: "10px 12px", color: T.textSec, whiteSpace: "nowrap" }}>{a.pesoActual ? `${a.pesoActual} lb` : "—"}</td>
                               {!panelAbierto && <td style={{ padding: "10px 12px", color: T.textSec, whiteSpace: "nowrap" }}>{a.potrero || "—"}</td>}
                               <td style={{ padding: "10px 12px" }}><Badge text={ec.label} color={ec.color} bg={ec.bg} border={ec.border} /></td>
                               {!panelAbierto && <td style={{ padding: "10px 12px" }}><Badge text={cc.label} color={cc.color} bg={cc.bg} border={cc.border} /></td>}
