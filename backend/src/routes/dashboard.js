@@ -32,7 +32,7 @@ router.get("/", async (req, res, next) => {
     // ── Ventas del mes ──
     const ventasMesRaw = await prisma.venta.findMany({
       where: { fincaId, fecha: { gte: inicioMes, lt: finMes }, estadoVenta: { not: "REVERSADA" } },
-      select: { precioNIO: true, estadoPago: true, costoBase: true, animalId: true, animal: { select: { costoBase: true } } },
+      select: { precioNIO: true, estadoPago: true, animalId: true, animal: { select: { costoBase: true } } },
     });
     const ventasMesTotal = ventasMesRaw.reduce((s, v) => s + (v.precioNIO || 0), 0);
     const ventasMesCantidad = ventasMesRaw.length;
