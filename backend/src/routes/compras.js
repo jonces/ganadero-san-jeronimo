@@ -56,16 +56,20 @@ router.get("/", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { tipo, descripcion, proveedor, cantidad, precioUnit, fecha, factura, notas, animalId } = req.body;
-    const total = (Number(cantidad) || 1) * Number(precioUnit);
+    const { tipo, descripcion, proveedor, cantidad, precioUnit, fecha, factura, notas, animalesIds } = req.body;
+    const ids = Array.isArray(animalesIds) ? animalesIds : [];
+    const cant = tipo === "ANIMAL" && ids.length > 0 ? ids.length : (Number(cantidad) || 1);
+    const pu = Number(precioUnit);
+    const total = cant * pu;
+
     const compra = await prisma.compra.create({
       data: {
         fincaId: req.user.fincaId,
         tipo,
         descripcion,
         proveedor: proveedor || null,
-        cantidad: Number(cantidad) || 1,
-        precioUnit: Number(precioUnit),
+        cantidad: cant,
+        precioUnit: pu,
         total,
         fecha: fecha ? new Date(fecha + "T12:00:00") : new Date(),
         factura: factura || null,
@@ -73,15 +77,14 @@ router.post("/", async (req, res, next) => {
       },
     });
 
-    // Si es compra de animal, actualizar costoBase del animal
-    if (tipo === "ANIMAL" && animalId) {
-      const animal = await prisma.animal.findFirst({ where: { id: animalId, fincaId: req.user.fincaId } });
-      if (animal) {
-        await prisma.animal.update({
-          where: { id: animalId },
-          data: { costoBase: Number(precioUnit) * (Number(cantidad) || 1) },
-        });
-      }
+    // Si es compra de animales, actualizar costoBase de cada uno
+    if (tipo === "ANIMAL" && ids.length > 0) {
+      await Promise.all(ids.map(async (animalId) => {
+        const animal = await prisma.animal.findFirst({ where: { id: animalId, fincaId: req.user.fincaId } });
+        if (animal) {
+          await prisma.animal.update({ where: { id: animalId }, data: { costoBase: pu } });
+        }
+      }));
     }
 
     res.json(compra);

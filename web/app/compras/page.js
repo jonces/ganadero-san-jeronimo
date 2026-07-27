@@ -26,7 +26,7 @@ const TIPO_COLORS = {
 
 const FORM_VACIO = {
   tipo: "INSUMO", descripcion: "", proveedor: "", cantidad: "1", precioUnit: "",
-  fecha: new Date().toISOString().slice(0, 10), factura: "", notas: "", animalId: "",
+  fecha: new Date().toISOString().slice(0, 10), factura: "", notas: "", animalesIds: [],
 };
 
 export default function ComprasPage() {
@@ -68,17 +68,31 @@ export default function ComprasPage() {
   }, [form.tipo]);
 
   const animalesFiltrados = animales.filter(a =>
-    !busqAnimal || `${a.nombre || ""} ${a.arete || ""}`.toLowerCase().includes(busqAnimal.toLowerCase())
+    !busqAnimal || `${a.arete || ""} ${a.raza || ""} ${a.nombre || ""}`.toLowerCase().includes(busqAnimal.toLowerCase())
   );
 
-  const total = Number(form.cantidad || 1) * Number(form.precioUnit || 0);
+  function toggleAnimal(id) {
+    setForm(f => {
+      const ids = f.animalesIds || [];
+      return { ...f, animalesIds: ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id] };
+    });
+  }
+
+  const precioUnitNum = Number(form.precioUnit || 0);
+  const cantidadAnimales = form.tipo === "ANIMAL" ? (form.animalesIds?.length || 0) : Number(form.cantidad || 1);
+  const total = form.tipo === "ANIMAL" ? cantidadAnimales * precioUnitNum : Number(form.cantidad || 1) * precioUnitNum;
 
   async function guardar() {
     if (!form.descripcion || !form.precioUnit) return alert("Completa descripción y precio");
-    if (form.tipo === "ANIMAL" && !form.animalId) return alert("Selecciona el animal comprado");
+    if (form.tipo === "ANIMAL" && (!form.animalesIds || form.animalesIds.length === 0)) return alert("Selecciona al menos un animal");
     setGuardando(true);
     try {
-      await api("/compras", { method: "POST", body: { ...form, cantidad: Number(form.cantidad), precioUnit: Number(form.precioUnit) } });
+      await api("/compras", { method: "POST", body: {
+        ...form,
+        cantidad: cantidadAnimales,
+        precioUnit: precioUnitNum,
+        animalesIds: form.animalesIds,
+      } });
       setShowModal(false);
       setForm(FORM_VACIO);
       await cargar();
@@ -184,55 +198,83 @@ export default function ComprasPage() {
             {/* Tipo */}
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 5 }}>Tipo *</div>
-              <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value, animalId: "" }))}
+              <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value, animalesIds: [] }))}
                 style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }}>
                 {TIPOS.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
 
-            {/* Selector de animal (solo cuando tipo=ANIMAL) */}
+            {/* Selector multi-animal */}
             {form.tipo === "ANIMAL" && (
               <div style={{ marginBottom: 14, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 6 }}>
-                  Animal comprado * <span style={{ fontWeight: 400, color: T.textLight }}>(actualiza su costo base)</span>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec }}>
+                    Animales comprados *
+                    <span style={{ fontWeight: 400, color: T.textLight }}> — selecciona uno o varios</span>
+                  </div>
+                  {form.animalesIds.length > 0 && (
+                    <span style={{ background: T.green, color: "#fff", borderRadius: 99, fontSize: 11, fontWeight: 800, padding: "2px 10px" }}>
+                      {form.animalesIds.length} seleccionado{form.animalesIds.length > 1 ? "s" : ""}
+                    </span>
+                  )}
                 </div>
-                <input placeholder="Buscar por arete o raza..." value={busqAnimal} onChange={e => setBusqAnimal(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box" }} />
-                <div style={{ maxHeight: 260, overflowY: "auto", borderRadius: 8, border: `1px solid ${T.border}`, background: T.white }}>
+                <input placeholder="Buscar por arete, raza o nombre..." value={busqAnimal} onChange={e => setBusqAnimal(e.target.value)}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box", background: T.white }} />
+                <div style={{ maxHeight: 300, overflowY: "auto", borderRadius: 8, border: `1px solid ${T.border}`, background: T.white }}>
                   {animalesFiltrados.length === 0 ? (
                     <div style={{ padding: 16, color: T.textLight, fontSize: 13, textAlign: "center" }}>No se encontraron animales</div>
                   ) : animalesFiltrados.map(a => {
-                    const selec = form.animalId === a.id;
-                    const foto = a.media?.find(m => m.tipo === "imagen" || m.tipo === "image" || m.url?.match(/\.(jpg|jpeg|png|webp)/i))?.url || null;
+                    const yaSelec = (form.animalesIds || []).includes(a.id);
+                    const yaConPrecio = !!a.costoBase;
+                    const foto = a.media?.find(m => m.tipo === "imagen")?.url || null;
                     return (
-                      <div key={a.id} onClick={() => setForm(f => ({ ...f, animalId: a.id, descripcion: f.descripcion || `Compra de animal #${a.arete || a.id.slice(0,6)}` }))}
-                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", cursor: "pointer", borderBottom: `1px solid ${T.border}`, background: selec ? "#DCFCE7" : T.white, transition: "background .15s" }}>
+                      <div key={a.id}
+                        onClick={() => !yaConPrecio && toggleAnimal(a.id)}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 10,
+                          padding: "9px 12px", borderBottom: `1px solid ${T.border}`,
+                          cursor: yaConPrecio ? "default" : "pointer",
+                          background: yaSelec ? "#DCFCE7" : yaConPrecio ? "#F8FAFC" : T.white,
+                          opacity: yaConPrecio ? 0.65 : 1,
+                          transition: "background .15s",
+                        }}>
                         {/* Foto */}
-                        <div style={{ width: 52, height: 52, borderRadius: 8, overflow: "hidden", flexShrink: 0, border: `2px solid ${selec ? T.green : T.border}`, background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ width: 56, height: 56, borderRadius: 8, overflow: "hidden", flexShrink: 0, border: `2px solid ${yaSelec ? T.green : yaConPrecio ? "#CBD5E1" : T.border}`, background: "#F1F5F9", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
                           {foto
-                            ? <img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={e => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }} />
-                            : null}
-                          <span style={{ fontSize: 22, display: foto ? "none" : "flex" }}>🐄</span>
+                            ? <img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            : <span style={{ fontSize: 24 }}>🐄</span>}
                         </div>
                         {/* Info */}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, fontSize: 14, color: selec ? T.green : T.text }}>
+                          <div style={{ fontWeight: 800, fontSize: 14, color: yaSelec ? T.green : T.text }}>
                             #{a.arete || "Sin arete"}
                           </div>
                           <div style={{ fontSize: 12, color: T.textSec }}>{a.raza || "Sin raza"} · {a.sexo === "MACHO" ? "Macho" : "Hembra"}</div>
-                          {a.nombre && <div style={{ fontSize: 11, color: T.textLight }}>{a.nombre}</div>}
+                          {yaConPrecio && (
+                            <div style={{ fontSize: 11, color: "#64748B", marginTop: 1 }}>
+                              Precio ya registrado: C$ {Number(a.costoBase).toLocaleString("es-NI")}
+                            </div>
+                          )}
                         </div>
                         {/* Check */}
-                        {selec && <div style={{ width: 22, height: 22, borderRadius: "50%", background: T.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span>
-                        </div>}
+                        {yaConPrecio ? (
+                          <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#1E293B", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span>
+                          </div>
+                        ) : yaSelec ? (
+                          <div style={{ width: 24, height: 24, borderRadius: "50%", background: T.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span>
+                          </div>
+                        ) : (
+                          <div style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${T.border}`, flexShrink: 0 }} />
+                        )}
                       </div>
                     );
                   })}
                 </div>
-                {form.animalId && (
-                  <div style={{ marginTop: 8, fontSize: 12, color: T.green, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
-                    ✓ Animal seleccionado — el precio que ingreses se guardará como su costo base
+                {form.animalesIds.length > 0 && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: T.green, fontWeight: 700 }}>
+                    ✓ {form.animalesIds.length} animal{form.animalesIds.length > 1 ? "es" : ""} seleccionado{form.animalesIds.length > 1 ? "s" : ""} — el precio se guardará como costo base de cada uno
                   </div>
                 )}
               </div>
@@ -242,8 +284,8 @@ export default function ComprasPage() {
             {[
               { label: "Descripción *", field: "descripcion", type: "text" },
               { label: "Proveedor / Vendedor", field: "proveedor", type: "text" },
-              { label: form.tipo === "ANIMAL" ? "Cantidad de animales" : "Cantidad", field: "cantidad", type: "number" },
-              { label: "Precio unitario (C$) *", field: "precioUnit", type: "number" },
+              ...(form.tipo !== "ANIMAL" ? [{ label: "Cantidad", field: "cantidad", type: "number" }] : []),
+              { label: "Precio unitario por animal (C$) *", field: "precioUnit", type: "number" },
               { label: "Fecha", field: "fecha", type: "date" },
               { label: "Número de factura", field: "factura", type: "text" },
               { label: "Notas", field: "notas", type: "textarea" },
@@ -251,10 +293,10 @@ export default function ComprasPage() {
               <div key={field} style={{ marginBottom: 14 }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 5 }}>{label}</div>
                 {type === "textarea" ? (
-                  <textarea value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} rows={3}
+                  <textarea value={form[field] ?? ""} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} rows={3}
                     style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, resize: "vertical", boxSizing: "border-box" }} />
                 ) : (
-                  <input type={type} value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
+                  <input type={type} value={form[field] ?? ""} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
                     style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }} />
                 )}
               </div>
