@@ -59,7 +59,7 @@ router.get("/", async (req, res, next) => {
     const [todosGastos, todasCompras, animalesConCosto] = await Promise.all([
       prisma.gasto.findMany({ where: { fincaId }, select: { monto: true } }),
       prisma.compra.findMany({ where: { fincaId }, select: { total: true } }),
-      prisma.animal.findMany({ where: { fincaId, estado: "ACTIVO", costoBase: { not: null } }, select: { costoBase: true } }),
+      prisma.animal.findMany({ where: { fincaId, estado: "ACTIVO", costoBase: { not: null }, madreId: null }, select: { costoBase: true } }),
     ]);
     const totalGastos = todosGastos.reduce((s, g) => s + (g.monto || 0), 0);
     const totalCompras = todasCompras.reduce((s, c) => s + (c.total || 0), 0);

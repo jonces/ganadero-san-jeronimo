@@ -67,7 +67,9 @@ export default function ComprasPage() {
     }
   }, [form.tipo]);
 
-  const animalesFiltrados = animales.filter(a =>
+  // Solo animales comprados (sin madreId = no nacidos en finca)
+  const animalesComprados = animales.filter(a => !a.madreId);
+  const animalesFiltrados = animalesComprados.filter(a =>
     !busqAnimal || `${a.arete || ""} ${a.raza || ""} ${a.nombre || ""}`.toLowerCase().includes(busqAnimal.toLowerCase())
   );
 
@@ -210,7 +212,7 @@ export default function ComprasPage() {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec }}>
                     Animales comprados *
-                    <span style={{ fontWeight: 400, color: T.textLight }}> — selecciona uno o varios</span>
+                    <span style={{ fontWeight: 400, color: T.textLight }}> — solo comprados (crías nacidas en finca no aplican)</span>
                   </div>
                   {form.animalesIds.length > 0 && (
                     <span style={{ background: T.green, color: "#fff", borderRadius: 99, fontSize: 11, fontWeight: 800, padding: "2px 10px" }}>
