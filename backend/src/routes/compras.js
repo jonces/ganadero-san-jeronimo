@@ -77,12 +77,12 @@ router.post("/", async (req, res, next) => {
       },
     });
 
-    // Si es compra de animales, actualizar costoBase de cada uno
+    // Si es compra de animales, actualizar costoCompra de cada uno
     if (tipo === "ANIMAL" && ids.length > 0) {
       await Promise.all(ids.map(async (animalId) => {
         const animal = await prisma.animal.findFirst({ where: { id: animalId, fincaId: req.user.fincaId } });
         if (animal) {
-          await prisma.animal.update({ where: { id: animalId }, data: { costoBase: pu } });
+          await prisma.animal.update({ where: { id: animalId }, data: { costoCompra: pu } });
         }
       }));
     }

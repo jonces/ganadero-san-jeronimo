@@ -200,7 +200,7 @@ const REPORTES = [
           a.raza || "—",
           a.pesoActual ? Number(a.pesoActual).toLocaleString("es-NI") : "—",
           a.potrero || "—",
-          a.costoBase ? fmt(a.costoBase) : "—",
+          a.costoCompra ? fmt(a.costoCompra) : "—",
         ]),
         styles: { fontSize: 8 },
         headStyles: { fillColor: [3, 105, 161] },

@@ -253,9 +253,9 @@ export default function ComprasPage() {
                             #{a.arete || "Sin arete"}
                           </div>
                           <div style={{ fontSize: 12, color: T.textSec }}>{a.raza || "Sin raza"} · {a.sexo === "MACHO" ? "Macho" : "Hembra"}</div>
-                          {a.costoBase && (
+                          {a.costoCompra && (
                             <div style={{ fontSize: 11, color: T.orange, marginTop: 1, fontWeight: 600 }}>
-                              Costo anterior: C$ {Number(a.costoBase).toLocaleString("es-NI")} — se actualizará
+                              Costo anterior: C$ {Number(a.costoCompra).toLocaleString("es-NI")} — se actualizará
                             </div>
                           )}
                         </div>

@@ -376,7 +376,8 @@ function ModalEditarAnimal({ animal, hembrasActivas, onClose, onSuccess }) {
     fierro:            animal.fierro            || "",
     pesoActual:        animal.pesoActual        || "",
     potrero:           animal.potrero           || "",
-    costoBase:         animal.costoBase         || "",
+    costoCompra:       animal.costoCompra       || "",
+    precioVenta:       animal.precioVenta       || "",
     observacion:       animal.observacion       || "",
     estadoReproductivo:animal.estadoReproductivo|| "",
     fechaNacimiento:   animal.fechaNacimiento ? animal.fechaNacimiento.slice(0, 10) : "",
@@ -396,7 +397,8 @@ function ModalEditarAnimal({ animal, hembrasActivas, onClose, onSuccess }) {
         body: {
           ...form,
           pesoActual:  form.pesoActual  ? Number(form.pesoActual)  : undefined,
-          costoBase:   form.costoBase   ? Number(form.costoBase)   : undefined,
+          costoCompra: form.costoCompra ? Number(form.costoCompra) : undefined,
+          precioVenta: form.precioVenta  ? Number(form.precioVenta)  : undefined,
           fechaNacimiento: form.fechaNacimiento || undefined,
           estadoReproductivo: animal.sexo === "HEMBRA" ? form.estadoReproductivo : undefined,
         },
@@ -447,7 +449,8 @@ function ModalEditarAnimal({ animal, hembrasActivas, onClose, onSuccess }) {
             {F("Fierro / marca", "fierro")}
             {F("Peso actual (kg)", "pesoActual", "number")}
             {F("Potrero", "potrero")}
-            {F("Costo base (C$)", "costoBase", "number")}
+            {F("Costo de compra (C$)", "costoCompra", "number")}
+            {F("Precio de venta (C$)", "precioVenta", "number")}
             {F("Fecha de nacimiento", "fechaNacimiento", "date")}
             <div>
               <label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Origen</label>
@@ -715,7 +718,8 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
           <Row label="Peso" value={animal.pesoActual ? `${animal.pesoActual} kg` : "—"} />
           <Row label="Potrero" value={animal.potrero || "—"} />
           <Row label="Fierro" value={animal.fierro || "—"} />
-          {animal.costoBase && <Row label="Costo base" value={`C$ ${animal.costoBase.toLocaleString()}`} />}
+          {animal.costoCompra && <Row label="Costo de compra" value={`C$ ${Number(animal.costoCompra).toLocaleString("es-NI")}`} />}
+          {animal.precioVenta && <Row label="Precio de venta" value={`C$ ${Number(animal.precioVenta).toLocaleString("es-NI")}`} />}
         </div>
 
         {/* Sección comercial */}
@@ -818,7 +822,7 @@ export default function InventarioPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const [form, setForm] = useState({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", pesoActual: "", observacion: "", estadoReproductivo: "", madreId: "", fechaNacimiento: "", potrero: "", costoBase: "", origen: "FINCA" });
+  const [form, setForm] = useState({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", pesoActual: "", observacion: "", estadoReproductivo: "", madreId: "", fechaNacimiento: "", potrero: "", costoCompra: "", precioVenta: "", origen: "FINCA" });
   const [archivos, setArchivos] = useState([]);
 
   useEffect(() => {
@@ -914,7 +918,7 @@ export default function InventarioPage() {
           body: fd,
         });
       }
-      setForm({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", pesoActual: "", observacion: "", estadoReproductivo: "", madreId: "", fechaNacimiento: "", potrero: "", costoBase: "", origen: "FINCA" });
+      setForm({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", pesoActual: "", observacion: "", estadoReproductivo: "", madreId: "", fechaNacimiento: "", potrero: "", costoCompra: "", precioVenta: "", origen: "FINCA" });
       setArchivos([]);
       setShowForm(false);
       load();
@@ -975,7 +979,8 @@ export default function InventarioPage() {
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Fierro</label><input style={{ ...li, width: "100%" }} value={form.fierro} onChange={e => setForm({ ...form, fierro: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Potrero</label><input style={{ ...li, width: "100%" }} placeholder="Ej: Potrero Norte" value={form.potrero} onChange={e => setForm({ ...form, potrero: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Peso actual (kg)</label><input type="number" style={{ ...li, width: "100%" }} value={form.pesoActual} onChange={e => setForm({ ...form, pesoActual: e.target.value })} /></div>
-              <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Costo base (C$)</label><input type="number" style={{ ...li, width: "100%" }} value={form.costoBase} onChange={e => setForm({ ...form, costoBase: e.target.value })} /></div>
+              <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Costo de compra (C$)</label><input type="number" style={{ ...li, width: "100%" }} value={form.costoCompra} onChange={e => setForm({ ...form, costoCompra: e.target.value })} /></div>
+              <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Precio de venta (C$)</label><input type="number" style={{ ...li, width: "100%" }} value={form.precioVenta} onChange={e => setForm({ ...form, precioVenta: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Fecha nacimiento</label><input type="date" style={{ ...li, width: "100%" }} value={form.fechaNacimiento} onChange={e => setForm({ ...form, fechaNacimiento: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Origen</label><select style={{ ...li, width: "100%" }} value={form.origen} onChange={e => setForm({ ...form, origen: e.target.value })}><option value="FINCA">Nacido en finca</option><option value="COMPRADO">Comprado</option></select></div>
               <div className="sm:col-span-2"><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Madre (si es cría)</label><select style={{ ...li, width: "100%" }} value={form.madreId} onChange={e => setForm({ ...form, madreId: e.target.value })}><option value="">Sin madre</option>{hembrasActivas.map(h => <option key={h.id} value={h.id}>{h.nombre || h.identificador}</option>)}</select></div>

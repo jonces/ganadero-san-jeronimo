@@ -111,7 +111,8 @@ model Animal {
   observacion     String?
   estadoComercial String    @default("NO_DISPONIBLE") // NO_DISPONIBLE, EN_VENTA, RESERVADO, VENTA_EN_PROCESO, VENTA_COMPLETADA
   potrero         String?
-  costoBase       Float?
+  costoCompra     Float?    // Precio pagado para adquirirlo
+  precioVenta     Float?    // Precio al que se quiere vender
   origen          String    @default("FINCA") // FINCA, COMPRADO
   estado          String    @default("ACTIVO")
   // Estado reproductivo (solo hembras)
