@@ -52,8 +52,8 @@ const REPORTES = [
     async generar() {
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
-      const animales = await api("/animales");
-      const activos = animales.filter(a => a.estado !== "ELIMINADO");
+      const animalesRes = await api("/animales");
+      const activos = (Array.isArray(animalesRes) ? animalesRes : (animalesRes.items || [])).filter(a => a.estado !== "ELIMINADO");
       const doc = new jsPDF();
       addHeader(doc, "Inventario del Hato");
       autoTable(doc, {
@@ -125,7 +125,8 @@ const REPORTES = [
     async generar() {
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
-      const ventas = await api("/ventas");
+      const ventasRes = await api("/ventas?limit=1000");
+      const ventas = Array.isArray(ventasRes) ? ventasRes : (ventasRes.items || ventasRes.ventas || []);
       const doc = new jsPDF({ orientation: "landscape" });
       addHeader(doc, "Reporte de Ventas");
       autoTable(doc, {
@@ -157,7 +158,8 @@ const REPORTES = [
     async generar() {
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
-      const gastos = await api("/gastos");
+      const gastosRes = await api("/gastos?limit=1000");
+      const gastos = gastosRes.items || gastosRes || [];
       const doc = new jsPDF();
       addHeader(doc, "Reporte de Gastos");
       autoTable(doc, {
@@ -187,20 +189,21 @@ const REPORTES = [
     async generar() {
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
-      const animales = await api("/animales?estadoComercial=EN_VENTA");
+      const enVentaRes = await api("/animales?estadoComercial=EN_VENTA");
+      const animalesEnVenta = Array.isArray(enVentaRes) ? enVentaRes : (enVentaRes.items || []);
       const doc = new jsPDF();
       addHeader(doc, "Animales en Venta");
       autoTable(doc, {
         startY: 28,
-        head: [["Arete", "Nombre", "Sexo", "Raza", "Peso (lb)", "Potrero", "Costo base (C$)"]],
-        body: animales.map(a => [
+        head: [["Arete", "Nombre", "Sexo", "Raza", "Peso (lb)", "Precio de venta (C$)", "Potrero"]],
+        body: animalesEnVenta.map(a => [
           a.identificador,
           a.nombre || "—",
           a.sexo === "MACHO" ? "Macho" : "Hembra",
           a.raza || "—",
           a.pesoActual ? Number(a.pesoActual).toLocaleString("es-NI") : "—",
           a.potrero || "—",
-          a.costoCompra ? fmt(a.costoCompra) : "—",
+          a.precioVenta ? fmt(a.precioVenta) : "—",
         ]),
         styles: { fontSize: 8 },
         headStyles: { fillColor: [3, 105, 161] },
@@ -219,7 +222,8 @@ const REPORTES = [
     async generar() {
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
-      const animales = await api("/reproduccion");
+      const repRes = await api("/reproduccion");
+      const animales = Array.isArray(repRes) ? repRes : (repRes.items || []);
       const doc = new jsPDF();
       addHeader(doc, "Reporte de Reproducción");
       autoTable(doc, {
