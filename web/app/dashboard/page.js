@@ -200,6 +200,7 @@ export default function DashboardPage() {
   const [showVistaRapida, setShowVistaRapida] = useState(false);
   const [showCalendario, setShowCalendario] = useState(false);
   const [fotoPerfil, setFotoPerfil] = useState(null);
+  const [clima, setClima] = useState(null);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -218,6 +219,23 @@ export default function DashboardPage() {
     const h = new Date().getHours();
     setSaludo(h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches");
     api("/usuarios/perfil").then(d => setFotoPerfil(d.fotoPerfil)).catch(() => {});
+    // Clima via Open-Meteo (Managua, NI — sin API key)
+    fetch("https://api.open-meteo.com/v1/forecast?latitude=12.13&longitude=-86.28&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=America/Managua")
+      .then(r => r.json())
+      .then(d => {
+        if (d?.current) {
+          const code = d.current.weather_code;
+          const temp = Math.round(d.current.temperature_2m);
+          let icono = "☀️", desc = "Despejado";
+          if (code >= 1 && code <= 3)   { icono = "⛅"; desc = "Parcialmente nublado"; }
+          if (code >= 45 && code <= 48) { icono = "🌫️"; desc = "Neblina"; }
+          if (code >= 51 && code <= 67) { icono = "🌧️"; desc = "Lluvia ligera"; }
+          if (code >= 80 && code <= 82) { icono = "🌦️"; desc = "Chubascos"; }
+          if (code >= 95 && code <= 99) { icono = "⛈️"; desc = "Tormenta"; }
+          setClima({ icono, desc, temp });
+        }
+      })
+      .catch(() => {});
     fetch("https://open.er-api.com/v6/latest/USD")
       .then(r => r.json())
       .then(d => { if (d?.rates?.NIO) setTipoCambio(d.rates.NIO); })
@@ -444,28 +462,103 @@ export default function DashboardPage() {
     >
       <style>{CSS}</style>
 
-      {/* ── BANNER ── */}
+      {/* ── HERO COMPACTO ── */}
       <div style={{
-        background: "linear-gradient(135deg, #14532d 0%, #166534 50%, #15803d 100%)",
-        borderRadius: 16, padding: "28px 36px", marginBottom: 24, position: "relative", overflow: "hidden", minHeight: 150,
+        background: COLOR.white,
+        border: `1px solid ${COLOR.border}`,
+        borderLeft: `4px solid ${COLOR.green}`,
+        borderRadius: 14,
+        marginBottom: 20,
+        boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
+        overflow: "hidden",
       }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "url('https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1920&q=80')", backgroundSize: "cover", backgroundPosition: "center", opacity: 0.22 }} />
-        <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-          <div>
-            <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 14, margin: "0 0 2px" }}>{saludo}, <strong style={{ color: "#fff" }}>{usuario?.nombre || "Usuario"}</strong> 👋</p>
-            <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, margin: "0 0 4px" }}>Bienvenido a</p>
-            <h2 style={{ color: "#fff", fontSize: 30, fontWeight: 900, margin: 0, lineHeight: 1.1 }}>Henriquez</h2>
-            <h2 style={{ color: "#4ade80", fontSize: 30, fontWeight: 900, margin: "0 0 18px", lineHeight: 1.1 }}>Cattle Management</h2>
-            <button
-              onClick={() => setShowVistaRapida(true)}
-              style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 8, padding: "7px 18px", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-              🐄 Vista rápida
-            </button>
+        {/* Fila superior: saludo + finca | clima | chips de estado */}
+        <div style={{ display: "flex", alignItems: "center", gap: 0, flexWrap: "wrap" }}>
+
+          {/* Saludo y nombre de finca */}
+          <div style={{ padding: "14px 20px", borderRight: `1px solid ${COLOR.border}`, minWidth: 220 }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>
+              {saludo}
+            </p>
+            <p style={{ margin: "2px 0 0", fontSize: 16, fontWeight: 900, color: COLOR.text, lineHeight: 1.2 }}>
+              {usuario?.nombre || "Usuario"}
+            </p>
+            <p style={{ margin: "3px 0 0", fontSize: 12, color: COLOR.muted, display: "flex", alignItems: "center", gap: 5 }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={COLOR.green} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
+              {loading ? "—" : (stats?.nombreFinca || "Mi Finca")}
+            </p>
           </div>
-          <div style={{ textAlign: "right", color: "rgba(255,255,255,0.5)", fontSize: 12 }}>
-            <div style={{ fontSize: 36, marginBottom: 4 }}>🐂</div>
-            <p style={{ margin: 0 }}>{new Date().toLocaleDateString("es-NI", { weekday: "short", day: "numeric", month: "short" })}</p>
+
+          {/* Clima */}
+          <div style={{ padding: "14px 20px", borderRight: `1px solid ${COLOR.border}`, minWidth: 160 }}>
+            {clima ? (
+              <>
+                <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Clima ahora</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                  <span style={{ fontSize: 26, lineHeight: 1 }}>{clima.icono}</span>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: COLOR.text, lineHeight: 1 }}>{clima.temp}°C</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 11, color: COLOR.muted }}>{clima.desc}</p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Clima ahora</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                  <Sk w={28} h={28} r="50%" />
+                  <div><Sk w={60} h={14} /><Sk w={80} h={10} /></div>
+                </div>
+              </>
+            )}
           </div>
+
+          {/* Estado del hato */}
+          <div style={{ padding: "14px 20px", borderRight: `1px solid ${COLOR.border}`, minWidth: 160 }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Estado del hato</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+              {loading ? <Sk w={100} h={22} r={20} /> : (
+                <>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 700, color: COLOR.green }}>
+                    🐄 {stats?.animalesActivos ?? "—"} activos
+                  </span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 700, color: COLOR.purple }}>
+                    🤰 {stats?.resumenHato?.prenadas ?? "—"} preñadas
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Alertas del día */}
+          <div style={{ padding: "14px 20px", borderRight: `1px solid ${COLOR.border}`, minWidth: 150 }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Alertas del día</p>
+            <div style={{ marginTop: 6 }}>
+              {loading ? <Sk w={90} h={22} r={20} /> : (() => {
+                const n = stats?.alertas?.length ?? 0;
+                return (
+                  <button onClick={() => router.push("/incidentes")}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: n > 0 ? "#FEF2F2" : "#F0FDF4", color: n > 0 ? COLOR.red : COLOR.green }}>
+                    {n > 0 ? "⚠️" : "✅"} {n > 0 ? `${n} alerta${n > 1 ? "s" : ""}` : "Sin alertas"}
+                  </button>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Tratamientos pendientes */}
+          <div style={{ padding: "14px 20px", flex: 1, minWidth: 150 }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Tratamientos</p>
+            <div style={{ marginTop: 6 }}>
+              <button onClick={() => router.push("/incidentes")}
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: "#EFF6FF", color: COLOR.blue }}>
+                💊 Ver tratamientos →
+              </button>
+            </div>
+          </div>
+
         </div>
       </div>
 
