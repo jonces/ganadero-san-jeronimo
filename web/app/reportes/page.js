@@ -26,16 +26,18 @@ async function getNombreFinca() {
 
 function addHeader(doc, title, nombreFinca) {
   doc.setFillColor(23, 32, 51);
-  doc.rect(0, 0, 210, 22, "F");
+  doc.rect(0, 0, 210, 26, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text((nombreFinca || "Mi Finca").toUpperCase(), 14, 10);
-  doc.setFontSize(9);
+  doc.text("HENRIQUEZ CATTLE MANAGEMENT", 14, 9);
+  doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
-  doc.text(title, 14, 17);
+  doc.text((nombreFinca || "Mi Finca").toUpperCase(), 14, 15);
+  doc.setFontSize(8);
+  doc.text(title, 14, 22);
   const fecha = new Date().toLocaleDateString("es-NI", { day: "2-digit", month: "long", year: "numeric" });
-  doc.text(`Generado: ${fecha}`, 196, 10, { align: "right" });
+  doc.text(`Generado: ${fecha}`, 196, 9, { align: "right" });
   doc.setTextColor(23, 32, 51);
 }
 
