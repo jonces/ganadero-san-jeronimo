@@ -64,94 +64,298 @@ const CAT_LABEL = {
   COMBUSTIBLE: "Combustible", OTRO: "Otro",
 };
 
-// ── Gráfica financiera SVG ──
+// ── Helpers gráfica ──
+function bezier(pts) {
+  if (!pts.length) return "";
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length; i++) {
+    const mx = (pts[i-1][0] + pts[i][0]) / 2;
+    d += ` C ${mx} ${pts[i-1][1]} ${mx} ${pts[i][1]} ${pts[i][0]} ${pts[i][1]}`;
+  }
+  return d;
+}
+function fmtK(v) {
+  if (Math.abs(v) >= 1000000) return `${(v/1000000).toFixed(1)}M`;
+  if (Math.abs(v) >= 1000) return `${Math.round(v/1000)}K`;
+  return String(Math.round(v));
+}
+
+// ── Gráfica Financiera Principal ──
 function GraficaFinanciera({ datos = [] }) {
-  const [hover, setHover] = useState(null);
-  if (!datos.length) return <div style={{ height: 160, display:"flex", alignItems:"center", justifyContent:"center", color: COLOR.muted, fontSize: 13 }}>Sin datos</div>;
+  const [vista, setVista]   = useState("6M");
+  const [serie, setSerie]   = useState("ambas"); // "ambas" | "neto"
+  const [hover, setHover]   = useState(null);
+  const [clip, setClip]     = useState(0);
+  const clipId = "gf-clip";
 
-  const W = 540, H = 180, PL = 50, PR = 16, PT = 16, PB = 28;
+  const filtrados = vista === "3M" ? datos.slice(-3) : datos;
+
+  useEffect(() => {
+    setClip(0);
+    const t = setTimeout(() => setClip(100), 60);
+    return () => clearTimeout(t);
+  }, [vista, serie, datos.length]);
+
+  if (!filtrados.length) return (
+    <div style={{ height: 300, display:"flex", alignItems:"center", justifyContent:"center", color: COLOR.muted, fontSize: 13 }}>
+      Sin datos financieros
+    </div>
+  );
+
+  // Dimensiones
+  const W = 900, H = 280, PL = 58, PR = 20, PT = 20, PB = 36;
   const IW = W - PL - PR, IH = H - PT - PB;
+  const n = filtrados.length;
 
-  const allVals = datos.flatMap(d => [d.ingresos, d.gastos]);
-  const maxVal = Math.max(...allVals, 1);
+  const allVals = filtrados.flatMap(d => serie === "neto"
+    ? [d.flujoNeto]
+    : [d.ingresos, d.gastos, 0]
+  );
+  const rawMax = Math.max(...allVals.map(Math.abs), 1);
+  const maxVal = rawMax * 1.15;
+  const minVal = serie === "neto" ? Math.min(...allVals, 0) * 1.15 : 0;
+  const range  = maxVal - minVal;
 
-  const px = i => PL + (i / (datos.length - 1)) * IW;
-  const py = v => PT + IH - (v / maxVal) * IH * 0.9;
+  const px = i => PL + (n === 1 ? IW / 2 : (i / (n - 1)) * IW);
+  const py = v => PT + IH - ((v - minVal) / range) * IH;
+  const py0 = py(0);
 
-  const ptsI = datos.map((d, i) => `${px(i)},${py(d.ingresos)}`).join(" ");
-  const ptsG = datos.map((d, i) => `${px(i)},${py(d.gastos)}`).join(" ");
+  // Puntos
+  const ptsI = filtrados.map((d, i) => [px(i), py(d.ingresos)]);
+  const ptsG = filtrados.map((d, i) => [px(i), py(d.gastos)]);
+  const ptsN = filtrados.map((d, i) => [px(i), py(d.flujoNeto || 0)]);
 
-  const ticks = [0, 0.25, 0.5, 0.75, 1];
+  // Paths bezier
+  const pathI = bezier(ptsI);
+  const pathG = bezier(ptsG);
+  const pathN = bezier(ptsN);
+
+  // Area bajo la curva
+  const areaClose = `L ${ptsI[ptsI.length-1][0]} ${py0} L ${ptsI[0][0]} ${py0} Z`;
+  const areaI = pathI + areaClose;
+  const areaG = pathG + `L ${ptsG[ptsG.length-1][0]} ${py0} L ${ptsG[0][0]} ${py0} Z`;
+  const areaN = pathN + `L ${ptsN[ptsN.length-1][0]} ${py0} L ${ptsN[0][0]} ${py0} Z`;
+
+  // Ticks Y
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map(f => minVal + range * f);
+
+  // Totales para el resumen
+  const totI = filtrados.reduce((s, d) => s + (d.ingresos || 0), 0);
+  const totG = filtrados.reduce((s, d) => s + (d.gastos   || 0), 0);
+  const totN = filtrados.reduce((s, d) => s + (d.flujoNeto || 0), 0);
 
   return (
-    <div style={{ position: "relative" }}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H }} onMouseLeave={() => setHover(null)}>
-        {ticks.map((f, fi) => {
-          const y = PT + IH * (1 - f);
-          const v = Math.round(maxVal * f / 1000);
-          return (
-            <g key={fi}>
-              <line x1={PL} y1={y} x2={W - PR} y2={y} stroke="#E2E8F0" strokeWidth="1" />
-              <text x={PL - 6} y={y + 4} textAnchor="end" fill="#94A3B8" fontSize="9">{v}K</text>
+    <div>
+      {/* ── Header: resumen + filtros ── */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px 14px", borderBottom:`1px solid ${COLOR.border}`, flexWrap:"wrap", gap:12 }}>
+
+        {/* Totales del período */}
+        <div style={{ display:"flex", gap:28, flexWrap:"wrap" }}>
+          {[
+            { label:"Ingresos",  val: totI, color: COLOR.green, dot:"#16a34a" },
+            { label:"Gastos",    val: totG, color: COLOR.red,   dot:"#DC2626" },
+            { label:"Flujo neto",val: totN, color: totN >= 0 ? COLOR.green : COLOR.red, dot: totN >= 0 ? "#16a34a" : "#DC2626" },
+          ].map(s => (
+            <div key={s.label} style={{ display:"flex", flexDirection:"column", gap:2 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ width:8, height:8, borderRadius:"50%", background:s.dot, display:"inline-block" }} />
+                <span style={{ fontSize:11, color:COLOR.muted, fontWeight:600 }}>{s.label}</span>
+              </div>
+              <span style={{ fontSize:17, fontWeight:900, color:s.color, letterSpacing:"-0.3px" }}>
+                C$ {Number(s.val).toLocaleString("es-NI", { maximumFractionDigits:0 })}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Controles */}
+        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+          {/* Filtro período */}
+          <div style={{ display:"flex", background:"#F1F5F9", borderRadius:8, padding:3, gap:2 }}>
+            {["3M","6M"].map(v => (
+              <button key={v} onClick={() => setVista(v)} style={{
+                padding:"4px 12px", borderRadius:6, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
+                background: vista === v ? COLOR.white : "transparent",
+                color: vista === v ? COLOR.text : COLOR.muted,
+                boxShadow: vista === v ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                transition:"all 0.15s",
+              }}>{v}</button>
+            ))}
+          </div>
+          {/* Filtro serie */}
+          <div style={{ display:"flex", background:"#F1F5F9", borderRadius:8, padding:3, gap:2 }}>
+            {[["ambas","Ingresos vs Gastos"],["neto","Flujo neto"]].map(([v,l]) => (
+              <button key={v} onClick={() => setSerie(v)} style={{
+                padding:"4px 12px", borderRadius:6, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
+                background: serie === v ? COLOR.white : "transparent",
+                color: serie === v ? COLOR.text : COLOR.muted,
+                boxShadow: serie === v ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                transition:"all 0.15s",
+              }}>{l}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── SVG principal ── */}
+      <div style={{ padding:"8px 8px 4px", overflowX:"auto" }}>
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          style={{ width:"100%", minWidth:480, height:H, display:"block" }}
+          onMouseLeave={() => setHover(null)}
+        >
+          <defs>
+            {/* Clip animado: se expande de izquierda a derecha */}
+            <clipPath id={clipId}>
+              <rect
+                x={PL} y={0}
+                width={(IW * clip) / 100}
+                height={H}
+                style={{ transition:"width 1s cubic-bezier(0.4,0,0.2,1)" }}
+              />
+            </clipPath>
+            <linearGradient id="grd-i" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="#16a34a" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="#16a34a" stopOpacity="0.01" />
+            </linearGradient>
+            <linearGradient id="grd-g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="#DC2626" stopOpacity="0.12" />
+              <stop offset="100%" stopColor="#DC2626" stopOpacity="0.01" />
+            </linearGradient>
+            <linearGradient id="grd-n-pos" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="#16a34a" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="#16a34a" stopOpacity="0.01" />
+            </linearGradient>
+            <linearGradient id="grd-n-neg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%"   stopColor="#DC2626" stopOpacity="0.01" />
+              <stop offset="100%" stopColor="#DC2626" stopOpacity="0.22" />
+            </linearGradient>
+          </defs>
+
+          {/* Línea base 0 (cuando hay negativos) */}
+          {minVal < 0 && (
+            <line x1={PL} y1={py0} x2={W-PR} y2={py0} stroke="#E2E8F0" strokeWidth="1.5" strokeDasharray="4 3" />
+          )}
+
+          {/* Grid horizontal */}
+          {ticks.map((v, fi) => {
+            const y = py(v);
+            return (
+              <g key={fi}>
+                <line x1={PL} y1={y} x2={W-PR} y2={y} stroke={fi === 0 ? COLOR.border : "#F1F5F9"} strokeWidth={fi === 0 ? 1 : 1} />
+                <text x={PL-8} y={y+4} textAnchor="end" fill="#94A3B8" fontSize="10" fontWeight="500">
+                  {fmtK(v)}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Columnas verticales de fondo al hover */}
+          {filtrados.map((_, i) => (
+            <rect key={`bg${i}`}
+              x={px(i) - IW / n / 2} y={PT}
+              width={IW / n} height={IH}
+              fill={hover?.i === i ? "rgba(0,0,0,0.025)" : "transparent"}
+              style={{ cursor:"pointer" }}
+              onMouseEnter={() => setHover({ i, d: filtrados[i] })}
+            />
+          ))}
+
+          {/* ─ Serie AMBAS ─ */}
+          {serie === "ambas" && (
+            <g clipPath={`url(#${clipId})`}>
+              {/* Área ingresos */}
+              <path d={areaI} fill="url(#grd-i)" />
+              {/* Área gastos */}
+              <path d={areaG} fill="url(#grd-g)" />
+              {/* Línea gastos */}
+              <path d={pathG} fill="none" stroke={COLOR.red} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              {/* Línea ingresos */}
+              <path d={pathI} fill="none" stroke={COLOR.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             </g>
-          );
-        })}
+          )}
 
-        {/* Barras flujo neto */}
-        {datos.map((d, i) => {
-          const bw = Math.max(IW / datos.length * 0.35, 8);
-          const neto = d.flujoNeto || 0;
-          const bh = Math.abs(neto) / maxVal * IH * 0.9;
-          const col = neto >= 0 ? "rgba(22,163,74,0.18)" : "rgba(220,38,38,0.18)";
-          const baseY = py(0);
-          return <rect key={i} x={px(i) - bw / 2} y={neto >= 0 ? py(neto) : baseY} width={bw} height={bh} fill={col} rx="3" />;
-        })}
-
-        {/* Línea gastos */}
-        <polygon points={`${ptsG} ${W - PR},${PT + IH} ${PL},${PT + IH}`} fill="rgba(220,38,38,0.06)" />
-        <polyline points={ptsG} fill="none" stroke={COLOR.red} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-
-        {/* Línea ingresos */}
-        <polygon points={`${ptsI} ${W - PR},${PT + IH} ${PL},${PT + IH}`} fill="rgba(22,163,74,0.08)" />
-        <polyline points={ptsI} fill="none" stroke={COLOR.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-
-        {/* Puntos y hover */}
-        {datos.map((d, i) => (
-          <g key={`pt${i}`}>
-            <circle cx={px(i)} cy={py(d.ingresos)} r="4" fill={COLOR.green} stroke="#fff" strokeWidth="1.5"
-              style={{ cursor: "pointer" }}
-              onMouseEnter={() => setHover({ i, x: px(i), d })} />
-            <circle cx={px(i)} cy={py(d.gastos)} r="3" fill={COLOR.red} stroke="#fff" strokeWidth="1.5"
-              style={{ cursor: "pointer" }}
-              onMouseEnter={() => setHover({ i, x: px(i), d })} />
-            <text x={px(i)} y={H - 6} textAnchor="middle" fill="#94A3B8" fontSize="9">{d.mes}</text>
-          </g>
-        ))}
-
-        {/* Tooltip */}
-        {hover && (() => {
-          const tx = Math.min(hover.x, W - 110);
-          return (
-            <g>
-              <rect x={tx - 4} y={PT} width={115} height={58} rx="6" fill="#172033" opacity="0.92" />
-              <text x={tx + 53} y={PT + 14} textAnchor="middle" fill="#fff" fontSize="9" fontWeight="bold">{hover.d.mes?.toUpperCase()}</text>
-              <text x={tx + 4} y={PT + 27} fill="#4ade80" fontSize="9">Ingresos: C${Math.round((hover.d.ingresos || 0) / 1000)}K</text>
-              <text x={tx + 4} y={PT + 39} fill="#f87171" fontSize="9">Gastos: C${Math.round((hover.d.gastos || 0) / 1000)}K</text>
-              <text x={tx + 4} y={PT + 51} fill={hover.d.flujoNeto >= 0 ? "#4ade80" : "#f87171"} fontSize="9">Neto: C${Math.round((hover.d.flujoNeto || 0) / 1000)}K</text>
+          {/* ─ Serie NETO ─ */}
+          {serie === "neto" && (
+            <g clipPath={`url(#${clipId})`}>
+              <path d={areaN} fill={totN >= 0 ? "url(#grd-n-pos)" : "url(#grd-n-neg)"} />
+              <path d={pathN} fill="none" stroke={totN >= 0 ? COLOR.green : COLOR.red} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
             </g>
-          );
-        })()}
-      </svg>
-      <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 4 }}>
-        <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: COLOR.muted }}>
-          <span style={{ width: 14, height: 3, background: COLOR.green, borderRadius: 2, display: "inline-block" }} />Ingresos
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: COLOR.muted }}>
-          <span style={{ width: 14, height: 3, background: COLOR.red, borderRadius: 2, display: "inline-block" }} />Gastos
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: COLOR.muted }}>
-          <span style={{ width: 10, height: 10, background: "rgba(22,163,74,0.3)", borderRadius: 3, display: "inline-block" }} />Flujo neto
-        </span>
+          )}
+
+          {/* Puntos interactivos + etiquetas mes */}
+          {filtrados.map((d, i) => {
+            const isHov = hover?.i === i;
+            const dotsI = serie !== "neto";
+            const dotsG = serie === "ambas";
+            const dotsN = serie === "neto";
+            return (
+              <g key={`pt${i}`}
+                onMouseEnter={() => setHover({ i, d })}
+                style={{ cursor:"pointer" }}>
+                {dotsI && <circle cx={px(i)} cy={py(d.ingresos)} r={isHov ? 6 : 4} fill={COLOR.green} stroke="#fff" strokeWidth="2" style={{ transition:"r 0.15s" }} />}
+                {dotsG && <circle cx={px(i)} cy={py(d.gastos)}   r={isHov ? 5 : 3} fill={COLOR.red}   stroke="#fff" strokeWidth="2" style={{ transition:"r 0.15s" }} />}
+                {dotsN && <circle cx={px(i)} cy={py(d.flujoNeto||0)} r={isHov ? 6 : 4} fill={d.flujoNeto>=0 ? COLOR.green : COLOR.red} stroke="#fff" strokeWidth="2" style={{ transition:"r 0.15s" }} />}
+                {/* Línea vertical en hover */}
+                {isHov && <line x1={px(i)} y1={PT} x2={px(i)} y2={PT+IH} stroke="#CBD5E1" strokeWidth="1" strokeDasharray="3 2" />}
+                {/* Etiqueta mes */}
+                <text x={px(i)} y={H-8} textAnchor="middle" fill="#94A3B8" fontSize="10" fontWeight="600" textTransform="capitalize">
+                  {d.mes}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* ── Tooltip flotante ── */}
+          {hover && (() => {
+            const d  = hover.d;
+            const cx = px(hover.i);
+            const TW = 148, TH = serie === "ambas" ? 76 : 52;
+            const tx = cx + TW + 20 > W ? cx - TW - 8 : cx + 8;
+            const ty = PT + 4;
+            const neto = d.flujoNeto || 0;
+            return (
+              <g style={{ pointerEvents:"none" }}>
+                <rect x={tx} y={ty} width={TW} height={TH} rx="8" fill="#0F172A" opacity="0.94" />
+                <text x={tx+10} y={ty+16} fill="white" fontSize="11" fontWeight="800">{d.mes?.toUpperCase()}</text>
+                {serie !== "neto" && <>
+                  <circle cx={tx+10} cy={ty+28} r="3.5" fill="#4ade80" />
+                  <text x={tx+18} y={ty+32} fill="#E2E8F0" fontSize="10">Ingresos</text>
+                  <text x={tx+TW-8} y={ty+32} fill="#4ade80" fontSize="10" fontWeight="700" textAnchor="end">C${fmtK(d.ingresos||0)}</text>
+                  <circle cx={tx+10} cy={ty+45} r="3.5" fill="#f87171" />
+                  <text x={tx+18} y={ty+49} fill="#E2E8F0" fontSize="10">Gastos</text>
+                  <text x={tx+TW-8} y={ty+49} fill="#f87171" fontSize="10" fontWeight="700" textAnchor="end">C${fmtK(d.gastos||0)}</text>
+                  <line x1={tx+8} y1={ty+57} x2={tx+TW-8} y2={ty+57} stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+                  <text x={tx+10} y={ty+68} fill={neto>=0?"#4ade80":"#f87171"} fontSize="10" fontWeight="700">
+                    {neto>=0?"↑":"↓"} Neto C${fmtK(Math.abs(neto))}
+                  </text>
+                </>}
+                {serie === "neto" && <>
+                  <circle cx={tx+10} cy={ty+28} r="3.5" fill={neto>=0?"#4ade80":"#f87171"} />
+                  <text x={tx+18} y={ty+32} fill="#E2E8F0" fontSize="10">Flujo neto</text>
+                  <text x={tx+TW-8} y={ty+32} fill={neto>=0?"#4ade80":"#f87171"} fontSize="10" fontWeight="700" textAnchor="end">C${fmtK(neto)}</text>
+                </>}
+              </g>
+            );
+          })()}
+        </svg>
+      </div>
+
+      {/* ── Leyenda ── */}
+      <div style={{ display:"flex", gap:20, padding:"6px 20px 14px", justifyContent:"center" }}>
+        {serie !== "neto" && <>
+          <span style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:COLOR.muted }}>
+            <span style={{ width:20, height:2.5, background:COLOR.green, borderRadius:2, display:"inline-block" }} />Ingresos
+          </span>
+          <span style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:COLOR.muted }}>
+            <span style={{ width:20, height:2.5, background:COLOR.red, borderRadius:2, display:"inline-block" }} />Gastos
+          </span>
+        </>}
+        {serie === "neto" && (
+          <span style={{ display:"flex", alignItems:"center", gap:6, fontSize:11, color:COLOR.muted }}>
+            <span style={{ width:20, height:2.5, background:totN>=0?COLOR.green:COLOR.red, borderRadius:2, display:"inline-block" }} />Flujo neto
+          </span>
+        )}
       </div>
     </div>
   );
@@ -635,8 +839,19 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* ── 3 COLUMNAS: Resumen hato | Gráfica | Alertas ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr", gap: 16, marginBottom: 16 }}>
+      {/* ── GRÁFICA FINANCIERA — ancho completo ── */}
+      <div style={{ ...cardStyle, marginBottom: 16 }}>
+        <div style={{ padding: "16px 20px 0", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 15, color: COLOR.text }}>Gráfica financiera</p>
+            <p style={{ margin: 0, fontSize: 11, color: COLOR.muted, marginTop: 2 }}>Ingresos, gastos y flujo neto del período seleccionado</p>
+          </div>
+        </div>
+        {loading ? <div style={{ padding: "20px" }}><Sk h={300} r={10} /></div> : <GraficaFinanciera datos={graficaMeses} />}
+      </div>
+
+      {/* ── 2 COLUMNAS: Resumen hato | Alertas ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
 
         {/* Resumen del hato */}
         <div style={cardStyle}>
@@ -664,20 +879,6 @@ export default function DashboardPage() {
             <button onClick={() => router.push("/inventario")} style={{ width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${COLOR.border}`, background: "none", color: COLOR.green, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
               Ver inventario completo →
             </button>
-          </div>
-        </div>
-
-        {/* Gráfica financiera */}
-        <div style={cardStyle}>
-          <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: COLOR.text }}>Gráfica financiera</p>
-              <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>Ingresos, gastos y flujo neto — últimos 6 meses</p>
-            </div>
-            <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: "#F8FAFC", border: `1px solid ${COLOR.border}`, color: COLOR.muted }}>6M</span>
-          </div>
-          <div style={{ padding: "12px 16px 8px" }}>
-            {loading ? <Sk h={160} /> : <GraficaFinanciera datos={graficaMeses} />}
           </div>
         </div>
 
