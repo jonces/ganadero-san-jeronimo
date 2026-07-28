@@ -29,7 +29,129 @@ const CSS = `
   from { opacity:0; transform:translateY(8px); }
   to   { opacity:1; transform:translateY(0); }
 }
+@keyframes donutGrow {
+  from { transform: scale(0.7); opacity:0; }
+  to   { transform: scale(1);   opacity:1; }
+}
 `;
+
+// ── Donut del Hato ──
+const HATO_COLORES = ["#16a34a","#2563EB","#EA580C","#7C3AED","#0891B2","#DB2777","#D97706"];
+
+function DonutHato({ data, total, onNavigate }) {
+  const [hov, setHov] = useState(null);
+
+  const items = data.filter(d => d.valor > 0);
+
+  if (!items.length) return (
+    <div style={{ textAlign:"center", padding:"32px 0", color:COLOR.muted }}>
+      <div style={{ fontSize:36, marginBottom:8 }}>🐄</div>
+      <p style={{ margin:0, fontSize:13, fontWeight:600 }}>Sin animales registrados</p>
+    </div>
+  );
+
+  const cx=90, cy=90, R=72, ri=48;
+  let angle = -Math.PI / 2;
+
+  const segs = items.map((d, idx) => {
+    const frac = d.valor / total;
+    const sweep = frac * 2 * Math.PI;
+    const a1 = angle, a2 = angle + sweep;
+    const large = sweep > Math.PI ? 1 : 0;
+    const cos1=Math.cos(a1), sin1=Math.sin(a1);
+    const cos2=Math.cos(a2), sin2=Math.sin(a2);
+    const path = [
+      `M ${cx+R*cos1} ${cy+R*sin1}`,
+      `A ${R} ${R} 0 ${large} 1 ${cx+R*cos2} ${cy+R*sin2}`,
+      `L ${cx+ri*cos2} ${cy+ri*sin2}`,
+      `A ${ri} ${ri} 0 ${large} 0 ${cx+ri*cos1} ${cy+ri*sin1}`,
+      "Z",
+    ].join(" ");
+    angle = a2;
+    return { path, color: d.color, label: d.label, valor: d.valor, frac };
+  });
+
+  const hovSeg = hov !== null ? segs[hov] : null;
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", padding:"16px 16px 0" }}>
+
+      {/* Donut + leyenda lado a lado */}
+      <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+
+        {/* SVG donut */}
+        <div style={{ flexShrink:0, animation:"donutGrow 0.5s cubic-bezier(0.34,1.56,0.64,1) both" }}>
+          <svg viewBox="0 0 180 180" width={168} height={168}>
+            {segs.map((s, i) => (
+              <path key={i} d={s.path}
+                fill={s.color}
+                stroke="#fff" strokeWidth="2.5"
+                opacity={hov === null || hov === i ? 1 : 0.35}
+                transform={hov === i ? `translate(${(Math.cos((segs[i-1]?.path ? angle : -Math.PI/2) + s.frac*Math.PI)*3).toFixed(1)} ${(Math.sin(-Math.PI/2 + s.frac*Math.PI)*3).toFixed(1)})` : ""}
+                style={{ cursor:"pointer", transition:"opacity 0.18s, transform 0.18s" }}
+                onMouseEnter={() => setHov(i)}
+                onMouseLeave={() => setHov(null)}
+              />
+            ))}
+            {/* Centro */}
+            {hovSeg ? (
+              <>
+                <text x="90" y="82" textAnchor="middle" fontSize="22" fontWeight="900" fill={hovSeg.color}>{hovSeg.valor}</text>
+                <text x="90" y="97" textAnchor="middle" fontSize="9.5" fill={COLOR.muted} fontWeight="600">{hovSeg.label.toUpperCase()}</text>
+                <text x="90" y="110" textAnchor="middle" fontSize="9" fill={COLOR.muted}>{(hovSeg.frac*100).toFixed(1)}%</text>
+              </>
+            ) : (
+              <>
+                <text x="90" y="84" textAnchor="middle" fontSize="28" fontWeight="900" fill={COLOR.text}>{total}</text>
+                <text x="90" y="100" textAnchor="middle" fontSize="9.5" fill={COLOR.muted} fontWeight="700" letterSpacing="0.5">TOTAL</text>
+              </>
+            )}
+          </svg>
+        </div>
+
+        {/* Leyenda compacta */}
+        <div style={{ flex:1, display:"flex", flexDirection:"column", gap:6 }}>
+          {segs.map((s, i) => (
+            <button key={i}
+              onClick={onNavigate}
+              onMouseEnter={() => setHov(i)}
+              onMouseLeave={() => setHov(null)}
+              style={{
+                display:"flex", alignItems:"center", gap:8,
+                background: hov === i ? "#F8FAFC" : "transparent",
+                border:"none", cursor:"pointer", padding:"5px 6px", borderRadius:7,
+                transition:"background 0.12s", textAlign:"left", width:"100%",
+              }}>
+              <span style={{ width:10, height:10, borderRadius:"50%", background:s.color, flexShrink:0, boxShadow:`0 0 0 2px ${s.color}33` }} />
+              <span style={{ flex:1, fontSize:12, fontWeight:600, color:COLOR.muted }}>{s.label}</span>
+              <span style={{ fontSize:14, fontWeight:900, color: hov===i ? s.color : COLOR.text }}>{s.valor}</span>
+              <span style={{ fontSize:10, color:COLOR.muted, minWidth:32, textAlign:"right" }}>{(s.frac*100).toFixed(0)}%</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Barras de distribución */}
+      <div style={{ marginTop:14, marginBottom:4 }}>
+        <p style={{ margin:"0 0 7px", fontSize:10, fontWeight:700, color:COLOR.muted, letterSpacing:0.5, textTransform:"uppercase" }}>Distribución</p>
+        <div style={{ display:"flex", height:8, borderRadius:6, overflow:"hidden", gap:1.5 }}>
+          {segs.map((s, i) => (
+            <div key={i}
+              style={{ flex: s.valor, background: s.color, opacity: hov===null||hov===i ? 1 : 0.3, transition:"opacity 0.18s", cursor:"pointer" }}
+              onMouseEnter={() => setHov(i)}
+              onMouseLeave={() => setHov(null)}
+            />
+          ))}
+        </div>
+        <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+          <span style={{ fontSize:10, color:COLOR.muted }}>{segs[0]?.label}</span>
+          <span style={{ fontSize:10, color:COLOR.muted }}>{segs[segs.length-1]?.label}</span>
+        </div>
+      </div>
+
+    </div>
+  );
+}
 
 // ── Skeleton loader ──
 function Sk({ w = "100%", h = 20, r = 6 }) {
@@ -542,16 +664,15 @@ export default function DashboardPage() {
   ];
 
   const filasHato = [
-    { label: "Vacas",        valor: hato.vacas    || 0 },
-    { label: "Toros",        valor: hato.toros    || 0 },
-    { label: "Novillos",     valor: hato.novillos || 0 },
-    { label: "Novillas",     valor: hato.novillas || 0 },
-    { label: "Terneros",     valor: hato.terneros || 0 },
-    { label: "Terneras",     valor: hato.terneras || 0 },
-    { label: "Preñadas",     valor: hato.prenadas || 0 },
-    { label: "En venta",     valor: hato.enVenta  || 0 },
-    { label: "Nacimientos",  valor: hato.nacimientosMes || 0 },
+    { label: "Vacas",    valor: hato.vacas    || 0, color: HATO_COLORES[0] },
+    { label: "Toros",    valor: hato.toros    || 0, color: HATO_COLORES[1] },
+    { label: "Novillos", valor: hato.novillos || 0, color: HATO_COLORES[2] },
+    { label: "Novillas", valor: hato.novillas || 0, color: HATO_COLORES[3] },
+    { label: "Terneros", valor: hato.terneros || 0, color: HATO_COLORES[4] },
+    { label: "Preñadas", valor: hato.prenadas || 0, color: HATO_COLORES[5] },
+    { label: "En venta", valor: hato.enVenta  || 0, color: HATO_COLORES[6] },
   ];
+  const totalHato = filasHato.reduce((s, f) => s + f.valor, 0);
 
   const indicadores = [
     { label: "Peso promedio", valor: stats?.pesoPromedio ? `${Math.round(stats.pesoPromedio)} lb` : "— kg", icono: "⚖️" },
@@ -853,30 +974,38 @@ export default function DashboardPage() {
       {/* ── 2 COLUMNAS: Resumen hato | Alertas ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
 
-        {/* Resumen del hato */}
+        {/* ── Resumen del hato — Donut ── */}
         <div style={cardStyle}>
           <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: COLOR.text }}>Resumen del hato</p>
-              <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>Animales activos por categoría</p>
+              <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>Distribución por categoría</p>
             </div>
-            <span style={{ fontSize: 20 }}>🐄</span>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ fontSize:12, fontWeight:700, color:COLOR.green, background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:20, padding:"2px 10px" }}>
+                {stats?.animalesActivos || 0} activos
+              </span>
+            </div>
           </div>
-          <div style={{ padding: "8px 0" }}>
-            {loading ? [1,2,3,4,5].map(i => <div key={i} style={{ padding: "8px 16px" }}><Sk h={14} /></div>) :
-              filasHato.map((f, i) => (
-                <button key={i} onClick={() => router.push("/inventario")}
-                  style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 16px", borderBottom: i < filasHato.length - 1 ? `1px solid ${COLOR.border}` : "none", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "#F8FAFC"}
-                  onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                  <span style={{ fontSize: 13, color: COLOR.muted }}>{f.label}</span>
-                  <span style={{ fontSize: 15, fontWeight: 900, color: COLOR.text }}>{f.valor}</span>
-                </button>
-              ))
-            }
-          </div>
-          <div style={{ padding: "8px 12px 12px" }}>
-            <button onClick={() => router.push("/inventario")} style={{ width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${COLOR.border}`, background: "none", color: COLOR.green, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+
+          {loading ? (
+            <div style={{ padding:20, display:"flex", gap:16, alignItems:"center" }}>
+              <Sk w={168} h={168} r="50%" />
+              <div style={{ flex:1, display:"flex", flexDirection:"column", gap:8 }}>
+                {[1,2,3,4,5,6,7].map(i => <Sk key={i} h={22} r={7} />)}
+              </div>
+            </div>
+          ) : (
+            <DonutHato
+              data={filasHato}
+              total={totalHato || stats?.animalesActivos || 0}
+              onNavigate={() => router.push("/inventario")}
+            />
+          )}
+
+          <div style={{ padding: "12px 16px 14px", borderTop: `1px solid ${COLOR.border}`, marginTop:4 }}>
+            <button onClick={() => router.push("/inventario")}
+              style={{ width:"100%", padding:"8px", borderRadius:8, border:`1px solid ${COLOR.border}`, background:"none", color:COLOR.green, fontWeight:700, fontSize:12, cursor:"pointer" }}>
               Ver inventario completo →
             </button>
           </div>
