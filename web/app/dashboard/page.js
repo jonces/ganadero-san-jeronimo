@@ -36,12 +36,25 @@ function Sk({ w = "100%", h = 20, r = 6 }) {
   return <div style={{ width: w, height: h, background: "#E2E8F0", borderRadius: r, animation: "pulse 1.5s ease-in-out infinite" }} />;
 }
 
-// ── Formateador ──
-function fmt(valor, tipo = "moneda", mon = "NIO") {
+// ── Formateador con conversión real ──
+function fmt(valor, tipo = "moneda", mon = "NIO", tc = 36.5) {
   if (valor === null || valor === undefined || isNaN(valor)) return "—";
   if (tipo === "numero") return Number(valor).toLocaleString("es-NI");
+  const num = mon === "USD" ? Number(valor) / tc : Number(valor);
   const sym = mon === "USD" ? "$ " : "C$ ";
-  return sym + Number(valor).toLocaleString("es-NI", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return sym + num.toLocaleString("es-NI", { minimumFractionDigits: mon === "USD" ? 2 : 0, maximumFractionDigits: mon === "USD" ? 2 : 0 });
+}
+
+// Equivalencia en la otra moneda (debajo del valor principal)
+function fmtSub(valor, monedaPrincipal, tc = 36.5) {
+  if (!valor || isNaN(valor) || valor === 0) return null;
+  if (monedaPrincipal === "NIO") {
+    const usd = Number(valor) / tc;
+    return `≈ $ ${usd.toLocaleString("es-NI", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  } else {
+    const nio = Number(valor) * tc;
+    return `≈ C$ ${nio.toLocaleString("es-NI", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  }
 }
 
 // ── Badge de categoría ──
@@ -145,7 +158,7 @@ function GraficaFinanciera({ datos = [] }) {
 }
 
 // ── KPI Card ──
-function KpiCard({ icono, label, valor, sub, color, bg, border: brd, loading, onClick }) {
+function KpiCard({ icono, label, valor, sub, equiv, color, bg, border: brd, loading, onClick }) {
   const s = {
     background: bg || COLOR.white, border: `1px solid ${brd || COLOR.border}`,
     borderRadius: 14, padding: "16px", cursor: onClick ? "pointer" : "default",
@@ -164,7 +177,8 @@ function KpiCard({ icono, label, valor, sub, color, bg, border: brd, loading, on
       </div>
       {loading ? <><Sk h={28} w="70%" /><Sk h={12} w="50%" /></> : (
         <>
-          <div style={{ fontSize: 22, fontWeight: 900, color: COLOR.text, lineHeight: 1.1, marginBottom: 4 }}>{valor}</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: COLOR.text, lineHeight: 1.1, marginBottom: 2 }}>{valor}</div>
+          {equiv && <div style={{ fontSize: 11, color: COLOR.muted, marginBottom: 2 }}>{equiv}</div>}
           <div style={{ fontSize: 12, color: COLOR.muted }}>{sub}</div>
         </>
       )}
@@ -178,6 +192,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState("mes");
   const [moneda, setMoneda] = useState("NIO");
+  const [tipoCambio, setTipoCambio] = useState(36.5);
   const [usuario, setUsuario] = useState(null);
   const [saludo, setSaludo] = useState("Buenos días");
   const [busqueda, setBusqueda] = useState("");
@@ -200,6 +215,11 @@ export default function DashboardPage() {
     setUsuario(getUsuario());
     const h = new Date().getHours();
     setSaludo(h < 12 ? "Buenos días" : h < 18 ? "Buenas tardes" : "Buenas noches");
+    // Tipo de cambio real NIO/USD
+    fetch("https://open.er-api.com/v6/latest/USD")
+      .then(r => r.json())
+      .then(d => { if (d?.rates?.NIO) setTipoCambio(d.rates.NIO); })
+      .catch(() => setTipoCambio(36.5));
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
@@ -221,13 +241,14 @@ export default function DashboardPage() {
   const hato = stats?.resumenHato || {};
   const graficaMeses = stats?.graficaMeses || [];
 
+  const tc = tipoCambio;
   const kpiCards = [
     { icono: "🐄", label: "Animales activos", valor: fmt(stats?.animalesActivos || 0, "numero"), sub: `${hato.enVenta || 0} en venta`, color: COLOR.green, bg: "#F0FDF4", border: "#BBF7D0", href: "/inventario" },
-    { icono: "💹", label: "Valor del hato", valor: fmt(stats?.valorEstimadoHato || 0, "moneda", moneda), sub: "Estimación por peso", color: COLOR.blue, bg: "#EFF6FF", border: "#BFDBFE", href: "/inventario" },
-    { icono: "💼", label: "Capital invertido", valor: fmt(stats?.capitalInvertido || 0, "moneda", moneda), sub: "Acumulado histórico", color: COLOR.purple, bg: "#F5F3FF", border: "#DDD6FE", href: "/finanzas" },
-    { icono: "💰", label: "Ventas del mes", valor: fmt(stats?.ventasMes?.total || 0, "moneda", moneda), sub: `${stats?.ventasMes?.cantidad || 0} ventas`, color: COLOR.green, bg: "#F0FDF4", border: "#BBF7D0", href: "/ventas" },
-    { icono: "📉", label: "Gastos del mes", valor: fmt(stats?.gastosMes?.total || 0, "moneda", moneda), sub: "Total en gastos", color: COLOR.red, bg: "#FEF2F2", border: "#FECACA", href: "/gastos" },
-    { icono: "📈", label: "Ganancia neta", valor: fmt(stats?.gananciaNeta || 0, "moneda", moneda), sub: `${(stats?.margenGanancia || 0).toFixed(1)}% margen`, color: COLOR.purple, bg: "#F5F3FF", border: "#DDD6FE", href: "/finanzas" },
+    { icono: "💹", label: "Valor del hato", valor: fmt(stats?.valorEstimadoHato || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.valorEstimadoHato, moneda, tc), sub: "Basado en precio de venta", color: COLOR.blue, bg: "#EFF6FF", border: "#BFDBFE", href: "/inventario" },
+    { icono: "💼", label: "Capital invertido", valor: fmt(stats?.capitalInvertido || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.capitalInvertido, moneda, tc), sub: "Acumulado histórico", color: COLOR.purple, bg: "#F5F3FF", border: "#DDD6FE", href: "/finanzas" },
+    { icono: "💰", label: "Ventas del mes", valor: fmt(stats?.ventasMes?.total || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.ventasMes?.total, moneda, tc), sub: `${stats?.ventasMes?.cantidad || 0} ventas`, color: COLOR.green, bg: "#F0FDF4", border: "#BBF7D0", href: "/ventas" },
+    { icono: "📉", label: "Gastos del mes", valor: fmt(stats?.gastosMes?.total || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.gastosMes?.total, moneda, tc), sub: "Total en gastos", color: COLOR.red, bg: "#FEF2F2", border: "#FECACA", href: "/gastos" },
+    { icono: "📈", label: "Ganancia neta", valor: fmt(stats?.gananciaNeta || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.gananciaNeta, moneda, tc), sub: `${(stats?.margenGanancia || 0).toFixed(1)}% margen`, color: COLOR.purple, bg: "#F5F3FF", border: "#DDD6FE", href: "/finanzas" },
   ];
 
   const filasHato = [
@@ -324,8 +345,8 @@ export default function DashboardPage() {
 
       {/* ── 2 TARJETAS: Cuentas por pagar + Caja ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-        <KpiCard loading={loading} icono="📑" label="Cuentas por pagar" valor={fmt(stats?.cuentasPagar || 0, "moneda", moneda)} sub="Pagos pendientes" color={COLOR.orange} bg="#FFF7ED" border="#FED7AA" onClick={() => router.push("/cuentas-pagar")} />
-        <KpiCard loading={loading} icono="🏦" label="Caja disponible" valor={fmt(stats?.cajaDisponible || 0, "moneda", moneda)} sub="Ingresos cobrados - gastos" color={COLOR.green} bg="#F0FDF4" border="#BBF7D0" onClick={() => router.push("/finanzas")} />
+        <KpiCard loading={loading} icono="📑" label="Cuentas por pagar" valor={fmt(stats?.cuentasPagar || 0, "moneda", moneda, tc)} equiv={fmtSub(stats?.cuentasPagar, moneda, tc)} sub="Pagos pendientes" color={COLOR.orange} bg="#FFF7ED" border="#FED7AA" onClick={() => router.push("/cuentas-pagar")} />
+        <KpiCard loading={loading} icono="🏦" label="Caja disponible" valor={fmt(stats?.cajaDisponible || 0, "moneda", moneda, tc)} equiv={fmtSub(stats?.cajaDisponible, moneda, tc)} sub="Ingresos cobrados - gastos" color={COLOR.green} bg="#F0FDF4" border="#BBF7D0" onClick={() => router.push("/finanzas")} />
       </div>
 
       {/* ── 3 COLUMNAS: Resumen hato | Gráfica | Alertas ── */}
