@@ -157,29 +157,80 @@ function GraficaFinanciera({ datos = [] }) {
   );
 }
 
-// ── KPI Card ──
-function KpiCard({ icono, label, valor, sub, equiv, color, bg, border: brd, loading, onClick }) {
-  const s = {
-    background: bg || COLOR.white, border: `1px solid ${brd || COLOR.border}`,
-    borderRadius: 14, padding: "16px", cursor: onClick ? "pointer" : "default",
-    transition: "box-shadow 0.15s, transform 0.1s", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-    animation: "fadeIn 0.3s ease",
-  };
+// ── Iconos SVG para KPIs ──
+const KpiIcon = {
+  animal:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8 2 4 6 4 10c0 2 1 4 2 5l-1 5h14l-1-5c1-1 2-3 2-5 0-4-4-8-8-8z"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>,
+  hato:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+  capital:  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>,
+  ventas:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>,
+  gastos:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>,
+  ganancia: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>,
+  cuentas:  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>,
+  caja:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
+};
+
+// ── KPI Card rediseñada ──
+function KpiCard({ iconKey, label, valor, sub, equiv, accentColor, iconBg, iconColor, trend, loading, onClick }) {
   return (
-    <div style={s} onClick={onClick}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.12)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)"; e.currentTarget.style.transform = "translateY(0)"; }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-        <span style={{ fontSize: 22 }}>{icono}</span>
-        <span style={{ fontSize: 10, fontWeight: 700, color, background: bg, padding: "2px 8px", borderRadius: 20, border: `1px solid ${brd}` }}>
-          {label}
-        </span>
+    <div
+      onClick={onClick}
+      style={{
+        background: COLOR.white,
+        border: `1px solid ${COLOR.border}`,
+        borderTop: `3px solid ${accentColor}`,
+        borderRadius: 12,
+        padding: "16px 18px",
+        cursor: "pointer",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+        transition: "box-shadow 0.15s, transform 0.15s",
+        display: "flex",
+        flexDirection: "column",
+        gap: 0,
+        minWidth: 0,
+      }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.05)"; e.currentTarget.style.transform = "translateY(0)"; }}
+    >
+      {/* Fila superior: ícono + label + tendencia */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: iconBg, color: iconColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {KpiIcon[iconKey]}
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 600, color: COLOR.muted, lineHeight: 1.3 }}>{label}</span>
+        </div>
+        {trend && !loading && (
+          <span style={{
+            fontSize: 10, fontWeight: 800, padding: "3px 7px", borderRadius: 20,
+            background: trend.dir === "up" ? "#F0FDF4" : "#FEF2F2",
+            color: trend.dir === "up" ? COLOR.green : COLOR.red,
+            display: "flex", alignItems: "center", gap: 2, flexShrink: 0,
+          }}>
+            {trend.dir === "up"
+              ? <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 8L8 2M8 2H3M8 2v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              : <svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 2l6 6M8 8H3M8 8V3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            }
+            {trend.pct}%
+          </span>
+        )}
       </div>
-      {loading ? <><Sk h={28} w="70%" /><Sk h={12} w="50%" /></> : (
+
+      {/* Valor principal */}
+      {loading ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <Sk h={26} w="75%" />
+          <Sk h={11} w="55%" />
+          <Sk h={11} w="45%" />
+        </div>
+      ) : (
         <>
-          <div style={{ fontSize: 22, fontWeight: 900, color: COLOR.text, lineHeight: 1.1, marginBottom: 2 }}>{valor}</div>
-          {equiv && <div style={{ fontSize: 11, color: COLOR.muted, marginBottom: 2 }}>{equiv}</div>}
-          <div style={{ fontSize: 12, color: COLOR.muted }}>{sub}</div>
+          <div style={{ fontSize: 20, fontWeight: 900, color: COLOR.text, lineHeight: 1.15, letterSpacing: "-0.3px", marginBottom: 3 }}>
+            {valor}
+          </div>
+          {equiv && (
+            <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 4 }}>{equiv}</div>
+          )}
+          <div style={{ fontSize: 11, color: COLOR.muted }}>{sub}</div>
         </>
       )}
     </div>
@@ -262,13 +313,28 @@ export default function DashboardPage() {
   const graficaMeses = stats?.graficaMeses || [];
 
   const tc = tipoCambio;
+  // ── Tendencias mes vs mes anterior (desde graficaMeses) ──
+  function tendencia(key) {
+    if (!graficaMeses || graficaMeses.length < 2) return null;
+    const actual   = graficaMeses[graficaMeses.length - 1]?.[key] || 0;
+    const anterior = graficaMeses[graficaMeses.length - 2]?.[key] || 0;
+    if (anterior === 0) return null;
+    const pct = ((actual - anterior) / anterior) * 100;
+    return { pct: Math.abs(pct).toFixed(1), dir: pct >= 0 ? "up" : "down" };
+  }
+  const tendVentas   = tendencia("ingresos");
+  const tendGastos   = tendencia("gastos");
+  const tendGanancia = tendencia("flujoNeto");
+
   const kpiCards = [
-    { icono: "🐄", label: "Animales activos", valor: fmt(stats?.animalesActivos || 0, "numero"), sub: `${hato.enVenta || 0} en venta`, color: COLOR.green, bg: "#F0FDF4", border: "#BBF7D0", href: "/inventario" },
-    { icono: "💹", label: "Valor del hato", valor: fmt(stats?.valorEstimadoHato || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.valorEstimadoHato, moneda, tc), sub: "Basado en precio de venta", color: COLOR.blue, bg: "#EFF6FF", border: "#BFDBFE", href: "/inventario" },
-    { icono: "💼", label: "Capital invertido", valor: fmt(stats?.capitalInvertido || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.capitalInvertido, moneda, tc), sub: "Acumulado histórico", color: COLOR.purple, bg: "#F5F3FF", border: "#DDD6FE", href: "/finanzas" },
-    { icono: "💰", label: "Ventas del mes", valor: fmt(stats?.ventasMes?.total || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.ventasMes?.total, moneda, tc), sub: `${stats?.ventasMes?.cantidad || 0} ventas`, color: COLOR.green, bg: "#F0FDF4", border: "#BBF7D0", href: "/ventas" },
-    { icono: "📉", label: "Gastos del mes", valor: fmt(stats?.gastosMes?.total || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.gastosMes?.total, moneda, tc), sub: "Total en gastos", color: COLOR.red, bg: "#FEF2F2", border: "#FECACA", href: "/gastos" },
-    { icono: "📈", label: "Ganancia neta", valor: fmt(stats?.gananciaNeta || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.gananciaNeta, moneda, tc), sub: `${(stats?.margenGanancia || 0).toFixed(1)}% margen`, color: COLOR.purple, bg: "#F5F3FF", border: "#DDD6FE", href: "/finanzas" },
+    { iconKey: "animal",   label: "Animales activos",   valor: fmt(stats?.animalesActivos || 0, "numero"),                                sub: `${hato.enVenta || 0} en venta · ${hato.prenadas || 0} preñadas`, accentColor: COLOR.green,  iconBg: "#F0FDF4", iconColor: COLOR.green,  trend: null,         href: "/inventario"   },
+    { iconKey: "hato",     label: "Valor del hato",     valor: fmt(stats?.valorEstimadoHato || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.valorEstimadoHato, moneda, tc),  sub: "Precio de venta estimado",                              accentColor: COLOR.blue,   iconBg: "#EFF6FF", iconColor: COLOR.blue,   trend: null,         href: "/inventario"   },
+    { iconKey: "capital",  label: "Capital invertido",  valor: fmt(stats?.capitalInvertido || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.capitalInvertido, moneda, tc),   sub: "Compras + gastos históricos",                           accentColor: COLOR.purple, iconBg: "#F5F3FF", iconColor: COLOR.purple, trend: null,         href: "/finanzas"     },
+    { iconKey: "ventas",   label: "Ventas del mes",     valor: fmt(stats?.ventasMes?.total || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.ventasMes?.total, moneda, tc),   sub: `${stats?.ventasMes?.cantidad || 0} transacciones`,      accentColor: COLOR.green,  iconBg: "#F0FDF4", iconColor: COLOR.green,  trend: tendVentas,   href: "/ventas"       },
+    { iconKey: "gastos",   label: "Gastos del mes",     valor: fmt(stats?.gastosMes?.total || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.gastosMes?.total, moneda, tc),   sub: "Total de egresos registrados",                          accentColor: COLOR.red,    iconBg: "#FEF2F2", iconColor: COLOR.red,    trend: tendGastos,   href: "/gastos"       },
+    { iconKey: "ganancia", label: "Ganancia neta",      valor: fmt(stats?.gananciaNeta || 0, "moneda", moneda, tc),      equiv: fmtSub(stats?.gananciaNeta, moneda, tc),        sub: `Margen: ${(stats?.margenGanancia || 0).toFixed(1)}%`,   accentColor: COLOR.purple, iconBg: "#F5F3FF", iconColor: COLOR.purple, trend: tendGanancia, href: "/finanzas"     },
+    { iconKey: "cuentas",  label: "Cuentas por pagar",  valor: fmt(stats?.cuentasPagar || 0, "moneda", moneda, tc),      equiv: fmtSub(stats?.cuentasPagar, moneda, tc),        sub: "Pagos pendientes",                                      accentColor: COLOR.orange, iconBg: "#FFF7ED", iconColor: COLOR.orange, trend: null,         href: "/cuentas-pagar"},
+    { iconKey: "caja",     label: "Caja disponible",    valor: fmt(stats?.cajaDisponible || 0, "moneda", moneda, tc),    equiv: fmtSub(stats?.cajaDisponible, moneda, tc),      sub: "Cobrado menos gastos",                                  accentColor: COLOR.green,  iconBg: "#F0FDF4", iconColor: COLOR.green,  trend: null,         href: "/finanzas"     },
   ];
 
   const filasHato = [
@@ -562,17 +628,11 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── KPI GRID 6 ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 12, marginBottom: 16 }}>
+      {/* ── KPI GRID UNIFICADO 4×2 ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
         {kpiCards.map(c => (
           <KpiCard key={c.label} loading={loading} {...c} onClick={() => router.push(c.href)} />
         ))}
-      </div>
-
-      {/* ── 2 TARJETAS: Cuentas por pagar + Caja ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-        <KpiCard loading={loading} icono="📑" label="Cuentas por pagar" valor={fmt(stats?.cuentasPagar || 0, "moneda", moneda, tc)} equiv={fmtSub(stats?.cuentasPagar, moneda, tc)} sub="Pagos pendientes" color={COLOR.orange} bg="#FFF7ED" border="#FED7AA" onClick={() => router.push("/cuentas-pagar")} />
-        <KpiCard loading={loading} icono="🏦" label="Caja disponible" valor={fmt(stats?.cajaDisponible || 0, "moneda", moneda, tc)} equiv={fmtSub(stats?.cajaDisponible, moneda, tc)} sub="Ingresos cobrados - gastos" color={COLOR.green} bg="#F0FDF4" border="#BBF7D0" onClick={() => router.push("/finanzas")} />
       </div>
 
       {/* ── 3 COLUMNAS: Resumen hato | Gráfica | Alertas ── */}
