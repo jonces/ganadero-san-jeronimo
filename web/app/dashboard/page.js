@@ -483,6 +483,204 @@ function GraficaFinanciera({ datos = [] }) {
   );
 }
 
+// ── Alertas Inteligentes ──
+const ALERTAS_EJEMPLO = [
+  {
+    id: "vacunas",
+    prioridad: "alta",
+    titulo: "Vacunas pendientes",
+    descripcion: "3 animales no han recibido la dosis de refuerzo programada.",
+    accion: "Ver animales",
+    href: "/incidentes",
+    icono: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+    ),
+  },
+  {
+    id: "medicamentos",
+    prioridad: "media",
+    titulo: "Medicamentos por vencer",
+    descripcion: "2 productos en inventario vencen en los próximos 7 días.",
+    accion: "Ver insumos",
+    href: "/insumos",
+    icono: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+      </svg>
+    ),
+  },
+  {
+    id: "peso",
+    prioridad: "media",
+    titulo: "Animales con bajo peso",
+    descripcion: "1 animal está por debajo del peso promedio del hato.",
+    accion: "Ver inventario",
+    href: "/inventario",
+    icono: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a5 5 0 100 10A5 5 0 0012 2z"/><path d="M3 20a9 9 0 1118 0"/>
+      </svg>
+    ),
+  },
+  {
+    id: "potreros",
+    prioridad: "baja",
+    titulo: "Potreros sobrecargados",
+    descripcion: "El Potrero 3 supera la capacidad recomendada de carga animal.",
+    accion: "Ver eventos",
+    href: "/eventos",
+    icono: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+      </svg>
+    ),
+  },
+];
+
+const PRIORIDAD_CONFIG = {
+  alta:  { label: "Alta",  dot: "#DC2626", bg: "#FEF2F2", border: "#FECACA", badgeBg: "#FEE2E2", badgeColor: "#B91C1C", barColor: "#DC2626" },
+  media: { label: "Media", dot: "#D97706", bg: "#FFFBEB", border: "#FDE68A", badgeBg: "#FEF3C7", badgeColor: "#92400E", barColor: "#D97706" },
+  baja:  { label: "Baja",  dot: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE", badgeBg: "#DBEAFE", badgeColor: "#1E40AF", barColor: "#2563EB" },
+};
+
+function AlertasInteligentes({ loading, onNavigate }) {
+  const [activa, setActiva] = useState(null);
+  const altaCount  = ALERTAS_EJEMPLO.filter(a => a.prioridad === "alta").length;
+  const mediaCount = ALERTAS_EJEMPLO.filter(a => a.prioridad === "media").length;
+  const bajaCount  = ALERTAS_EJEMPLO.filter(a => a.prioridad === "baja").length;
+
+  return (
+    <div style={{
+      background: COLOR.white, border: `1px solid ${COLOR.border}`,
+      borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      display: "flex", flexDirection: "column",
+    }}>
+
+      {/* Header */}
+      <div style={{ padding: "14px 16px 12px", borderBottom: `1px solid ${COLOR.border}` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: COLOR.text }}>Alertas inteligentes</p>
+            <p style={{ margin: "2px 0 0", fontSize: 11, color: COLOR.muted }}>Monitoreo automático del sistema</p>
+          </div>
+          {/* Badge IA — solo visual */}
+          <span style={{
+            fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 20,
+            background: "linear-gradient(135deg, #F0FDF4, #EFF6FF)",
+            border: "1px solid #BBF7D0", color: "#065F46",
+            display: "flex", alignItems: "center", gap: 4,
+          }}>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+            IA lista
+          </span>
+        </div>
+
+        {/* Resumen de prioridades */}
+        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+          {[
+            { label: `${altaCount} alta`,  ...PRIORIDAD_CONFIG.alta  },
+            { label: `${mediaCount} media`,...PRIORIDAD_CONFIG.media },
+            { label: `${bajaCount} baja`,  ...PRIORIDAD_CONFIG.baja  },
+          ].map(p => (
+            <span key={p.label} style={{
+              fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20,
+              background: p.badgeBg, color: p.badgeColor,
+              display: "flex", alignItems: "center", gap: 5,
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: p.dot }} />
+              {p.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Tarjetas de alerta */}
+      <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+        {loading ? [1,2,3,4].map(i => <Sk key={i} h={62} r={10} />) :
+          ALERTAS_EJEMPLO.map(a => {
+            const cfg = PRIORIDAD_CONFIG[a.prioridad];
+            const isOpen = activa === a.id;
+            return (
+              <div key={a.id}
+                style={{
+                  borderRadius: 10,
+                  border: `1px solid ${isOpen ? cfg.border : COLOR.border}`,
+                  borderLeft: `3px solid ${cfg.barColor}`,
+                  background: isOpen ? cfg.bg : COLOR.white,
+                  overflow: "hidden",
+                  transition: "all 0.18s",
+                  cursor: "pointer",
+                }}
+                onClick={() => setActiva(isOpen ? null : a.id)}
+              >
+                {/* Fila principal */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px" }}>
+                  {/* Ícono */}
+                  <div style={{
+                    width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                    background: cfg.badgeBg, color: cfg.barColor,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {a.icono}
+                  </div>
+
+                  {/* Texto */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: COLOR.text, lineHeight: 1.3 }}>{a.titulo}</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 11, color: COLOR.muted, lineHeight: 1.4, display: isOpen ? "none" : "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {a.descripcion}
+                    </p>
+                  </div>
+
+                  {/* Badge prioridad + chevron */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 20, background: cfg.badgeBg, color: cfg.badgeColor }}>
+                      {cfg.label.toUpperCase()}
+                    </span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={COLOR.muted} strokeWidth="2.5" strokeLinecap="round"
+                      style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.18s" }}>
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Detalle expandido */}
+                {isOpen && (
+                  <div style={{ padding: "0 12px 12px 52px", animation: "fadeIn 0.15s ease" }}>
+                    <p style={{ margin: "0 0 10px", fontSize: 12, color: COLOR.muted, lineHeight: 1.5 }}>{a.descripcion}</p>
+                    <button
+                      onClick={e => { e.stopPropagation(); onNavigate(a.href); }}
+                      style={{
+                        padding: "6px 14px", borderRadius: 7, border: `1px solid ${cfg.border}`,
+                        background: cfg.badgeBg, color: cfg.badgeColor,
+                        fontSize: 12, fontWeight: 700, cursor: "pointer",
+                      }}>
+                      {a.accion} →
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        }
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: "10px 12px 14px", borderTop: `1px solid ${COLOR.border}` }}>
+        <button onClick={() => onNavigate("/incidentes")} style={{
+          width: "100%", padding: "8px", borderRadius: 8,
+          border: `1px solid ${COLOR.border}`, background: "none",
+          color: COLOR.red, fontWeight: 700, fontSize: 12, cursor: "pointer",
+        }}>
+          Ver todas las alertas →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Iconos SVG para KPIs ──
 const KpiIcon = {
   animal:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8 2 4 6 4 10c0 2 1 4 2 5l-1 5h14l-1-5c1-1 2-3 2-5 0-4-4-8-8-8z"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>,
@@ -1011,33 +1209,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Pagos y alertas */}
-        <div style={cardStyle}>
-          <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: COLOR.text }}>Alertas</p>
-            <span style={{ fontSize: 20 }}>🚨</span>
-          </div>
-          <div style={{ padding: "8px 12px" }}>
-            {loading ? [1,2,3].map(i => <div key={i} style={{ marginBottom: 8 }}><Sk h={50} r={8} /></div>) :
-              (stats?.alertas?.length > 0 ? stats.alertas.slice(0, 3).map((a, i) => (
-                <div key={i} style={{ padding: "10px 12px", borderRadius: 8, marginBottom: 8, background: "#FEF2F2", border: "1px solid #FECACA" }}>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: COLOR.red }}>{a.titulo}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>{a.descripcion}</p>
-                </div>
-              )) : (
-                <div style={{ textAlign: "center", padding: "24px 0", color: COLOR.muted }}>
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Sin alertas pendientes</p>
-                </div>
-              ))
-            }
-          </div>
-          <div style={{ padding: "0 12px 12px" }}>
-            <button onClick={() => router.push("/cuentas-pagar")} style={{ width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${COLOR.border}`, background: "none", color: COLOR.orange, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-              Ver cuentas por pagar →
-            </button>
-          </div>
-        </div>
+        {/* ── Alertas Inteligentes ── */}
+        <AlertasInteligentes loading={loading} onNavigate={router.push.bind(router)} />
       </div>
 
       {/* ── 3 COLUMNAS: Capital invertido | Insumos | Indicadores ── */}
