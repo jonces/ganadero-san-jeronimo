@@ -12,6 +12,10 @@ router.get("/", async (req, res, next) => {
     const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
     const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1);
 
+    // ── Nombre de la finca ──
+    const fincaData = await prisma.finca.findUnique({ where: { id: fincaId }, select: { nombre: true } });
+    const nombreFinca = fincaData?.nombre || "Mi Finca";
+
     // ── Animales activos ──
     const animales = await prisma.animal.findMany({
       where: { fincaId, estado: "ACTIVO" },
@@ -124,6 +128,7 @@ router.get("/", async (req, res, next) => {
     const mortalidad = animalesActivos > 0 ? (muertesAnio / animalesActivos) * 100 : 0;
 
     res.json({
+      nombreFinca,
       animalesActivos,
       resumenHato: { vacas, toros, novillos, novillas, terneros, terneras, prenadas, enVenta, reservados, nacimientosMes: partosMes },
       ventasMes: { total: ventasMesTotal, cantidad: ventasMesCantidad, moneda: "NIO" },

@@ -15,13 +15,22 @@ function fmt(v) {
   return "C$ " + Number(v).toLocaleString("es-NI", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-function addHeader(doc, title) {
+async function getNombreFinca() {
+  try {
+    const stats = await api("/dashboard");
+    return stats?.nombreFinca || "Mi Finca";
+  } catch {
+    return "Mi Finca";
+  }
+}
+
+function addHeader(doc, title, nombreFinca) {
   doc.setFillColor(23, 32, 51);
   doc.rect(0, 0, 210, 22, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text("HENRIQUEZ CATTLE MANAGEMENT", 14, 10);
+  doc.text((nombreFinca || "Mi Finca").toUpperCase(), 14, 10);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.text(title, 14, 17);
@@ -30,15 +39,36 @@ function addHeader(doc, title) {
   doc.setTextColor(23, 32, 51);
 }
 
-function addFooter(doc) {
+function addFooter(doc, nombreFinca) {
   const pageCount = doc.internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text(`Página ${i} de ${pageCount}`, 196, 288, { align: "right" });
-    doc.text("HENRIQUEZ CATTLE MANAGEMENT — Confidencial", 14, 288);
+    doc.text(`${(nombreFinca || "Mi Finca").toUpperCase()} — Confidencial`, 14, 288);
   }
+}
+
+async function urlToBase64(url) {
+  try {
+    const resp = await fetch(url, { mode: "cors" });
+    const blob = await resp.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+function getAnimalFoto(animal) {
+  if (!animal.media || !Array.isArray(animal.media)) return null;
+  const img = animal.media.find(m => m.tipo === "imagen" || m.url?.match(/\.(jpg|jpeg|png|webp)/i));
+  return img?.url || null;
 }
 
 const REPORTES = [
@@ -46,32 +76,64 @@ const REPORTES = [
     id: "inventario",
     icono: "🐄",
     titulo: "Inventario del hato",
-    descripcion: "Lista completa de todos los animales activos con peso, raza y estado.",
+    descripcion: "Lista completa de todos los animales activos con foto, peso, raza y estado.",
     color: T.green,
     bg: T.greenBg,
     async generar() {
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
-      const animalesRes = await api("/animales");
+      const [animalesRes, nombreFinca] = await Promise.all([api("/animales"), getNombreFinca()]);
       const activos = (Array.isArray(animalesRes) ? animalesRes : (animalesRes.items || [])).filter(a => a.estado !== "ELIMINADO");
+
+      // Pre-cargar fotos
+      const fotos = {};
+      await Promise.all(activos.map(async (a) => {
+        const url = getAnimalFoto(a);
+        if (url) {
+          const b64 = await urlToBase64(url);
+          if (b64) fotos[a.id] = b64;
+        }
+      }));
+
+      const hasFotos = Object.keys(fotos).length > 0;
       const doc = new jsPDF();
-      addHeader(doc, "Inventario del Hato");
+      addHeader(doc, "Inventario del Hato", nombreFinca);
+
+      const head = hasFotos
+        ? [["Foto", "Arete", "Sexo", "Raza", "Peso (lb)", "Potrero", "Estado"]]
+        : [["Arete", "Sexo", "Raza", "Peso (lb)", "Potrero", "Estado"]];
+
+      const body = activos.map(a => {
+        const row = hasFotos
+          ? ["", a.identificador, a.sexo === "MACHO" ? "Macho" : "Hembra", a.raza || "—", a.pesoActual ? Number(a.pesoActual).toLocaleString("es-NI") : "—", a.potrero || "—", a.estadoComercial || a.estado]
+          : [a.identificador, a.sexo === "MACHO" ? "Macho" : "Hembra", a.raza || "—", a.pesoActual ? Number(a.pesoActual).toLocaleString("es-NI") : "—", a.potrero || "—", a.estadoComercial || a.estado];
+        return row;
+      });
+
+      const COL_FOTO = 18;
+      const ROW_H = hasFotos ? 18 : 10;
+
       autoTable(doc, {
         startY: 28,
-        head: [["Arete", "Nombre", "Sexo", "Raza", "Peso (lb)", "Potrero", "Estado"]],
-        body: activos.map(a => [
-          a.identificador,
-          a.nombre || "—",
-          a.sexo === "MACHO" ? "Macho" : "Hembra",
-          a.raza || "—",
-          a.pesoActual ? Number(a.pesoActual).toLocaleString("es-NI") : "—",
-          a.potrero || "—",
-          a.estadoComercial,
-        ]),
-        styles: { fontSize: 8 },
+        head,
+        body,
+        styles: { fontSize: 7, cellPadding: 2, minCellHeight: hasFotos ? ROW_H : undefined },
         headStyles: { fillColor: [22, 163, 74] },
+        columnStyles: hasFotos ? { 0: { cellWidth: COL_FOTO } } : {},
+        didDrawCell(data) {
+          if (!hasFotos) return;
+          if (data.section === "body" && data.column.index === 0) {
+            const animal = activos[data.row.index];
+            const b64 = fotos[animal?.id];
+            if (b64) {
+              const pad = 1;
+              doc.addImage(b64, "JPEG", data.cell.x + pad, data.cell.y + pad, COL_FOTO - pad * 2, data.cell.height - pad * 2);
+            }
+          }
+        },
       });
-      addFooter(doc);
+
+      addFooter(doc, nombreFinca);
       doc.save("inventario-hato.pdf");
     },
   },
@@ -85,9 +147,9 @@ const REPORTES = [
     async generar() {
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
-      const fin = await api("/finanzas?periodo=mes");
+      const [fin, nombreFinca] = await Promise.all([api("/finanzas?periodo=mes"), getNombreFinca()]);
       const doc = new jsPDF();
-      addHeader(doc, "Resumen Financiero — Este mes");
+      addHeader(doc, "Resumen Financiero — Este mes", nombreFinca);
       autoTable(doc, {
         startY: 28,
         head: [["Concepto", "Monto (C$)"]],
@@ -111,7 +173,7 @@ const REPORTES = [
           headStyles: { fillColor: [37, 99, 235] },
         });
       }
-      addFooter(doc);
+      addFooter(doc, nombreFinca);
       doc.save("resumen-financiero.pdf");
     },
   },
@@ -125,10 +187,10 @@ const REPORTES = [
     async generar() {
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
-      const ventasRes = await api("/ventas?limit=1000");
+      const [ventasRes, nombreFinca] = await Promise.all([api("/ventas?limit=1000"), getNombreFinca()]);
       const ventas = Array.isArray(ventasRes) ? ventasRes : (ventasRes.items || ventasRes.ventas || []);
       const doc = new jsPDF({ orientation: "landscape" });
-      addHeader(doc, "Reporte de Ventas");
+      addHeader(doc, "Reporte de Ventas", nombreFinca);
       autoTable(doc, {
         startY: 28,
         head: [["Fecha", "Animal", "Comprador", "Tipo", "Precio (C$)", "Estado pago", "Estado venta"]],
@@ -144,7 +206,7 @@ const REPORTES = [
         styles: { fontSize: 7 },
         headStyles: { fillColor: [124, 58, 237] },
       });
-      addFooter(doc);
+      addFooter(doc, nombreFinca);
       doc.save("reporte-ventas.pdf");
     },
   },
@@ -158,10 +220,10 @@ const REPORTES = [
     async generar() {
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
-      const gastosRes = await api("/gastos?limit=1000");
-      const gastos = gastosRes.gastos || gastosRes.items || [];
+      const [gastosRes, nombreFinca] = await Promise.all([api("/gastos?limit=1000"), getNombreFinca()]);
+      const gastos = Array.isArray(gastosRes) ? gastosRes : (gastosRes.gastos || gastosRes.items || []);
       const doc = new jsPDF();
-      addHeader(doc, "Reporte de Gastos");
+      addHeader(doc, "Reporte de Gastos", nombreFinca);
       autoTable(doc, {
         startY: 28,
         head: [["Fecha", "Descripción", "Categoría", "Periodicidad", "Monto (C$)"]],
@@ -175,7 +237,7 @@ const REPORTES = [
         styles: { fontSize: 8 },
         headStyles: { fillColor: [234, 88, 12] },
       });
-      addFooter(doc);
+      addFooter(doc, nombreFinca);
       doc.save("reporte-gastos.pdf");
     },
   },
@@ -189,26 +251,55 @@ const REPORTES = [
     async generar() {
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
-      const enVentaRes = await api("/animales?estadoComercial=EN_VENTA");
+      const [enVentaRes, nombreFinca] = await Promise.all([api("/animales?estadoComercial=EN_VENTA"), getNombreFinca()]);
       const animalesEnVenta = Array.isArray(enVentaRes) ? enVentaRes : (enVentaRes.items || []);
+
+      // Pre-cargar fotos
+      const fotos = {};
+      await Promise.all(animalesEnVenta.map(async (a) => {
+        const url = getAnimalFoto(a);
+        if (url) {
+          const b64 = await urlToBase64(url);
+          if (b64) fotos[a.id] = b64;
+        }
+      }));
+
+      const hasFotos = Object.keys(fotos).length > 0;
       const doc = new jsPDF();
-      addHeader(doc, "Animales en Venta");
+      addHeader(doc, "Animales en Venta", nombreFinca);
+
+      const head = hasFotos
+        ? [["Foto", "Arete", "Sexo", "Raza", "Peso (lb)", "Precio venta (C$)", "Potrero"]]
+        : [["Arete", "Sexo", "Raza", "Peso (lb)", "Precio venta (C$)", "Potrero"]];
+
+      const body = animalesEnVenta.map(a => hasFotos
+        ? ["", a.identificador, a.sexo === "MACHO" ? "Macho" : "Hembra", a.raza || "—", a.pesoActual ? Number(a.pesoActual).toLocaleString("es-NI") : "—", a.precioVenta ? fmt(a.precioVenta) : "—", a.potrero || "—"]
+        : [a.identificador, a.sexo === "MACHO" ? "Macho" : "Hembra", a.raza || "—", a.pesoActual ? Number(a.pesoActual).toLocaleString("es-NI") : "—", a.precioVenta ? fmt(a.precioVenta) : "—", a.potrero || "—"]
+      );
+
+      const COL_FOTO = 18;
+
       autoTable(doc, {
         startY: 28,
-        head: [["Arete", "Nombre", "Sexo", "Raza", "Peso (lb)", "Precio de venta (C$)", "Potrero"]],
-        body: animalesEnVenta.map(a => [
-          a.identificador,
-          a.nombre || "—",
-          a.sexo === "MACHO" ? "Macho" : "Hembra",
-          a.raza || "—",
-          a.pesoActual ? Number(a.pesoActual).toLocaleString("es-NI") : "—",
-          a.potrero || "—",
-          a.precioVenta ? fmt(a.precioVenta) : "—",
-        ]),
-        styles: { fontSize: 8 },
+        head,
+        body,
+        styles: { fontSize: 7, cellPadding: 2, minCellHeight: hasFotos ? 18 : undefined },
         headStyles: { fillColor: [3, 105, 161] },
+        columnStyles: hasFotos ? { 0: { cellWidth: COL_FOTO } } : {},
+        didDrawCell(data) {
+          if (!hasFotos) return;
+          if (data.section === "body" && data.column.index === 0) {
+            const animal = animalesEnVenta[data.row.index];
+            const b64 = fotos[animal?.id];
+            if (b64) {
+              const pad = 1;
+              doc.addImage(b64, "JPEG", data.cell.x + pad, data.cell.y + pad, COL_FOTO - pad * 2, data.cell.height - pad * 2);
+            }
+          }
+        },
       });
-      addFooter(doc);
+
+      addFooter(doc, nombreFinca);
       doc.save("animales-en-venta.pdf");
     },
   },
@@ -222,10 +313,10 @@ const REPORTES = [
     async generar() {
       const { jsPDF } = await import("jspdf");
       const autoTable = (await import("jspdf-autotable")).default;
-      const repRes = await api("/reproduccion");
+      const [repRes, nombreFinca] = await Promise.all([api("/reproduccion"), getNombreFinca()]);
       const animales = Array.isArray(repRes) ? repRes : (repRes.items || []);
       const doc = new jsPDF();
-      addHeader(doc, "Reporte de Reproducción");
+      addHeader(doc, "Reporte de Reproducción", nombreFinca);
       autoTable(doc, {
         startY: 28,
         head: [["Arete", "Nombre", "Raza", "Estado reproductivo", "Fecha parto probable", "Potrero"]],
@@ -240,7 +331,7 @@ const REPORTES = [
         styles: { fontSize: 8 },
         headStyles: { fillColor: [147, 51, 234] },
       });
-      addFooter(doc);
+      addFooter(doc, nombreFinca);
       doc.save("reporte-reproduccion.pdf");
     },
   },
@@ -262,7 +353,7 @@ export default function ReportesPage() {
   }
 
   return (
-    <AppLayout title="Reportes" subtitle="HENRIQUEZ CATTLE MANAGEMENT">
+    <AppLayout title="Reportes" subtitle="Exporta datos de tu finca en PDF">
       <div style={{ marginBottom: 20 }}>
         <div style={{ color: T.textSec, fontSize: 14 }}>
           Exporta reportes en PDF con los datos reales de tu finca.
