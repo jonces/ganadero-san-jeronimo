@@ -681,6 +681,138 @@ function AlertasInteligentes({ loading, onNavigate }) {
   );
 }
 
+// ── Inventario de Insumos ──
+const INSUMOS_DEMO = [
+  { id:"med",   label:"Medicamentos",   icono:"💊", cant:12, max:20, unidad:"unidades", color:"#2563EB", bg:"#EFF6FF" },
+  { id:"vit",   label:"Vitaminas",      icono:"🧪", cant:8,  max:15, unidad:"dosis",    color:"#16a34a", bg:"#F0FDF4" },
+  { id:"vac",   label:"Vacunas",        icono:"💉", cant:2,  max:10, unidad:"frascos",  color:"#DC2626", bg:"#FEF2F2" },
+  { id:"sal",   label:"Sales minerales",icono:"🧂", cant:45, max:50, unidad:"kg",       color:"#16a34a", bg:"#F0FDF4" },
+  { id:"con",   label:"Concentrados",   icono:"🌾", cant:5,  max:20, unidad:"sacos",    color:"#D97706", bg:"#FFFBEB" },
+  { id:"des",   label:"Desparasitantes",icono:"🔬", cant:1,  max:8,  unidad:"frascos",  color:"#DC2626", bg:"#FEF2F2" },
+];
+
+function stockStatus(cant, max) {
+  const pct = cant / max;
+  if (pct <= 0.2) return { label: "Crítico", color: "#DC2626", bg: "#FEF2F2", barColor: "#DC2626" };
+  if (pct <= 0.4) return { label: "Bajo",    color: "#D97706", bg: "#FFFBEB", barColor: "#F59E0B" };
+  return              { label: "OK",       color: "#16a34a", bg: "#F0FDF4", barColor: "#22c55e" };
+}
+
+function InventarioInsumosCard({ loading, onNavigate }) {
+  const [hovItem, setHovItem] = useState(null);
+  const bajos = INSUMOS_DEMO.filter(i => (i.cant / i.max) <= 0.4);
+
+  return (
+    <div style={{
+      background: COLOR.white, border: `1px solid ${COLOR.border}`,
+      borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      display: "flex", flexDirection: "column",
+    }}>
+
+      {/* Header */}
+      <div style={{ padding: "14px 16px 12px", borderBottom: `1px solid ${COLOR.border}` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: COLOR.text }}>Inventario</p>
+            <p style={{ margin: "2px 0 0", fontSize: 11, color: COLOR.muted }}>Stock de insumos y suministros</p>
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {bajos.length > 0 && (
+              <span style={{ fontSize: 10, fontWeight: 800, padding: "3px 9px", borderRadius: 20, background: "#FEF2F2", color: "#B91C1C", border: "1px solid #FECACA", display: "flex", alignItems: "center", gap: 4 }}>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                {bajos.length} bajo stock
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de categorías */}
+      <div style={{ padding: "8px 0", flex: 1 }}>
+        {loading
+          ? [1,2,3,4,5,6].map(i => <div key={i} style={{ padding: "8px 16px" }}><Sk h={36} r={8} /></div>)
+          : INSUMOS_DEMO.map((item, idx) => {
+            const st   = stockStatus(item.cant, item.max);
+            const pct  = Math.round((item.cant / item.max) * 100);
+            const isHov = hovItem === item.id;
+            return (
+              <div key={item.id}
+                onMouseEnter={() => setHovItem(item.id)}
+                onMouseLeave={() => setHovItem(null)}
+                onClick={() => onNavigate("/insumos")}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "9px 16px",
+                  borderBottom: idx < INSUMOS_DEMO.length - 1 ? `1px solid ${COLOR.border}` : "none",
+                  background: isHov ? "#F8FAFC" : "transparent",
+                  cursor: "pointer", transition: "background 0.12s",
+                }}>
+
+                {/* Ícono */}
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: item.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
+                  {item.icono}
+                </div>
+
+                {/* Label + barra */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: COLOR.text }}>{item.label}</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: st.color }}>{item.cant} {item.unidad}</span>
+                  </div>
+                  {/* Barra de stock */}
+                  <div style={{ height: 5, background: "#F1F5F9", borderRadius: 4, overflow: "hidden" }}>
+                    <div style={{
+                      height: "100%", width: `${pct}%`,
+                      background: st.barColor, borderRadius: 4,
+                      transition: "width 0.6s ease",
+                    }} />
+                  </div>
+                </div>
+
+                {/* Badge estado */}
+                <span style={{
+                  fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 20, flexShrink: 0,
+                  background: st.bg, color: st.color,
+                }}>
+                  {st.label.toUpperCase()}
+                </span>
+
+              </div>
+            );
+        })}
+      </div>
+
+      {/* Alertas de stock bajo */}
+      {bajos.length > 0 && (
+        <div style={{ margin: "0 12px 10px", borderRadius: 10, background: "#FFF7ED", border: "1px solid #FED7AA", padding: "10px 12px" }}>
+          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 800, color: "#C2410C", display: "flex", alignItems: "center", gap: 5 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Stock bajo detectado
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+            {bajos.map(i => (
+              <span key={i.id} style={{ fontSize: 11, fontWeight: 600, color: "#9A3412", background: "#FEE2E2", padding: "2px 9px", borderRadius: 20 }}>
+                {i.icono} {i.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div style={{ padding: "0 12px 14px" }}>
+        <button onClick={() => onNavigate("/insumos")} style={{
+          width: "100%", padding: "8px", borderRadius: 8,
+          border: `1px solid ${COLOR.border}`, background: "none",
+          color: COLOR.blue, fontWeight: 700, fontSize: 12, cursor: "pointer",
+        }}>
+          Gestionar inventario →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Iconos SVG para KPIs ──
 const KpiIcon = {
   animal:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8 2 4 6 4 10c0 2 1 4 2 5l-1 5h14l-1-5c1-1 2-3 2-5 0-4-4-8-8-8z"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>,
@@ -1251,26 +1383,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Inventario e insumos */}
-        <div style={cardStyle}>
-          <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}` }}>
-            <p style={{ margin: 0, fontWeight: 800, fontSize: 14, color: COLOR.text }}>Inventario e insumos</p>
-            <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>Stock y estado actual</p>
-          </div>
-          <div style={{ padding: "8px 0" }}>
-            {loading ? [1,2,3].map(i => <div key={i} style={{ padding: "8px 16px" }}><Sk h={30} /></div>) : (
-              <div style={{ textAlign: "center", padding: "24px 0", color: COLOR.muted }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>📦</div>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 600 }}>Sin datos de insumos</p>
-                <p style={{ margin: "4px 0 0", fontSize: 11 }}>Módulo en desarrollo</p>
-              </div>
-            )}
-          </div>
-          <div style={{ padding: "8px 12px 12px" }}>
-            <button onClick={() => router.push("/insumos")} style={{ width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${COLOR.border}`, background: "none", color: COLOR.blue, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-              Ver insumos →
-            </button>
-          </div>
-        </div>
+        <InventarioInsumosCard loading={loading} onNavigate={router.push.bind(router)} />
 
         {/* Indicadores productivos */}
         <div style={cardStyle}>
