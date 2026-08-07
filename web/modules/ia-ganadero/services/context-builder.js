@@ -1,4 +1,4 @@
-import { ESPECIALISTAS } from "../constants/specialists.js";
+import { ESPECIALISTAS, getEspecialista } from "../constants/specialists.js";
 
 /**
  * Construye el system prompt que se envía en cada llamada a la IA.
@@ -10,7 +10,7 @@ import { ESPECIALISTAS } from "../constants/specialists.js";
  * @returns {string}
  */
 export function buildSystemPrompt({ context, specialistId = "veterinario" } = {}) {
-  const especialista = ESPECIALISTAS.find(e => e.id === specialistId) ?? ESPECIALISTAS[0];
+  const especialista = getEspecialista(specialistId);
   const now = new Date();
 
   let fincaBlock = "- Finca: información no disponible";
@@ -75,28 +75,33 @@ export function buildSystemPrompt({ context, specialistId = "veterinario" } = {}
     ].join("\n");
   }
 
-  return `Eres el asistente IA de GanaderoSG, la plataforma líder de gestión ganadera en Colombia. Eres experto en ganadería bovina y sistemas de producción pecuaria.
+  // Usa el systemPrompt rico del especialista si está disponible
+  const expertPrompt = especialista.systemPrompt
+    ? especialista.systemPrompt
+    : `Eres el asistente IA de GanaderoSG especializado en ${especialista.label}.`;
 
-ESPECIALISTA ACTIVO: ${especialista.icono} ${especialista.label}
+  return `${expertPrompt}
 
-CONTEXTO DE LA FINCA:
+---
+
+## CONTEXTO DE LA FINCA DEL USUARIO
+
 ${fincaBlock}
-${empresaBlock ? `\nEMPRESA:\n${empresaBlock}` : ""}
-${usuarioBlock ? `\nUSUARIO:\n${usuarioBlock}` : ""}
+${empresaBlock ? `\n**Empresa:**\n${empresaBlock}` : ""}
+${usuarioBlock ? `\n**Usuario:**\n${usuarioBlock}` : ""}
 
-CONFIGURACIÓN:
+**Configuración:**
 ${locBlock}
 
-INSTRUCCIONES DE RESPUESTA:
+---
+
+## INSTRUCCIONES GENERALES
+
 - Responde siempre en español, de forma clara, directa y práctica.
-- Usa **negrita** para términos técnicos importantes.
-- Usa tablas Markdown cuando los datos tienen estructura tabular.
-- Usa listas con viñetas para protocolos, pasos o enumeraciones.
-- Usa bloques de código para protocolos técnicos específicos.
-- Sé específico con dosis, cantidades, fechas y precios en la moneda configurada.
+- Cuando el contexto de la finca esté disponible, personaliza tus respuestas con esos datos.
+- Sé específico con dosis, cantidades, fechas y precios en COP (pesos colombianos) salvo que se indique otra moneda.
 - Si no tienes suficiente información para responder con precisión, pide los datos que necesitas.
-- No inventes datos que no estén en el contexto proporcionado.
-- Mantén un tono profesional pero accesible para ganaderos y técnicos del campo.`;
+- No inventes datos que no estén en el contexto proporcionado.`;
 }
 
 /**

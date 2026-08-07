@@ -55,7 +55,13 @@ export { ProviderBadge }     from "./components/ProviderBadge.js";
 // Constantes y tokens
 export { T, IA_THEME_CSS }   from "./constants/theme.js";
 export { ESPECIALISTAS, getEspecialista } from "./constants/specialists.js";
-export { CATEGORIAS_IA, EMERGENCIAS_IA }  from "./constants/quick-queries.js";
+export { CATEGORIAS_IA, EMERGENCIAS_IA, getConsultasEjemplo } from "./constants/quick-queries.js";
+
+// Especialistas IA (sistema experto completo)
+export { ESPECIALISTAS_IA, ESPECIALISTAS_MAP, getEspecialista as getEspecialistaIA } from "./specialists/index.js";
+
+// Motor de recomendaciones
+export { generateRecommendations, prioridadColor, prioridadLabel } from "./services/recommendations-engine.js";
 export { DEMO_FINCA, DEMO_RECOMENDACIONES, DEMO_ACCIONES, DEMO_DOCS } from "./constants/demo-data.js";
 export * from "./constants/index.js";
 export * from "./constants/context.js";

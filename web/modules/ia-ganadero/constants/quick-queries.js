@@ -1,5 +1,16 @@
-// 9 categorías de consultas rápidas + emergencias frecuentes
+/**
+ * Consultas rápidas por especialista — generadas dinámicamente desde los especialistas IA.
+ * Mantiene también las categorías genéricas legacy para compatibilidad.
+ */
+import { ESPECIALISTAS_IA } from "../specialists/index.js";
 
+/** Genera las consultas rápidas dinámicamente a partir de los especialistas. */
+export function getConsultasEjemplo(specialistId) {
+  const especialista = ESPECIALISTAS_IA.find(e => e.id === specialistId);
+  return especialista?.consultasEjemplo ?? EMERGENCIAS_IA;
+}
+
+// Categorías genéricas legacy — se mantienen por compatibilidad con código existente
 export const CATEGORIAS_IA = [
   {
     id: "alimentacion", titulo: "Mi vaca no quiere comer", icono: "🐄",
@@ -29,7 +40,7 @@ export const CATEGORIAS_IA = [
     id: "vacunacion", titulo: "Plan de vacunación", icono: "💉",
     color: "#0EA5E9", bg: "#F0F9FF", border: "#BAE6FD", hoverBg: "#E0F2FE",
     descripcion: "Calendario sanitario y protocolos de inmunización",
-    sugerencias: ["Vacunas obligatorias en Nicaragua","Esquema para terneros recién nacidos","¿Cuándo vacunar contra fiebre aftosa?","Vacunación en época lluviosa"],
+    sugerencias: ["Vacunas obligatorias en Colombia","Esquema para terneros recién nacidos","¿Cuándo vacunar contra fiebre aftosa?","Vacunación en época lluviosa"],
   },
   {
     id: "reproduccion", titulo: "Reproducción", icono: "🤰",
