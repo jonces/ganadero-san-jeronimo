@@ -1,9 +1,13 @@
 // API pública del módulo Centro IA Ganadero.
 // Importar siempre desde aquí, nunca desde subcarpetas directamente.
 
-// Context
+// Context — IA
 export { IAProvider }     from "./context/IAContext.js";
 export { useIA }          from "./context/useIA.js";
+
+// Context — Conversación (finca, empresa, usuario, idioma, moneda, zona horaria)
+export { ConversationContextProvider } from "./context/ConversationContextContext.js";
+export { useConversationContext }      from "./hooks/useConversationContext.js";
 
 // Hooks
 export { useConversation } from "./hooks/useConversation.js";
@@ -23,3 +27,4 @@ export { ProviderBadge }      from "./components/ProviderBadge.js";
 
 // Constantes y tipos (para uso externo si se necesita)
 export * from "./constants/index.js";
+export * from "./constants/context.js";

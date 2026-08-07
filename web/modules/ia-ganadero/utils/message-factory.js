@@ -26,9 +26,10 @@ export function createMessage(sender, text, attachments = [], status = MESSAGE_S
 /**
  * Crea un objeto Conversation vacío.
  * @param {string} [providerId]
+ * @param {import('../types/conversation-context').ConversationContext} [conversationContext]
  * @returns {import('../types').Conversation}
  */
-export function createConversation(providerId = null) {
+export function createConversation(providerId = null, conversationContext = null) {
   const now = new Date().toISOString();
   return {
     id:         uuid(),
@@ -37,6 +38,9 @@ export function createConversation(providerId = null) {
     createdAt:  now,
     updatedAt:  now,
     providerId,
+    // Contexto resuelto al momento de crear la conversación.
+    // La IA lo recibirá como system prompt al conectarse.
+    context:    conversationContext,
   };
 }
 

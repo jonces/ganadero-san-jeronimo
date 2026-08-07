@@ -1,16 +1,20 @@
 "use client";
-import { createContext, useReducer, useRef, useEffect } from "react";
-import { iaReducer, INITIAL_STATE } from "./IAReducer.js";
-import { createProvider }           from "../services/providers/index.js";
+import { createContext, useReducer, useRef, useEffect, useContext } from "react";
+import { iaReducer, INITIAL_STATE }       from "./IAReducer.js";
+import { createProvider }                 from "../services/providers/index.js";
 import { IA_ACTION, CONVERSATION_STATUS, MESSAGE_STATUS, SENDER } from "../constants/index.js";
 import { createMessage, createConversation } from "../utils/message-factory.js";
+import { ConversationContextCtx }         from "./ConversationContextContext.js";
 
 export const IAContext = createContext(null);
 
 export function IAProvider({ children }) {
   const [state, dispatch] = useReducer(iaReducer, INITIAL_STATE);
-  const clientRef         = useRef(null);  // instancia activa del IAClient
-  const cancelStreamRef   = useRef(null);  // función para abortar stream
+  const clientRef         = useRef(null);
+  const cancelStreamRef   = useRef(null);
+
+  // Lee el contexto de conversación si está disponible en el árbol
+  const convCtx = useContext(ConversationContextCtx);
 
   // Inicializa el provider cuando cambia
   useEffect(() => {
@@ -46,7 +50,8 @@ export function IAProvider({ children }) {
 
   function newConversation() {
     cancelStreamRef.current?.();
-    const conv = createConversation(state.providerId);
+    // Inyecta automáticamente el contexto resuelto (finca, usuario, etc.)
+    const conv = createConversation(state.providerId, convCtx?.context ?? null);
     dispatch({ type: IA_ACTION.CREATE_CONVERSATION, payload: conv });
   }
 
@@ -109,6 +114,9 @@ export function IAProvider({ children }) {
       text,
       attachments,
       history: activeConv?.messages ?? [],
+      // El contexto de la conversación activa (finca, usuario, idioma…)
+      // Los providers lo usarán como system prompt al conectarse con la IA
+      context: activeConv?.context ?? convCtx?.context ?? null,
     };
 
     if (clientRef.current.config.capabilities.streaming) {

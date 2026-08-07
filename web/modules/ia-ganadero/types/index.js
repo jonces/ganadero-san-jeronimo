@@ -28,7 +28,10 @@
  * @property {Message[]} messages   - Mensajes de la conversación
  * @property {string}   createdAt   - ISO string
  * @property {string}   updatedAt   - ISO string
- * @property {string}   [providerId] - Provider usado en esta conversación
+ * @property {string}   [providerId]  - Provider usado en esta conversación
+ * @property {import('./conversation-context').ConversationContext} [context]
+ *   Contexto resuelto al crear la conversación: finca, empresa, usuario,
+ *   idioma, moneda, zona horaria y roles. La IA lo recibe como system prompt.
  */
 
 /**
@@ -56,6 +59,9 @@
  * @property {string}     text           - Texto del usuario
  * @property {Attachment[]} [attachments] - Adjuntos opcionales
  * @property {Message[]}  [history]      - Historial previo para contexto
+ * @property {import('./conversation-context').ConversationContext} [context]
+ *   Contexto de la conversación (finca, usuario, idioma, etc.).
+ *   Los providers de IA lo convertirán en un system prompt automáticamente.
  */
 
 /**
