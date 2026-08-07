@@ -5,6 +5,9 @@ import { useIA }          from "../context/useIA.js";
 import { useConversation } from "../hooks/useConversation.js";
 import { useProvider }    from "../hooks/useProvider.js";
 import { QUICK_QUERIES, SENDER, MESSAGE_STATUS, CONVERSATION_STATUS } from "../constants/index.js";
+import { useFileUpload }    from "../hooks/useFileUpload.js";
+import { FileUploadZone }   from "./FileUploadZone.js";
+import { FilePreviewGrid }  from "./FilePreviewGrid.js";
 
 // ── Paleta ──────────────────────────────────────────────────────────────────
 const T = {
@@ -522,6 +525,12 @@ function CenterPanel({ sidebarCollapsed, onToggleSidebar, specialist }) {
   const fileVidRef = useRef(null);
   const fileDocRef = useRef(null);
 
+  // Sistema de carga de archivos
+  const { files, addFiles, removeFile, clearAll: clearFiles, readyFiles, hasFiles } = useFileUpload();
+  // Panel de archivos abierto
+  const [showFiles, setShowFiles] = useState(false);
+  // Drag activo sobre el panel central
+  const [dragOver, setDragOver]   = useState(false);
   // Adjuntos pendientes (solo UI, sin subir nada)
   const [attachments, setAttachments] = useState([]);
   // Grabación simulada
@@ -531,7 +540,7 @@ function CenterPanel({ sidebarCollapsed, onToggleSidebar, specialist }) {
 
   const messages  = active?.messages ?? [];
   const hasText   = state.inputText.trim().length > 0;
-  const canSend   = (hasText || attachments.length > 0) && !isBusy && !recording;
+  const canSend   = (hasText || attachments.length > 0 || readyFiles.length > 0) && !isBusy && !recording;
   const isWelcome = !active || messages.length === 0;
   const charCount = state.inputText.length;
 
@@ -567,9 +576,9 @@ function CenterPanel({ sidebarCollapsed, onToggleSidebar, specialist }) {
     setTimeout(() => { autoResize(textRef.current); textRef.current?.focus(); }, 0);
   }
 
-  // ── Handlers de archivos ─────────────────────────────────────────────────
-  function addFiles(files, defaultIcon, type) {
-    const newAtts = Array.from(files).map(f => {
+  // ── Handler chips de adjunto en el chat (flujo legacy, no usa useFileUpload) ──
+  function addLegacyAttachments(rawFiles, defaultIcon, type) {
+    const newAtts = Array.from(rawFiles).map(f => {
       const isImg = f.type.startsWith("image/");
       return {
         id:      Math.random().toString(36).slice(2),
@@ -604,7 +613,13 @@ function CenterPanel({ sidebarCollapsed, onToggleSidebar, specialist }) {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <main style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: T.panel }}>
+    <main
+      style={{ flex: 1, display: "flex", flexDirection: "column", height: "100%", overflow: "hidden", background: T.panel, position: "relative" }}
+      onDragEnter={e => { e.preventDefault(); setDragOver(true); setShowFiles(true); }}
+      onDragOver={e => e.preventDefault()}
+      onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false); }}
+      onDrop={e => { e.preventDefault(); setDragOver(false); }}
+    >
 
       {/* ── Topbar ── */}
       <div style={{ height: 54, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", padding: "0 20px", gap: 10, flexShrink: 0 }}>
@@ -634,13 +649,70 @@ function CenterPanel({ sidebarCollapsed, onToggleSidebar, specialist }) {
             );
           })()}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          {/* Botón panel de archivos */}
+          <button
+            onClick={() => setShowFiles(v => !v)}
+            title={showFiles ? "Ocultar archivos" : "Archivos adjuntos"}
+            style={{
+              ...iconBtn,
+              background:  showFiles ? "#F0FDF4" : "transparent",
+              border:      showFiles ? `1px solid #A7F3D0` : "1px solid transparent",
+              position:    "relative",
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={showFiles ? T.accent : T.muted} strokeWidth="2.2" strokeLinecap="round">
+              <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+            </svg>
+            {hasFiles && (
+              <span style={{
+                position: "absolute", top: -4, right: -4,
+                width: 16, height: 16, borderRadius: "50%",
+                background: T.accent, color: "#fff",
+                fontSize: 9, fontWeight: 800,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                {files.length > 9 ? "9+" : files.length}
+              </span>
+            )}
+          </button>
           <div style={{ width: 7, height: 7, borderRadius: "50%", background: isBusy ? "#F59E0B" : "#22C55E" }} />
           <span style={{ fontSize: 11, color: T.muted }}>
             {activeConfig?.icon} {activeConfig?.name} · {isBusy ? "Procesando…" : "Listo"}
           </span>
         </div>
       </div>
+
+      {/* ── Panel de archivos (se desliza desde arriba) ── */}
+      {showFiles && (
+        <div style={{
+          borderBottom:  `1px solid ${T.border}`,
+          background:    T.panel,
+          padding:       "16px 24px",
+          maxHeight:     420,
+          overflowY:     "auto",
+          flexShrink:    0,
+          outline:       dragOver ? `2px dashed ${T.accent}` : "none",
+          outlineOffset: "-4px",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: T.text }}>
+              📎 Archivos adjuntos
+            </p>
+            <button onClick={() => setShowFiles(false)} style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontSize: 13, color: T.muted, padding: 0,
+            }}>✕ Cerrar</button>
+          </div>
+          <FilePreviewGrid
+            items={files}
+            onAdd={addFiles}
+            onRemove={removeFile}
+            onClearAll={clearFiles}
+            showZone={true}
+          />
+        </div>
+      )}
 
       {/* ── Área de mensajes ── */}
       <div style={{ flex: 1, overflowY: "auto", padding: isWelcome ? 0 : "28px 0 8px" }}>
@@ -693,10 +765,10 @@ function CenterPanel({ sidebarCollapsed, onToggleSidebar, specialist }) {
           )}
 
           {/* Inputs ocultos */}
-          <input ref={fileImgRef} type="file" accept="image/*"        multiple style={{ display: "none" }} onChange={e => addFiles(e.target.files, "🖼️", "image")}    />
-          <input ref={fileCamRef} type="file" accept="image/*"        capture="environment" style={{ display: "none" }} onChange={e => addFiles(e.target.files, "📷", "image")} />
-          <input ref={fileVidRef} type="file" accept="video/*"        multiple style={{ display: "none" }} onChange={e => addFiles(e.target.files, "🎬", "video")}    />
-          <input ref={fileDocRef} type="file" accept=".pdf,.doc,.docx,.txt,.xlsx,.csv" multiple style={{ display: "none" }} onChange={e => addFiles(e.target.files, "📄", "file")} />
+          <input ref={fileImgRef} type="file" accept="image/*"        multiple style={{ display: "none" }} onChange={e => addLegacyAttachments(e.target.files, "🖼️", "image")}    />
+          <input ref={fileCamRef} type="file" accept="image/*"        capture="environment" style={{ display: "none" }} onChange={e => addLegacyAttachments(e.target.files, "📷", "image")} />
+          <input ref={fileVidRef} type="file" accept="video/*"        multiple style={{ display: "none" }} onChange={e => addLegacyAttachments(e.target.files, "🎬", "video")}    />
+          <input ref={fileDocRef} type="file" accept=".pdf,.doc,.docx,.txt,.xlsx,.csv" multiple style={{ display: "none" }} onChange={e => addLegacyAttachments(e.target.files, "📄", "file")} />
 
           {/* Caja principal */}
           <div style={{
@@ -729,18 +801,29 @@ function CenterPanel({ sidebarCollapsed, onToggleSidebar, specialist }) {
             {/* Barra inferior del input */}
             <div style={{ display: "flex", alignItems: "center", padding: "6px 10px 10px", gap: 6 }}>
 
-              {/* Botón adjuntar (abre barra de herramientas) */}
+              {/* Botón adjuntar — abre panel de archivos */}
               <button
-                onClick={() => setToolsOpen(v => !v)}
+                onClick={() => setShowFiles(v => !v)}
                 title="Adjuntar archivo"
                 style={{
-                  width: 34, height: 34, borderRadius: 9, border: `1px solid ${toolsOpen ? T.accent : T.border}`,
-                  background: toolsOpen ? T.accent + "15" : "transparent",
-                  color: toolsOpen ? T.accent : T.muted,
+                  width: 34, height: 34, borderRadius: 9,
+                  border: `1px solid ${(showFiles || hasFiles) ? T.accent : T.border}`,
+                  background: (showFiles || hasFiles) ? T.accent + "15" : "transparent",
+                  color: (showFiles || hasFiles) ? T.accent : T.muted,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   cursor: "pointer", transition: "all 0.15s", flexShrink: 0,
+                  position: "relative",
                 }}>
                 {TOOL_ICONS.adjuntar}
+                {hasFiles && (
+                  <span style={{
+                    position: "absolute", top: -5, right: -5,
+                    width: 15, height: 15, borderRadius: "50%",
+                    background: T.accent, color: "#fff",
+                    fontSize: 8, fontWeight: 800,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>{files.length > 9 ? "9+" : files.length}</span>
+                )}
               </button>
 
               {/* Micrófono */}

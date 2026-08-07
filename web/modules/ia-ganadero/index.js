@@ -10,9 +10,10 @@ export { ConversationContextProvider } from "./context/ConversationContextContex
 export { useConversationContext }      from "./hooks/useConversationContext.js";
 
 // Hooks
-export { useConversation } from "./hooks/useConversation.js";
-export { useMessages }     from "./hooks/useMessages.js";
-export { useProvider }     from "./hooks/useProvider.js";
+export { useConversation }     from "./hooks/useConversation.js";
+export { useMessages }         from "./hooks/useMessages.js";
+export { useProvider }         from "./hooks/useProvider.js";
+export { useFileUpload }       from "./hooks/useFileUpload.js";
 
 // Componentes
 export { IALayout }           from "./components/IALayout.js";
@@ -23,6 +24,9 @@ export { MessageBubble }      from "./components/MessageBubble.js";
 export { TypingIndicator }    from "./components/TypingIndicator.js";
 export { QuickQueries }       from "./components/QuickQueries.js";
 export { AttachmentPreview }  from "./components/AttachmentPreview.js";
+export { FileCard }           from "./components/FileCard.js";
+export { FileUploadZone }     from "./components/FileUploadZone.js";
+export { FilePreviewGrid }    from "./components/FilePreviewGrid.js";
 export { ProviderBadge }      from "./components/ProviderBadge.js";
 
 // Constantes y tipos (para uso externo si se necesita)
