@@ -27,9 +27,8 @@ export class OpenAIProvider extends BaseProvider {
       max_tokens:  4096,
     };
     if (tools.length) {
-      body.tools        = tools;
-      body.tool_choice  = "auto";
-      body.parallel_tool_calls = true;
+      body.tools       = tools;
+      body.tool_choice = "auto";
     }
 
     const res = await fetch(`${BASE}/chat/completions`, {

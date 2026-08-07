@@ -41,7 +41,7 @@ export function MessageBubble({ message }) {
           wordBreak:    "break-word",
           whiteSpace:   "pre-wrap",
         }}>
-          {isError ? "Error al procesar la respuesta." : (message.text || " ")}
+          {isError ? (message.text || "Error al procesar la respuesta.") : (message.text || " ")}
         </div>
 
         {/* Timestamp */}

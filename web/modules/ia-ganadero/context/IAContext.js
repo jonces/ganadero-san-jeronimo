@@ -205,7 +205,7 @@ export function IAProvider({ children }) {
           dispatch({ type: IA_ACTION.SET_ERROR,  payload: err.message });
           dispatch({
             type:    IA_ACTION.UPDATE_MESSAGE,
-            payload: { id: aiMsg.id, changes: { status: MESSAGE_STATUS.ERROR, isStreaming: false } },
+            payload: { id: aiMsg.id, changes: { text: err.message, status: MESSAGE_STATUS.ERROR, isStreaming: false } },
           });
         },
       );
