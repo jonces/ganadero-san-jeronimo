@@ -968,6 +968,227 @@ function ProximasActividadesCard({ onNavigate }) {
   );
 }
 
+// ── Centro IA Ganadero ──
+const IA_CONSULTAS_RAPIDAS = [
+  { texto: "¿Qué animales necesitan vacuna?", icono: "💉" },
+  { texto: "Resumen financiero del mes",       icono: "📊" },
+  { texto: "¿Qué potreros rotar esta semana?", icono: "🌿" },
+  { texto: "Animales con bajo peso",           icono: "⚖️" },
+  { texto: "¿Cuándo es el próximo pesaje?",    icono: "📅" },
+  { texto: "Estado reproductivo del hato",     icono: "🐄" },
+];
+
+const IA_HISTORIAL = [
+  { id: 1, titulo: "Vacunación agosto",      fecha: "Hoy",    preview: "¿Cuántos animales necesitan..." },
+  { id: 2, titulo: "Revisión de gastos",     fecha: "Ayer",   preview: "¿Cuál fue el gasto mayor en..." },
+  { id: 3, titulo: "Plan rotación potreros", fecha: "Lun",    preview: "Recomienda un plan de rotación..." },
+  { id: 4, titulo: "Peso promedio hato",     fecha: "Vie",    preview: "¿Cuál es el peso promedio de..." },
+];
+
+function CentroIA({ visible, onClose }) {
+  const [tab, setTab] = useState("chat");   // "chat" | "historial"
+  const [inputVal, setInputVal] = useState("");
+
+  const btnBase = (active) => ({
+    flex: 1, padding: "7px 0", borderRadius: 8, border: "none",
+    background: active ? COLOR.green : "transparent",
+    color: active ? "#fff" : COLOR.muted,
+    fontWeight: 700, fontSize: 12, cursor: "pointer", transition: "all 0.15s",
+  });
+
+  return (
+    <>
+      {/* Overlay oscuro solo en móvil */}
+      {visible && (
+        <div onClick={onClose} style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 59,
+          display: "none",
+        }} className="ia-overlay" />
+      )}
+
+      {/* Panel fijo */}
+      <div style={{
+        position: "fixed", top: 0, right: visible ? 0 : -380,
+        width: 360, height: "100vh", zIndex: 60,
+        background: COLOR.white, borderLeft: `1px solid ${COLOR.border}`,
+        boxShadow: "-4px 0 32px rgba(0,0,0,0.10)",
+        display: "flex", flexDirection: "column",
+        transition: "right 0.3s cubic-bezier(.4,0,.2,1)",
+        fontFamily: "inherit",
+      }}>
+
+        {/* ── Cabecera ── */}
+        <div style={{
+          padding: "16px 16px 12px",
+          background: "linear-gradient(135deg,#16a34a 0%,#15803d 100%)",
+          flexShrink: 0,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🤖</div>
+              <div>
+                <p style={{ margin: 0, fontWeight: 900, fontSize: 14, color: "#fff" }}>Centro IA Ganadero</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#86efac" }} />
+                  <p style={{ margin: 0, fontSize: 10, color: "rgba(255,255,255,0.8)" }}>Asistente inteligente · Próximamente</p>
+                </div>
+              </div>
+            </div>
+            <button onClick={onClose} style={{ background: "rgba(255,255,255,0.15)", border: "none", borderRadius: 8, width: 30, height: 30, cursor: "pointer", color: "#fff", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+          </div>
+          {/* Tabs */}
+          <div style={{ display: "flex", background: "rgba(0,0,0,0.15)", borderRadius: 10, padding: 3, gap: 3 }}>
+            <button style={btnBase(tab === "chat")}     onClick={() => setTab("chat")}>💬 Chat</button>
+            <button style={btnBase(tab === "historial")} onClick={() => setTab("historial")}>🕐 Historial</button>
+          </div>
+        </div>
+
+        {/* ── Cuerpo ── */}
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+
+          {tab === "chat" && (
+            <>
+              {/* Bienvenida / burbuja IA */}
+              <div style={{ padding: "16px 14px 8px" }}>
+                <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: "4px 14px 14px 14px", padding: "12px 14px", maxWidth: "90%" }}>
+                  <p style={{ margin: 0, fontSize: 13, color: "#166534", fontWeight: 600 }}>¡Hola! Soy tu asistente ganadero.</p>
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "#15803d", lineHeight: 1.5 }}>
+                    Puedo ayudarte con vacunaciones, análisis financieros, rotación de potreros y más. ¿En qué te ayudo hoy?
+                  </p>
+                </div>
+                {/* Burbuja demo usuario */}
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10 }}>
+                  <div style={{ background: COLOR.green, borderRadius: "14px 4px 14px 14px", padding: "10px 14px", maxWidth: "85%" }}>
+                    <p style={{ margin: 0, fontSize: 12, color: "#fff", lineHeight: 1.5 }}>¿Qué animales necesitan vacuna esta semana?</p>
+                  </div>
+                </div>
+                {/* Burbuja respuesta IA en proceso */}
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: "4px 14px 14px 14px", padding: "12px 14px", maxWidth: "90%", display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {[0,1,2].map(i => (
+                        <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: COLOR.green, animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+                      ))}
+                    </div>
+                    <span style={{ fontSize: 11, color: COLOR.muted }}>IA no conectada aún</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Consultas rápidas */}
+              <div style={{ padding: "4px 14px 12px" }}>
+                <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, color: COLOR.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Consultas rápidas</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {IA_CONSULTAS_RAPIDAS.map((c, i) => (
+                    <button key={i} style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "8px 12px", borderRadius: 10,
+                      border: `1px solid ${COLOR.border}`, background: "#F8FAFC",
+                      cursor: "pointer", textAlign: "left", transition: "all 0.15s",
+                      fontSize: 12, color: COLOR.text, fontWeight: 500,
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "#F0FDF4"; e.currentTarget.style.borderColor = COLOR.green; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "#F8FAFC"; e.currentTarget.style.borderColor = COLOR.border; }}
+                    onClick={() => setInputVal(c.texto)}>
+                      <span style={{ fontSize: 16, flexShrink: 0 }}>{c.icono}</span>
+                      {c.texto}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === "historial" && (
+            <div style={{ padding: "14px" }}>
+              <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: COLOR.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Conversaciones recientes</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {IA_HISTORIAL.map(h => (
+                  <button key={h.id} style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "10px 12px", borderRadius: 10,
+                    border: `1px solid ${COLOR.border}`, background: COLOR.white,
+                    cursor: "pointer", textAlign: "left", transition: "all 0.15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "#F8FAFC"; e.currentTarget.style.borderColor = "#94A3B8"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = COLOR.white; e.currentTarget.style.borderColor = COLOR.border; }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, background: "#F0FDF4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>💬</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
+                        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: COLOR.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.titulo}</p>
+                        <span style={{ fontSize: 10, color: COLOR.muted, flexShrink: 0, marginLeft: 6 }}>{h.fecha}</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: 11, color: COLOR.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.preview}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Input zona ── */}
+        <div style={{ flexShrink: 0, borderTop: `1px solid ${COLOR.border}`, padding: "10px 12px 14px", background: COLOR.white }}>
+          {/* Acciones adjunto/foto/voz */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+            {[
+              { icono: "📎", label: "Adjuntar archivo", color: COLOR.blue },
+              { icono: "📷", label: "Fotografía",       color: COLOR.purple },
+              { icono: "🎤", label: "Hablar",           color: COLOR.green },
+            ].map(a => (
+              <button key={a.label} title={a.label} style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "6px 10px", borderRadius: 8,
+                border: `1px solid ${COLOR.border}`, background: "#F8FAFC",
+                cursor: "pointer", fontSize: 13, color: a.color,
+                fontWeight: 600, transition: "all 0.15s", flex: 1, justifyContent: "center",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#F0FDF4"; e.currentTarget.style.borderColor = a.color; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "#F8FAFC"; e.currentTarget.style.borderColor = COLOR.border; }}>
+                <span>{a.icono}</span>
+                <span style={{ fontSize: 10 }}>{a.label}</span>
+              </button>
+            ))}
+          </div>
+          {/* Caja de texto */}
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+            <textarea
+              value={inputVal}
+              onChange={e => setInputVal(e.target.value)}
+              placeholder="Escribe tu consulta ganadera..."
+              rows={2}
+              style={{
+                flex: 1, resize: "none", padding: "10px 12px",
+                borderRadius: 12, border: `1.5px solid ${COLOR.border}`,
+                fontSize: 13, fontFamily: "inherit", color: COLOR.text,
+                background: "#F8FAFC", outline: "none", lineHeight: 1.5,
+                transition: "border-color 0.15s",
+              }}
+              onFocus={e => e.target.style.borderColor = COLOR.green}
+              onBlur={e => e.target.style.borderColor = COLOR.border}
+            />
+            <button style={{
+              width: 40, height: 40, borderRadius: 12, border: "none",
+              background: inputVal.trim() ? COLOR.green : "#E2E8F0",
+              color: inputVal.trim() ? "#fff" : COLOR.muted,
+              cursor: inputVal.trim() ? "pointer" : "default",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.2s", flexShrink: 0,
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
+          <p style={{ margin: "6px 0 0", fontSize: 10, color: COLOR.muted, textAlign: "center" }}>
+            🔒 IA no conectada · Solo interfaz visual
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Iconos SVG para KPIs ──
 const KpiIcon = {
   animal:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8 2 4 6 4 10c0 2 1 4 2 5l-1 5h14l-1-5c1-1 2-3 2-5 0-4-4-8-8-8z"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>,
@@ -1063,6 +1284,7 @@ export default function DashboardPage() {
   const [showCalendario, setShowCalendario] = useState(false);
   const [fotoPerfil, setFotoPerfil] = useState(null);
   const [clima, setClima] = useState(null);
+  const [showIA, setShowIA] = useState(false);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -1575,6 +1797,28 @@ export default function DashboardPage() {
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 20px 20px" }}>
         <ProximasActividadesCard onNavigate={router.push.bind(router)} />
       </div>
+
+      {/* ── CENTRO IA GANADERO ── */}
+      <CentroIA visible={showIA} onClose={() => setShowIA(false)} />
+
+      {/* Botón flotante para abrir IA */}
+      <button
+        onClick={() => setShowIA(v => !v)}
+        title="Centro IA Ganadero"
+        style={{
+          position: "fixed", bottom: 28, right: showIA ? 376 : 24,
+          width: 52, height: 52, borderRadius: "50%", border: "none",
+          background: "linear-gradient(135deg,#16a34a,#15803d)",
+          color: "#fff", fontSize: 22, cursor: "pointer", zIndex: 61,
+          boxShadow: "0 4px 20px rgba(22,163,74,0.45)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "right 0.3s cubic-bezier(.4,0,.2,1), transform 0.15s",
+        }}
+        onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+        onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+      >
+        {showIA ? "✕" : "🤖"}
+      </button>
 
       {/* ── MODAL: REGISTRAR MOVIMIENTO ── */}
       {showRegistrar && (
