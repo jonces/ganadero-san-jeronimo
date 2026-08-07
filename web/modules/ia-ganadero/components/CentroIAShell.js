@@ -743,113 +743,351 @@ function quickToolBtn(color) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  PANEL DERECHO — Herramientas (reservado)
+//  DATOS SIMULADOS — PANEL DERECHO
+// ─────────────────────────────────────────────────────────────────────────────
+const DEMO_FINCA = {
+  nombre:        "Finca San Jerónimo",
+  animalesTotal: 34,
+  animalesSanos: 31,
+  enVenta:        4,
+  prenadas:        7,
+  pesoPromedio:  "382 kg",
+  cajaDisponible:"C$ 84,500",
+  ventasMes:     "C$ 126,000",
+  gastosMes:     "C$ 38,200",
+  hatoStatus:    "bueno",           // "bueno" | "alerta" | "critico"
+};
+
+const DEMO_RECOMENDACIONES = [
+  {
+    id: "r1", prioridad: "alta",
+    titulo: "3 vacas sin vacunar",
+    detalle: "Las vacas #012, #027 y #031 no tienen vacunación registrada este ciclo.",
+    icono: "💉", color: "#DC2626", bg: "#FEF2F2", border: "#FECACA",
+    accion: "Ver animales",
+  },
+  {
+    id: "r2", prioridad: "alta",
+    titulo: "Stock crítico: Vacunas",
+    detalle: "Solo quedan 2 frascos. El mínimo recomendado es 10.",
+    icono: "📦", color: "#DC2626", bg: "#FEF2F2", border: "#FECACA",
+    accion: "Ver inventario",
+  },
+  {
+    id: "r3", prioridad: "media",
+    titulo: "Rotación de Potrero 3",
+    detalle: "Lleva 18 días en uso. Se recomienda rotar antes de los 21 días.",
+    icono: "🌿", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A",
+    accion: "Ver potreros",
+  },
+  {
+    id: "r4", prioridad: "media",
+    titulo: "Pesaje pendiente",
+    detalle: "12 animales no tienen registro de peso en los últimos 30 días.",
+    icono: "⚖️", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A",
+    accion: "Registrar pesaje",
+  },
+  {
+    id: "r5", prioridad: "baja",
+    titulo: "Vaca #008 próxima a parir",
+    detalle: "Gestación en día 268. Se estima parto en los próximos 7 días.",
+    icono: "🤰", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE",
+    accion: "Ver reproducción",
+  },
+];
+
+const DEMO_ACCIONES = [
+  { id: "a1", label: "Registrar venta",    icono: "💰", color: "#10A37F", bg: "#F0FDF4" },
+  { id: "a2", label: "Nuevo gasto",        icono: "💸", color: "#EF4444", bg: "#FEF2F2" },
+  { id: "a3", label: "Nuevo animal",       icono: "🐄", color: "#0EA5E9", bg: "#F0F9FF" },
+  { id: "a4", label: "Registrar evento",   icono: "📋", color: "#8B5CF6", bg: "#F5F3FF" },
+  { id: "a5", label: "Generar reporte",    icono: "📊", color: "#F59E0B", bg: "#FFFBEB" },
+  { id: "a6", label: "Plan sanitario",     icono: "💉", color: "#EC4899", bg: "#FDF2F8" },
+];
+
+const DEMO_DOCS = [
+  { id: "d1", nombre: "Reporte mensual julio 2026",  tipo: "PDF",  fecha: "Hoy",         icono: "📄", color: "#EF4444" },
+  { id: "d2", nombre: "Inventario de medicamentos",  tipo: "XLSX", fecha: "Ayer",         icono: "📊", color: "#10A37F" },
+  { id: "d3", nombre: "Protocolo de vacunación Q3",  tipo: "PDF",  fecha: "Hace 3 días",  icono: "📄", color: "#EF4444" },
+  { id: "d4", nombre: "Plan de rotación agosto",     tipo: "DOC",  fecha: "Hace 5 días",  icono: "📝", color: "#0EA5E9" },
+  { id: "d5", nombre: "Registro de partos 2026",     tipo: "XLSX", fecha: "Hace 1 semana",icono: "📊", color: "#10A37F" },
+];
+
+// ── Subcomponente: mini barra de progreso ─────────────────────────────────────
+function MiniBar({ pct, color }) {
+  return (
+    <div style={{ height: 4, borderRadius: 4, background: "#E5E5E5", overflow: "hidden", marginTop: 4 }}>
+      <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 4, transition: "width 0.6s ease" }} />
+    </div>
+  );
+}
+
+// ── Subcomponente: encabezado de sección ─────────────────────────────────────
+function RSection({ label, action, onAction }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "18px 0 8px" }}>
+      <p style={{ margin: 0, fontSize: 10, fontWeight: 800, color: T.muted, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</p>
+      {action && (
+        <button onClick={onAction} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: T.accent, fontWeight: 700, padding: 0 }}>
+          {action} →
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PANEL DERECHO
 // ─────────────────────────────────────────────────────────────────────────────
 function RightPanel({ collapsed, onToggle }) {
-  const [activeTab, setActiveTab] = useState("herramientas");
+  const [tab, setTab] = useState("finca");  // "finca" | "docs"
+  const [recDismissed, setRecDismissed] = useState(new Set());
 
-  const TOOLS_COMING = [
-    { icon: "📊", title: "Análisis de datos",    desc: "Gráficos y tendencias del hato generados por IA",   eta: "Q3 2026" },
-    { icon: "🔔", title: "Alertas inteligentes", desc: "Detección automática de anomalías en tu finca",      eta: "Q3 2026" },
-    { icon: "📋", title: "Generador de informes",desc: "Reportes automáticos basados en tus datos reales",   eta: "Q4 2026" },
-    { icon: "🌿", title: "Plan de pastoreo",      desc: "Rotación óptima de potreros con IA",                eta: "Q4 2026" },
-    { icon: "💊", title: "Protocolo sanitario",   desc: "Calendario de vacunación y tratamientos inteligente",eta: "Q1 2027" },
-    { icon: "💰", title: "Proyección financiera", desc: "Predicción de ingresos y gastos con ML",            eta: "Q1 2027" },
-  ];
+  const recsVisibles = DEMO_RECOMENDACIONES.filter(r => !recDismissed.has(r.id));
+  const altasCount   = recsVisibles.filter(r => r.prioridad === "alta").length;
+
+  const hatoColor  = DEMO_FINCA.hatoStatus === "bueno" ? T.accent : DEMO_FINCA.hatoStatus === "alerta" ? "#D97706" : "#DC2626";
+  const hatoLabel  = { bueno: "✅ Buen estado", alerta: "⚠️ Revisar", critico: "🚨 Crítico" }[DEMO_FINCA.hatoStatus];
 
   return (
     <aside style={{
-      width: collapsed ? 0 : 280,
-      minWidth: collapsed ? 0 : 280,
-      height: "100%",
+      width:    collapsed ? 0   : 290,
+      minWidth: collapsed ? 0   : 290,
+      height:   "100%",
       borderLeft: `1px solid ${T.border}`,
-      background: T.panel,
-      display: "flex", flexDirection: "column",
+      background: T.bg,
+      display:  "flex", flexDirection: "column",
       overflow: "hidden",
       transition: "width 0.25s ease, min-width 0.25s ease",
     }}>
-      {/* Cabecera */}
-      <div style={{ height: 56, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", padding: "0 16px", gap: 8, flexShrink: 0 }}>
-        <button onClick={onToggle} style={iconBtn} title="Ocultar herramientas">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2.2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+
+      {/* ── Cabecera ── */}
+      <div style={{ height: 54, borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", padding: "0 14px", gap: 8, flexShrink: 0, background: T.panel }}>
+        <button onClick={onToggle} style={iconBtn} title="Ocultar panel">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2.2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
         </button>
-        <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: T.text, flex: 1, whiteSpace: "nowrap" }}>Herramientas IA</p>
-        <span style={{ fontSize: 10, fontWeight: 700, color: T.accent, background: "#E6F8F4", padding: "2px 7px", borderRadius: 20, whiteSpace: "nowrap" }}>Próximamente</span>
+        <p style={{ margin: 0, fontWeight: 800, fontSize: 13, color: T.text, flex: 1 }}>Mi Finca</p>
+        {altasCount > 0 && (
+          <span style={{ fontSize: 10, fontWeight: 800, color: "#fff", background: "#DC2626", padding: "2px 7px", borderRadius: 20 }}>
+            {altasCount} alerta{altasCount > 1 ? "s" : ""}
+          </span>
+        )}
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: "flex", borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
+      {/* ── Tabs ── */}
+      <div style={{ display: "flex", borderBottom: `1px solid ${T.border}`, flexShrink: 0, background: T.panel }}>
         {[
-          { id: "herramientas", label: "Herramientas" },
-          { id: "contexto",     label: "Contexto" },
-        ].map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-            flex: 1, padding: "10px 0", border: "none", background: "transparent",
-            fontSize: 12, fontWeight: 600, cursor: "pointer",
-            color: activeTab === tab.id ? T.accent : T.muted,
-            borderBottom: activeTab === tab.id ? `2px solid ${T.accent}` : "2px solid transparent",
+          { id: "finca", label: "Estado" },
+          { id: "docs",  label: "Documentos" },
+        ].map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)} style={{
+            flex: 1, padding: "9px 0", border: "none", background: "transparent",
+            fontSize: 12, fontWeight: 700, cursor: "pointer",
+            color: tab === t.id ? T.accent : T.muted,
+            borderBottom: tab === t.id ? `2px solid ${T.accent}` : "2px solid transparent",
             transition: "all 0.15s",
-          }}>{tab.label}</button>
+          }}>{t.label}</button>
         ))}
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 14px" }}>
+      {/* ── Contenido scrolleable ── */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 12px 20px" }}>
 
-        {activeTab === "herramientas" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <p style={{ margin: "0 0 6px", fontSize: 11, color: T.muted, lineHeight: 1.6 }}>
-              Las siguientes herramientas se activarán automáticamente al conectar un modelo de IA.
-            </p>
-            {TOOLS_COMING.map((tool, i) => (
-              <div key={i} style={{
-                padding: "12px 14px", borderRadius: 12,
-                border: `1px solid ${T.border}`, background: T.bg,
-                opacity: 0.7,
-              }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                  <span style={{ fontSize: 20, lineHeight: 1, marginTop: 1 }}>{tool.icon}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
-                      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: T.text }}>{tool.title}</p>
-                      <span style={{ fontSize: 9, fontWeight: 700, color: T.muted, background: T.border, padding: "1px 6px", borderRadius: 10, whiteSpace: "nowrap", marginLeft: 6 }}>{tool.eta}</span>
-                    </div>
-                    <p style={{ margin: 0, fontSize: 11, color: T.muted, lineHeight: 1.5 }}>{tool.desc}</p>
-                  </div>
+        {/* ══════════════ TAB: ESTADO DE LA FINCA ══════════════ */}
+        {tab === "finca" && (
+          <>
+            {/* — Tarjeta estado del hato — */}
+            <RSection label="Estado del hato" />
+            <div style={{ borderRadius: 14, border: `1px solid ${T.border}`, background: T.panel, padding: "14px 14px 12px", overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+                <div>
+                  <p style={{ margin: "0 0 2px", fontSize: 13, fontWeight: 800, color: T.text }}>{DEMO_FINCA.nombre}</p>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: hatoColor }}>{hatoLabel}</span>
                 </div>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: hatoColor + "15", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🐄</div>
               </div>
-            ))}
-          </div>
+
+              {/* Métricas del hato en 2×2 */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {[
+                  { label: "Total animales", valor: DEMO_FINCA.animalesTotal, icono: "🐄", color: "#0EA5E9" },
+                  { label: "En buen estado", valor: DEMO_FINCA.animalesSanos, icono: "✅", color: T.accent },
+                  { label: "En venta",        valor: DEMO_FINCA.enVenta,        icono: "🏷️", color: "#F59E0B" },
+                  { label: "Preñadas",         valor: DEMO_FINCA.prenadas,       icono: "🤰", color: "#EC4899" },
+                ].map((m, i) => (
+                  <div key={i} style={{ padding: "9px 10px", borderRadius: 10, background: T.bg, border: `1px solid ${T.border}` }}>
+                    <p style={{ margin: "0 0 3px", fontSize: 10, color: T.muted }}>{m.icono} {m.label}</p>
+                    <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: m.color, lineHeight: 1 }}>{m.valor}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Barra salud del hato */}
+              <div style={{ marginTop: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                  <span style={{ fontSize: 10, color: T.muted }}>Salud general</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: hatoColor }}>
+                    {Math.round((DEMO_FINCA.animalesSanos / DEMO_FINCA.animalesTotal) * 100)}%
+                  </span>
+                </div>
+                <MiniBar pct={(DEMO_FINCA.animalesSanos / DEMO_FINCA.animalesTotal) * 100} color={hatoColor} />
+              </div>
+            </div>
+
+            {/* — Tarjeta financiera — */}
+            <RSection label="Resumen financiero" action="Ver finanzas" />
+            <div style={{ borderRadius: 14, border: `1px solid ${T.border}`, background: T.panel, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {[
+                { label: "Caja disponible", valor: DEMO_FINCA.cajaDisponible, icono: "💵", color: T.accent,    sub: "Saldo actual" },
+                { label: "Ventas del mes",  valor: DEMO_FINCA.ventasMes,      icono: "📈", color: "#0EA5E9",   sub: "Agosto 2026" },
+                { label: "Gastos del mes",  valor: DEMO_FINCA.gastosMes,      icono: "📉", color: "#EF4444",   sub: "Agosto 2026" },
+              ].map((f, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 9, background: f.color + "15", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{f.icono}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: 10, color: T.muted }}>{f.label}</p>
+                    <p style={{ margin: 0, fontSize: 10, color: T.muted }}>{f.sub}</p>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: f.color, whiteSpace: "nowrap" }}>{f.valor}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* — Recomendaciones IA — */}
+            <RSection label={`Recomendaciones (${recsVisibles.length})`} />
+            {recsVisibles.length === 0 ? (
+              <div style={{ padding: "20px 0", textAlign: "center", color: T.muted }}>
+                <p style={{ fontSize: 24, margin: "0 0 6px" }}>🎉</p>
+                <p style={{ fontSize: 12, margin: 0 }}>Todo al día — sin pendientes</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {recsVisibles.map(r => (
+                  <div key={r.id} style={{ borderRadius: 12, border: `1px solid ${r.border}`, background: r.bg, padding: "10px 12px", position: "relative" }}>
+                    {/* Cerrar */}
+                    <button onClick={() => setRecDismissed(prev => new Set([...prev, r.id]))} style={{
+                      position: "absolute", top: 8, right: 8,
+                      background: "none", border: "none", cursor: "pointer",
+                      color: T.muted, fontSize: 13, lineHeight: 1, padding: 0,
+                    }} title="Descartar">✕</button>
+
+                    <div style={{ display: "flex", gap: 9, paddingRight: 16 }}>
+                      <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1, marginTop: 1 }}>{r.icono}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                          <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: r.color }}>{r.titulo}</p>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: r.color, padding: "1px 5px", borderRadius: 20, flexShrink: 0, textTransform: "uppercase" }}>
+                            {r.prioridad}
+                          </span>
+                        </div>
+                        <p style={{ margin: "0 0 8px", fontSize: 11, color: T.text, lineHeight: 1.5 }}>{r.detalle}</p>
+                        <button style={{
+                          fontSize: 11, fontWeight: 700, color: r.color,
+                          background: "none", border: `1px solid ${r.color}50`,
+                          padding: "3px 8px", borderRadius: 6, cursor: "pointer",
+                          transition: "background 0.15s",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = r.color + "15"}
+                        onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                          {r.accion} →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* — Acciones rápidas — */}
+            <RSection label="Acciones rápidas" />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+              {DEMO_ACCIONES.map(a => (
+                <button key={a.id} style={{
+                  padding: "10px 8px", borderRadius: 11,
+                  border: `1px solid ${T.border}`, background: T.panel,
+                  cursor: "pointer", textAlign: "center",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = a.bg; e.currentTarget.style.borderColor = a.color + "60"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = T.panel; e.currentTarget.style.borderColor = T.border; }}>
+                  <span style={{ fontSize: 20 }}>{a.icono}</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: T.text, lineHeight: 1.3 }}>{a.label}</span>
+                </button>
+              ))}
+            </div>
+          </>
         )}
 
-        {activeTab === "contexto" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <p style={{ margin: "0 0 4px", fontSize: 11, color: T.muted, lineHeight: 1.6 }}>
-              Cuando se conecte la IA, tendrá acceso a los datos de tu finca para generar respuestas precisas.
-            </p>
-            {[
-              { icon: "🐄", label: "Animales",     value: "—",  hint: "Hato activo" },
-              { icon: "💰", label: "Finanzas",      value: "—",  hint: "Ventas y gastos" },
-              { icon: "🌿", label: "Potreros",      value: "—",  hint: "Estado de pastoreo" },
-              { icon: "📅", label: "Actividades",   value: "—",  hint: "Agenda del mes" },
-              { icon: "💊", label: "Sanidad",       value: "—",  hint: "Vacunas y tratamientos" },
-              { icon: "📦", label: "Inventario",    value: "—",  hint: "Stock de insumos" },
-            ].map((item, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, border: `1px solid ${T.border}`, background: T.bg, opacity: 0.7 }}>
-                <span style={{ fontSize: 18 }}>{item.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: T.text }}>{item.label}</p>
-                  <p style={{ margin: 0, fontSize: 11, color: T.muted }}>{item.hint}</p>
-                </div>
-                <span style={{ fontSize: 13, fontWeight: 700, color: T.muted }}>{item.value}</span>
-              </div>
-            ))}
-            <div style={{ padding: "10px 12px", borderRadius: 10, border: `1px dashed ${T.border}`, background: "#FAFAFA", textAlign: "center" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.border, display: "inline-block", margin: "0 2px" }} />
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.border, display: "inline-block", margin: "0 2px" }} />
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: T.border, display: "inline-block", margin: "0 2px" }} />
-              <p style={{ margin: "8px 0 0", fontSize: 11, color: T.muted }}>Contexto disponible cuando se conecte la IA</p>
+        {/* ══════════════ TAB: DOCUMENTOS ══════════════ */}
+        {tab === "docs" && (
+          <>
+            <RSection label="Documentos recientes" action="Ver todos" />
+
+            {/* Barra de búsqueda */}
+            <div style={{ position: "relative", marginBottom: 12 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2.2" strokeLinecap="round"
+                style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)" }}>
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input placeholder="Buscar documentos…" style={{
+                width: "100%", padding: "7px 10px 7px 26px", borderRadius: 9,
+                border: `1px solid ${T.border}`, background: T.panel,
+                fontSize: 12, color: T.text, outline: "none", boxSizing: "border-box",
+              }}
+              onFocus={e => e.target.style.borderColor = T.accent}
+              onBlur={e  => e.target.style.borderColor = T.border} />
             </div>
-          </div>
+
+            {/* Filtros de tipo */}
+            <div style={{ display: "flex", gap: 5, marginBottom: 14, flexWrap: "wrap" }}>
+              {["Todos", "PDF", "XLSX", "DOC"].map(f => (
+                <button key={f} style={{
+                  padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+                  border: `1px solid ${T.border}`, background: f === "Todos" ? T.accent : T.panel,
+                  color: f === "Todos" ? "#fff" : T.muted, cursor: "pointer",
+                }}>{f}</button>
+              ))}
+            </div>
+
+            {/* Lista de documentos */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {DEMO_DOCS.map(d => (
+                <div key={d.id} style={{
+                  padding: "10px 12px", borderRadius: 12,
+                  border: `1px solid ${T.border}`, background: T.panel,
+                  display: "flex", alignItems: "center", gap: 10,
+                  cursor: "pointer", transition: "all 0.15s",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = T.bg; e.currentTarget.style.borderColor = "#C0C0C0"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = T.panel; e.currentTarget.style.borderColor = T.border; }}>
+                  {/* Ícono tipo */}
+                  <div style={{ width: 36, height: 36, borderRadius: 9, background: d.color + "15", border: `1px solid ${d.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flexShrink: 0 }}>
+                    {d.icono}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: "0 0 2px", fontSize: 12, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nombre}</p>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: d.color, background: d.color + "15", padding: "1px 6px", borderRadius: 5 }}>{d.tipo}</span>
+                      <span style={{ fontSize: 10, color: T.muted }}>{d.fecha}</span>
+                    </div>
+                  </div>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}>
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                </div>
+              ))}
+            </div>
+
+            {/* Subir documento */}
+            <div style={{ marginTop: 14, padding: "14px", borderRadius: 12, border: `2px dashed ${T.border}`, textAlign: "center", cursor: "pointer", transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = T.accent; e.currentTarget.style.background = "#F0FDF4"; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = "transparent"; }}>
+              <p style={{ fontSize: 22, margin: "0 0 6px" }}>📤</p>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: T.text }}>Subir documento</p>
+              <p style={{ margin: "3px 0 0", fontSize: 11, color: T.muted }}>PDF, XLSX, DOC · Máx 10 MB</p>
+            </div>
+          </>
         )}
       </div>
     </aside>
