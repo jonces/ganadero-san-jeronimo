@@ -813,6 +813,161 @@ function InventarioInsumosCard({ loading, onNavigate }) {
   );
 }
 
+// ── Próximas Actividades ──
+const ACTIVIDADES_DEMO = [
+  { id: "vac",  tipo: "Vacunación",          icono: "💉", color: "#2563EB", bg: "#EFF6FF",  fecha: "Hoy",       hora: "08:00", animales: 12, urgente: true,  href: "/sanidad"    },
+  { id: "des",  tipo: "Desparasitación",      icono: "🔬", color: "#7C3AED", bg: "#F5F3FF",  fecha: "Mañana",    hora: "09:00", animales: 8,  urgente: true,  href: "/sanidad"    },
+  { id: "rot",  tipo: "Rotación de potreros", icono: "🌿", color: "#16a34a", bg: "#F0FDF4",  fecha: "Vie 09 ago",hora: "06:00", animales: 34, urgente: false, href: "/potreros"   },
+  { id: "pes",  tipo: "Pesaje general",       icono: "⚖️", color: "#D97706", bg: "#FFFBEB",  fecha: "Lun 11 ago",hora: "07:00", animales: 34, urgente: false, href: "/animales"   },
+  { id: "evt",  tipo: "Revisión veterinaria", icono: "🩺", color: "#0891B2", bg: "#ECFEFF",  fecha: "Mié 13 ago",hora: "10:00", animales: 5,  urgente: false, href: "/eventos"    },
+];
+
+const MINI_CAL = (() => {
+  const hoy = new Date(2026, 7, 6); // agosto 2026
+  const mes = hoy.getMonth();
+  const anio = hoy.getFullYear();
+  const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+  const primerDia = new Date(anio, mes, 1).getDay();
+  return { hoy: hoy.getDate(), mes, anio, diasEnMes, primerDia,
+    conActividad: new Set([6, 7, 9, 11, 13, 18, 22, 25]) };
+})();
+
+function ProximasActividadesCard({ onNavigate }) {
+  const [hovItem, setHovItem] = useState(null);
+  const [verCal, setVerCal] = useState(false);
+  const urgentes = ACTIVIDADES_DEMO.filter(a => a.urgente);
+
+  const diasSemana = ["D","L","M","X","J","V","S"];
+  const celdas = [];
+  for (let i = 0; i < MINI_CAL.primerDia; i++) celdas.push(null);
+  for (let d = 1; d <= MINI_CAL.diasEnMes; d++) celdas.push(d);
+
+  return (
+    <div style={{ ...cardStyle, gridColumn: "1 / -1" }}>
+      {/* Header */}
+      <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${COLOR.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <p style={{ margin: 0, fontWeight: 800, fontSize: 15, color: COLOR.text }}>Próximas Actividades</p>
+          <p style={{ margin: "2px 0 0", fontSize: 11, color: COLOR.muted }}>Agenda ganadera · {ACTIVIDADES_DEMO.length} actividades programadas</p>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setVerCal(v => !v)} style={{
+            display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
+            borderRadius: 8, border: `1px solid ${COLOR.border}`,
+            background: verCal ? COLOR.green : "none", color: verCal ? "#fff" : COLOR.text,
+            fontWeight: 700, fontSize: 12, cursor: "pointer", transition: "all 0.2s",
+          }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Calendario
+          </button>
+          <button onClick={() => onNavigate("/eventos")} style={{
+            padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLOR.border}`,
+            background: "none", color: COLOR.blue, fontWeight: 700, fontSize: 12, cursor: "pointer",
+          }}>Ver todo →</button>
+        </div>
+      </div>
+
+      {/* Alertas urgentes */}
+      {urgentes.length > 0 && (
+        <div style={{ margin: "12px 20px 0", padding: "10px 14px", borderRadius: 10, background: "#FFF7ED", border: "1px solid #FED7AA", display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 16 }}>⚡</span>
+          <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#92400E" }}>
+            {urgentes.length} actividad{urgentes.length > 1 ? "es urgentes" : " urgente"} para hoy o mañana:&nbsp;
+            <span style={{ fontWeight: 400 }}>{urgentes.map(u => u.tipo).join(" · ")}</span>
+          </p>
+        </div>
+      )}
+
+      {/* Lista de actividades */}
+      <div style={{ padding: "12px 20px", display: "grid", gridTemplateColumns: verCal ? "1fr 1fr" : "repeat(auto-fill,minmax(280px,1fr))", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {ACTIVIDADES_DEMO.map(act => (
+            <div key={act.id}
+              onMouseEnter={() => setHovItem(act.id)}
+              onMouseLeave={() => setHovItem(null)}
+              onClick={() => onNavigate(act.href)}
+              style={{
+                display: "flex", alignItems: "center", gap: 12,
+                padding: "12px 14px", borderRadius: 12,
+                border: `1.5px solid ${hovItem === act.id ? act.color : COLOR.border}`,
+                background: hovItem === act.id ? act.bg : COLOR.white,
+                cursor: "pointer", transition: "all 0.18s",
+                boxShadow: hovItem === act.id ? `0 2px 12px ${act.color}22` : "none",
+              }}>
+              {/* Icono tipo */}
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: act.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, border: `1px solid ${act.color}33` }}>
+                {act.icono}
+              </div>
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: COLOR.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{act.tipo}</p>
+                  {act.urgente && (
+                    <span style={{ fontSize: 10, fontWeight: 800, color: "#fff", background: "#DC2626", padding: "1px 6px", borderRadius: 20, flexShrink: 0 }}>URGENTE</span>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{ fontSize: 11, color: COLOR.muted }}>📅 {act.fecha}</span>
+                  <span style={{ fontSize: 11, color: COLOR.muted }}>🕐 {act.hora}</span>
+                  <span style={{ fontSize: 11, color: act.color, fontWeight: 600 }}>🐄 {act.animales} animales</span>
+                </div>
+              </div>
+              {/* Flecha */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COLOR.muted} strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          ))}
+        </div>
+
+        {/* Mini calendario */}
+        {verCal && (
+          <div style={{ background: "#F8FAFC", borderRadius: 14, padding: 16, border: `1px solid ${COLOR.border}` }}>
+            <p style={{ margin: "0 0 12px", fontWeight: 800, fontSize: 13, color: COLOR.text, textAlign: "center" }}>
+              Agosto 2026
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 6 }}>
+              {diasSemana.map(d => (
+                <div key={d} style={{ textAlign: "center", fontSize: 10, fontWeight: 700, color: COLOR.muted, padding: "2px 0" }}>{d}</div>
+              ))}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
+              {celdas.map((d, i) => {
+                if (!d) return <div key={i} />;
+                const esHoy = d === MINI_CAL.hoy;
+                const tieneAct = MINI_CAL.conActividad.has(d);
+                return (
+                  <div key={i} style={{
+                    aspectRatio: "1", borderRadius: 8, display: "flex", flexDirection: "column",
+                    alignItems: "center", justifyContent: "center",
+                    background: esHoy ? COLOR.green : tieneAct ? "#DBEAFE" : "transparent",
+                    color: esHoy ? "#fff" : tieneAct ? COLOR.blue : COLOR.text,
+                    fontWeight: esHoy || tieneAct ? 800 : 400,
+                    fontSize: 12, cursor: tieneAct ? "pointer" : "default",
+                    border: esHoy ? `2px solid ${COLOR.green}` : "none",
+                  }}>
+                    {d}
+                    {tieneAct && !esHoy && <div style={{ width: 4, height: 4, borderRadius: "50%", background: COLOR.blue, marginTop: 1 }} />}
+                  </div>
+                );
+              })}
+            </div>
+            {/* Leyenda */}
+            <div style={{ marginTop: 12, display: "flex", gap: 12, justifyContent: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: COLOR.green }} />
+                <span style={{ fontSize: 10, color: COLOR.muted }}>Hoy</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: COLOR.blue }} />
+                <span style={{ fontSize: 10, color: COLOR.muted }}>Con actividad</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Iconos SVG para KPIs ──
 const KpiIcon = {
   animal:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2C8 2 4 6 4 10c0 2 1 4 2 5l-1 5h14l-1-5c1-1 2-3 2-5 0-4-4-8-8-8z"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/></svg>,
@@ -1414,6 +1569,11 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* ── PRÓXIMAS ACTIVIDADES ── */}
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 20px 20px" }}>
+        <ProximasActividadesCard onNavigate={router.push.bind(router)} />
       </div>
 
       {/* ── MODAL: REGISTRAR MOVIMIENTO ── */}
