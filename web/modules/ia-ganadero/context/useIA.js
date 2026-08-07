@@ -18,6 +18,7 @@ import { IAContext }  from "./IAContext.js";
  *   addAttachment:       (attachment: import('../types').Attachment) => void,
  *   removeAttachment:    (id: string) => void,
  *   setProvider:         (providerId: string) => void,
+ *   engine:              import('../../ai-engine').AIEngine,
  * }}
  */
 export function useIA() {

@@ -1,3 +1,4 @@
+"use client";
 import { useContext } from "react";
 import { ConversationContextCtx } from "../context/ConversationContextContext.js";
 import { ROL_LABELS, IDIOMA_LABELS, MONEDA_CONFIG } from "../constants/context.js";

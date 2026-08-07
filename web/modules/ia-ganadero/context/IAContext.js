@@ -5,6 +5,7 @@ import { createProvider }                 from "../services/providers/index.js";
 import { IA_ACTION, CONVERSATION_STATUS, MESSAGE_STATUS, SENDER } from "../constants/index.js";
 import { createMessage, createConversation } from "../utils/message-factory.js";
 import { ConversationContextCtx }         from "./ConversationContextContext.js";
+import { AIEngine }                       from "../../ai-engine/index.js";
 
 export const IAContext = createContext(null);
 
@@ -12,6 +13,9 @@ export function IAProvider({ children }) {
   const [state, dispatch] = useReducer(iaReducer, INITIAL_STATE);
   const clientRef         = useRef(null);
   const cancelStreamRef   = useRef(null);
+  // AIEngine — instanciado aquí, listo para conectar en Fase 2.
+  // Cuando un proveedor esté configurado: engine.configure(PROVIDER_ID.CLAUDE, { apiKey }).use(PROVIDER_ID.CLAUDE)
+  const engineRef = useRef(AIEngine.create());
 
   // Lee el contexto de conversación si está disponible en el árbol
   const convCtx = useContext(ConversationContextCtx);
@@ -166,6 +170,8 @@ export function IAProvider({ children }) {
   const value = {
     state,
     dispatch,
+    // AIEngine — expuesto para uso en Fase 2 (conectar proveedor real)
+    engine: engineRef.current,
     // Acciones
     selectConversation,
     newConversation,

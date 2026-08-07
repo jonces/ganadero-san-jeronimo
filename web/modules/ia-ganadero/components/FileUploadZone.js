@@ -2,15 +2,7 @@
 import { useState, useRef, useCallback } from "react";
 import { ACCEPT_ALL, FILE_CATEGORY_CONFIG, FILE_CATEGORY } from "../constants/files.js";
 import { processFiles } from "../utils/file-handler.js";
-
-const T = {
-  panel:   "#FFFFFF",
-  bg:      "#F7F7F8",
-  border:  "#E5E5E5",
-  text:    "#0D0D0D",
-  muted:   "#6E6E80",
-  accent:  "#10A37F",
-};
+import { T } from "../constants/theme.js";
 
 const TYPE_GROUPS = [
   { label: "Imágenes", items: FILE_CATEGORY_CONFIG[FILE_CATEGORY.IMAGE] },

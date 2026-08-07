@@ -5,16 +5,7 @@ import { revokeFileUrls, formatFileSize } from "../utils/file-handler.js";
 import { FileCard }           from "./FileCard.js";
 import { FileUploadZone }     from "./FileUploadZone.js";
 import { FilePreviewModal }   from "./FilePreviewModal.js";
-
-const T = {
-  panel:   "#FFFFFF",
-  bg:      "#F7F7F8",
-  border:  "#E5E5E5",
-  text:    "#0D0D0D",
-  muted:   "#6E6E80",
-  accent:  "#10A37F",
-  danger:  "#EF4444",
-};
+import { T } from "../constants/theme.js";
 
 const ALL_CATEGORIES = Object.values(FILE_CATEGORY).filter(c => c !== FILE_CATEGORY.UNKNOWN);
 

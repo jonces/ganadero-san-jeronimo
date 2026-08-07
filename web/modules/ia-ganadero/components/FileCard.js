@@ -2,15 +2,7 @@
 import { useState } from "react";
 import { FILE_CATEGORY_CONFIG, UPLOAD_STATUS, FILE_CATEGORY } from "../constants/files.js";
 import { formatFileSize } from "../utils/file-handler.js";
-
-const T = {
-  panel:   "#FFFFFF",
-  bg:      "#F7F7F8",
-  border:  "#E5E5E5",
-  text:    "#0D0D0D",
-  muted:   "#6E6E80",
-  danger:  "#EF4444",
-};
+import { T } from "../constants/theme.js";
 
 const PREVIEWABLE = [FILE_CATEGORY.IMAGE, FILE_CATEGORY.VIDEO, FILE_CATEGORY.PDF];
 
