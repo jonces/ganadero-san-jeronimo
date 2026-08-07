@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const key = process.env.OPENAI_API_KEY;
+  const key = (process.env.OPENAI_API_KEY ?? "").replace(/\s+/g, "");
 
   const diag = {
     timestamp:      new Date().toISOString(),

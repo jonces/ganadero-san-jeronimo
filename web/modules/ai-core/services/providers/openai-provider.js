@@ -7,16 +7,20 @@ export class OpenAIProvider extends BaseProvider {
     super({ id: "openai", label: "OpenAI" });
   }
 
+  #key() {
+    return (process.env.OPENAI_API_KEY ?? "").replace(/\s+/g, "");
+  }
+
   isAvailable() {
-    const ok = !!process.env.OPENAI_API_KEY;
-    console.log("[OpenAIProvider] isAvailable():", ok);
+    const ok = this.#key().length > 10;
+    console.log("[OpenAIProvider] isAvailable():", ok, "keyLen:", this.#key().length);
     return ok;
   }
 
   #headers() {
     return {
       "Content-Type":  "application/json",
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Authorization": `Bearer ${this.#key()}`,
     };
   }
 
