@@ -1,0 +1,71 @@
+// All config comes from env — NEVER hardcode keys
+export const PROVIDER_CONFIGS = {
+  openai: {
+    id:       "openai",
+    label:    "OpenAI",
+    baseUrl:  "https://api.openai.com/v1",
+    keyEnv:   "OPENAI_API_KEY",
+    priority: 1,
+    streaming: true,
+    tools:     true,
+    vision:    true,
+    images:    true,
+  },
+  claude: {
+    id:       "claude",
+    label:    "Anthropic Claude",
+    baseUrl:  "https://api.anthropic.com/v1",
+    keyEnv:   "ANTHROPIC_API_KEY",
+    priority: 2,
+    streaming: true,
+    tools:     true,
+    vision:    true,
+    images:    false,
+  },
+  gemini: {
+    id:       "gemini",
+    label:    "Google Gemini",
+    baseUrl:  "https://generativelanguage.googleapis.com/v1beta",
+    keyEnv:   "GEMINI_API_KEY",
+    priority: 3,
+    streaming: true,
+    tools:     true,
+    vision:    true,
+    images:    false,
+  },
+  ollama: {
+    id:       "ollama",
+    label:    "Ollama (local)",
+    baseUrl:  null, // resolved at runtime: process.env.OLLAMA_URL || "http://localhost:11434"
+    keyEnv:   null,
+    priority: 4,
+    streaming: true,
+    tools:     false,
+    vision:    false,
+    images:    false,
+  },
+  azure: {
+    id:       "azure",
+    label:    "Azure OpenAI",
+    baseUrl:  null, // process.env.AZURE_OPENAI_ENDPOINT
+    keyEnv:   "AZURE_OPENAI_KEY",
+    priority: 5,
+    streaming: true,
+    tools:     true,
+    vision:    true,
+    images:    false,
+  },
+  openrouter: {
+    id:       "openrouter",
+    label:    "OpenRouter",
+    baseUrl:  "https://openrouter.ai/api/v1",
+    keyEnv:   "OPENROUTER_API_KEY",
+    priority: 6,
+    streaming: true,
+    tools:     true,
+    vision:    true,
+    images:    false,
+  },
+};
+
+export const DEFAULT_PROVIDER = "openai";
