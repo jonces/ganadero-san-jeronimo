@@ -5,7 +5,15 @@ export async function GET() {
   const key = process.env.OPENAI_API_KEY;
 
   if (!key) {
-    return Response.json({ ok: false, error: "OPENAI_API_KEY no configurada" });
+    return Response.json({
+      ok: false,
+      error: "OPENAI_API_KEY no configurada",
+      debug: {
+        nodeEnv: process.env.NODE_ENV,
+        hasNextPublicApi: !!process.env.NEXT_PUBLIC_API_URL,
+        keyPrefix: key ? key.slice(0, 10) : null,
+      }
+    });
   }
 
   try {
