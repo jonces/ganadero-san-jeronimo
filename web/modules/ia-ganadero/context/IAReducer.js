@@ -82,7 +82,7 @@ export const INITIAL_STATE = {
   activeId:           null,
   status:             CONVERSATION_STATUS.IDLE,
   error:              null,
-  providerId:         PROVIDER_ID.MOCK,
+  providerId:         PROVIDER_ID.OPENAI,
   pendingAttachments: [],
   inputText:          "",
 };
