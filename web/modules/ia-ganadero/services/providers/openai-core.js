@@ -29,17 +29,13 @@ export class OpenAICoreProvider extends IAClient {
   }
 
   async initialize() {
+    // Nunca lanza — el stream maneja los errores de API key
     try {
       const res  = await fetch("/api/ai/context");
       const data = await res.json();
       this._available = data.hasAI === true;
-      if (!this._available) {
-        throw new Error("No hay proveedor de IA configurado. Agrega OPENAI_API_KEY en Railway.");
-      }
-    } catch (e) {
-      if (e.message.includes("OPENAI_API_KEY")) throw e;
-      // Si /api/ai/context falla por red, asumir disponible y dejar que el stream maneje el error
-      this._available = true;
+    } catch {
+      this._available = true; // asumir disponible; el stream reportará el error real
     }
   }
 
