@@ -61,6 +61,9 @@ export * from "./constants/index.js";
 export * from "./constants/context.js";
 export * from "./constants/files.js";
 
+// Componentes de renderizado IA
+export { MarkdownMessage }  from "./components/MarkdownMessage.js";
+
 // Utilidades
 export { uid }          from "./utils/id.js";
 export { ts, groupByDate } from "./utils/date.js";

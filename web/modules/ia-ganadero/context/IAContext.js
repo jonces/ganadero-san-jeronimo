@@ -1,31 +1,39 @@
 "use client";
-import { createContext, useReducer, useRef, useEffect, useContext } from "react";
+import { createContext, useReducer, useRef, useEffect, useContext, useCallback } from "react";
 import { iaReducer, INITIAL_STATE }       from "./IAReducer.js";
 import { createProvider }                 from "../services/providers/index.js";
 import { IA_ACTION, CONVERSATION_STATUS, MESSAGE_STATUS, SENDER } from "../constants/index.js";
 import { createMessage, createConversation } from "../utils/message-factory.js";
 import { ConversationContextCtx }         from "./ConversationContextContext.js";
 import { AIEngine }                       from "../../ai-engine/index.js";
+import { loadConversations, saveConversations } from "../services/memory/conversation-memory.js";
 
 export const IAContext = createContext(null);
 
 export function IAProvider({ children }) {
-  const [state, dispatch] = useReducer(iaReducer, INITIAL_STATE);
-  const clientRef         = useRef(null);
-  const cancelStreamRef   = useRef(null);
-  // AIEngine — instanciado aquí, listo para conectar en Fase 2.
-  // Cuando un proveedor esté configurado: engine.configure(PROVIDER_ID.CLAUDE, { apiKey }).use(PROVIDER_ID.CLAUDE)
-  const engineRef = useRef(AIEngine.create());
+  const persisted            = loadConversations();
+  const initialWithMemory    = persisted.length > 0
+    ? { ...INITIAL_STATE, conversations: persisted, activeId: persisted[0]?.id ?? null }
+    : INITIAL_STATE;
 
-  // Lee el contexto de conversación si está disponible en el árbol
+  const [state, dispatch]  = useReducer(iaReducer, initialWithMemory);
+  const clientRef          = useRef(null);
+  const cancelStreamRef    = useRef(null);
+  const engineRef          = useRef(AIEngine.create());
+  const specialistIdRef    = useRef("veterinario");
+
   const convCtx = useContext(ConversationContextCtx);
+
+  // Persiste conversaciones en localStorage cada vez que cambian
+  useEffect(() => {
+    saveConversations(state.conversations);
+  }, [state.conversations]);
 
   // Inicializa el provider cuando cambia
   useEffect(() => {
     let destroyed = false;
 
     async function initProvider() {
-      // Destruye el anterior
       clientRef.current?.destroy();
       clientRef.current = null;
 
@@ -45,82 +53,84 @@ export function IAProvider({ children }) {
     };
   }, [state.providerId]);
 
-  // ── Acciones expuestas al resto de la app ─────────────────────────────────
+  // ── Acciones ──────────────────────────────────────────────────────────────
 
-  function selectConversation(id) {
+  const selectConversation = useCallback((id) => {
     cancelStreamRef.current?.();
     dispatch({ type: IA_ACTION.SELECT_CONVERSATION, payload: id });
-  }
+  }, []);
 
-  function newConversation() {
+  const newConversation = useCallback(() => {
     cancelStreamRef.current?.();
-    // Inyecta automáticamente el contexto resuelto (finca, usuario, etc.)
     const conv = createConversation(state.providerId, convCtx?.context ?? null);
     dispatch({ type: IA_ACTION.CREATE_CONVERSATION, payload: conv });
-  }
+  }, [state.providerId, convCtx?.context]);
 
-  function deleteConversation(id) {
+  const deleteConversation = useCallback((id) => {
     dispatch({ type: IA_ACTION.DELETE_CONVERSATION, payload: id });
-  }
+  }, []);
 
-  function renameConversation(id, title) {
+  const renameConversation = useCallback((id, title) => {
     dispatch({ type: IA_ACTION.RENAME_CONVERSATION, payload: { id, title } });
-  }
+  }, []);
 
-  function toggleFavorite(id) {
+  const toggleFavorite = useCallback((id) => {
     dispatch({ type: IA_ACTION.TOGGLE_FAVORITE, payload: id });
-  }
+  }, []);
 
-  function setInput(text) {
+  const setInput = useCallback((text) => {
     dispatch({ type: IA_ACTION.SET_INPUT, payload: text });
-  }
+  }, []);
 
-  function addAttachment(attachment) {
+  const addAttachment = useCallback((attachment) => {
     dispatch({ type: IA_ACTION.ADD_ATTACHMENT, payload: attachment });
-  }
+  }, []);
 
-  function removeAttachment(id) {
+  const removeAttachment = useCallback((id) => {
     dispatch({ type: IA_ACTION.REMOVE_ATTACHMENT, payload: id });
-  }
+  }, []);
 
-  function setProvider(providerId) {
+  const setProvider = useCallback((providerId) => {
     cancelStreamRef.current?.();
     dispatch({ type: IA_ACTION.SET_PROVIDER, payload: providerId });
-  }
+  }, []);
 
-  async function sendMessage() {
+  // Actualiza el especialista activo (ej: "veterinario", "nutricionista")
+  // IAContext lo necesita para construir el system prompt correcto.
+  const setSpecialist = useCallback((id) => {
+    specialistIdRef.current = id;
+  }, []);
+
+  async function sendMessage(overrideSpecialist) {
     const text        = state.inputText.trim();
     const attachments = state.pendingAttachments;
     if (!text && attachments.length === 0) return;
     if (!clientRef.current) return;
 
-    // Obtiene el historial de la conversación activa
     const activeConv = state.conversations.find(c => c.id === state.activeId);
 
-    // Si no hay conversación activa, crea una nueva
     if (!activeConv) newConversation();
 
-    // Limpia input y adjuntos
-    dispatch({ type: IA_ACTION.SET_INPUT,          payload: "" });
+    dispatch({ type: IA_ACTION.SET_INPUT,        payload: "" });
     dispatch({ type: IA_ACTION.CLEAR_ATTACHMENTS });
 
-    // Agrega mensaje del usuario
     const userMsg = createMessage(SENDER.USER, text, attachments);
     dispatch({ type: IA_ACTION.ADD_MESSAGE, payload: userMsg });
     dispatch({ type: IA_ACTION.SET_STATUS,  payload: CONVERSATION_STATUS.LOADING });
 
-    // Placeholder del mensaje IA (irá actualizándose durante el stream)
     const aiMsg = createMessage(SENDER.AI, "", [], MESSAGE_STATUS.SENDING);
+    // Marca el mensaje IA como "en streaming" desde el inicio
+    aiMsg.isStreaming = true;
     dispatch({ type: IA_ACTION.ADD_MESSAGE, payload: aiMsg });
 
     const payload = {
       conversationId: state.activeId,
       text,
       attachments,
-      history: activeConv?.messages ?? [],
-      // El contexto de la conversación activa (finca, usuario, idioma…)
-      // Los providers lo usarán como system prompt al conectarse con la IA
-      context: activeConv?.context ?? convCtx?.context ?? null,
+      history:        activeConv?.messages ?? [],
+      context:        activeConv?.context ?? convCtx?.context ?? null,
+      // Permite que el provider construya el system prompt con el especialista activo
+      specialistId:   overrideSpecialist ?? specialistIdRef.current ?? "veterinario",
     };
 
     if (clientRef.current.config.capabilities.streaming) {
@@ -133,10 +143,18 @@ export function IAProvider({ children }) {
           accumulated += chunk;
           dispatch({
             type:    IA_ACTION.UPDATE_MESSAGE,
-            payload: { id: aiMsg.id, changes: { text: accumulated, status: MESSAGE_STATUS.RECEIVED } },
+            payload: {
+              id:      aiMsg.id,
+              changes: { text: accumulated, status: MESSAGE_STATUS.RECEIVED, isStreaming: true },
+            },
           });
         },
         () => {
+          // Stream terminado — quita el cursor de streaming
+          dispatch({
+            type:    IA_ACTION.UPDATE_MESSAGE,
+            payload: { id: aiMsg.id, changes: { isStreaming: false } },
+          });
           dispatch({ type: IA_ACTION.SET_STATUS, payload: CONVERSATION_STATUS.IDLE });
           cancelStreamRef.current = null;
         },
@@ -144,7 +162,7 @@ export function IAProvider({ children }) {
           dispatch({ type: IA_ACTION.SET_ERROR,  payload: err.message });
           dispatch({
             type:    IA_ACTION.UPDATE_MESSAGE,
-            payload: { id: aiMsg.id, changes: { status: MESSAGE_STATUS.ERROR } },
+            payload: { id: aiMsg.id, changes: { status: MESSAGE_STATUS.ERROR, isStreaming: false } },
           });
         },
       );
@@ -154,14 +172,17 @@ export function IAProvider({ children }) {
         const responseText = await clientRef.current.sendMessage(payload);
         dispatch({
           type:    IA_ACTION.UPDATE_MESSAGE,
-          payload: { id: aiMsg.id, changes: { text: responseText, status: MESSAGE_STATUS.RECEIVED } },
+          payload: {
+            id:      aiMsg.id,
+            changes: { text: responseText, status: MESSAGE_STATUS.RECEIVED, isStreaming: false },
+          },
         });
         dispatch({ type: IA_ACTION.SET_STATUS, payload: CONVERSATION_STATUS.IDLE });
       } catch (err) {
-        dispatch({ type: IA_ACTION.SET_ERROR,  payload: err.message });
+        dispatch({ type: IA_ACTION.SET_ERROR, payload: err.message });
         dispatch({
           type:    IA_ACTION.UPDATE_MESSAGE,
-          payload: { id: aiMsg.id, changes: { status: MESSAGE_STATUS.ERROR } },
+          payload: { id: aiMsg.id, changes: { status: MESSAGE_STATUS.ERROR, isStreaming: false } },
         });
       }
     }
@@ -170,7 +191,6 @@ export function IAProvider({ children }) {
   const value = {
     state,
     dispatch,
-    // AIEngine — expuesto para uso en Fase 2 (conectar proveedor real)
     engine: engineRef.current,
     // Acciones
     selectConversation,
@@ -183,6 +203,7 @@ export function IAProvider({ children }) {
     addAttachment,
     removeAttachment,
     setProvider,
+    setSpecialist,
   };
 
   return <IAContext.Provider value={value}>{children}</IAContext.Provider>;

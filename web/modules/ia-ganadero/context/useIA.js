@@ -13,11 +13,12 @@ import { IAContext }  from "./IAContext.js";
  *   newConversation:     () => void,
  *   deleteConversation:  (id: string) => void,
  *   renameConversation:  (id: string, title: string) => void,
- *   sendMessage:         () => Promise<void>,
+ *   sendMessage:         (specialistId?: string) => Promise<void>,
  *   setInput:            (text: string) => void,
  *   addAttachment:       (attachment: import('../types').Attachment) => void,
  *   removeAttachment:    (id: string) => void,
  *   setProvider:         (providerId: string) => void,
+ *   setSpecialist:       (id: string) => void,
  *   engine:              import('../../ai-engine').AIEngine,
  * }}
  */

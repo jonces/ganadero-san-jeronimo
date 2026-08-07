@@ -17,3 +17,10 @@ export { PROVIDER_ID, DEFAULT_MODELS, DEFAULT_CHAT_OPTIONS } from "./constants/p
 
 // Errores
 export { AIError, NotImplementedError, NotConfiguredError, AIErrorCode } from "./errors/ai-error.js";
+
+// Servicios de medios y generación
+export { fileToBase64, resizeIfNeeded, generateThumbnail, getImageDimensions, isSupportedByVision } from "./services/image-processor.js";
+export { extractText, documentTypeLabel }    from "./services/document-processor.js";
+export { extractVideoInfo, extractFrames, formatDuration } from "./services/video-processor.js";
+export { startRecording, getAudioDuration, isRecordingSupported } from "./services/audio-processor.js";
+export { generateImage, buildGanaderiaPrompt, isImageGenerationAvailable } from "./services/image-generator.js";

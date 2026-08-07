@@ -1,31 +1,24 @@
-import { MockProvider, MOCK_CONFIG } from "./mock.js";
-import { PROVIDER_ID }              from "../../constants/index.js";
+import { MockProvider,  MOCK_CONFIG }   from "./mock.js";
+import { ClaudeProvider, CLAUDE_CONFIG } from "./claude.js";
+import { PROVIDER_ID }                  from "../../constants/index.js";
 
 /**
  * Registro central de providers disponibles.
  *
- * Para agregar un provider nuevo:
- *   1. Crear el archivo en esta carpeta (ej: claude.js)
- *   2. Importarlo aquí y añadirlo al objeto PROVIDERS
- *   3. Añadir su ID en constants/index.js → PROVIDER_ID
+ * Agregar nuevo provider:
+ *   1. Crear archivo en esta carpeta
+ *   2. Importar y añadir al objeto PROVIDERS
+ *   3. Añadir ID en constants/index.js → PROVIDER_ID
  */
 export const PROVIDERS = {
   [PROVIDER_ID.MOCK]: {
     config:  MOCK_CONFIG,
     factory: () => new MockProvider(),
   },
-  // [PROVIDER_ID.CLAUDE]: {
-  //   config:  CLAUDE_CONFIG,
-  //   factory: (opts) => new ClaudeProvider(opts),
-  // },
-  // [PROVIDER_ID.OPENAI]: {
-  //   config:  OPENAI_CONFIG,
-  //   factory: (opts) => new OpenAIProvider(opts),
-  // },
-  // [PROVIDER_ID.GEMINI]: {
-  //   config:  GEMINI_CONFIG,
-  //   factory: (opts) => new GeminiProvider(opts),
-  // },
+  [PROVIDER_ID.CLAUDE]: {
+    config:  CLAUDE_CONFIG,
+    factory: (opts) => new ClaudeProvider(opts),
+  },
 };
 
 /** Devuelve la lista de configs de todos los providers registrados */

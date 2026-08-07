@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
-import { T, IA_THEME_CSS } from "../constants/theme.js";
-import { SpecialistBar } from "./SpecialistBar.js";
-import { LeftPanel }     from "./LeftPanel.js";
-import { CenterPanel }   from "./CenterPanel.js";
-import { RightPanel }    from "./RightPanel.js";
+import { useState, useCallback } from "react";
+import { T, IA_THEME_CSS }  from "../constants/theme.js";
+import { SpecialistBar }    from "./SpecialistBar.js";
+import { LeftPanel }        from "./LeftPanel.js";
+import { CenterPanel }      from "./CenterPanel.js";
+import { RightPanel }       from "./RightPanel.js";
+import { useIA }            from "../context/useIA.js";
 
 /**
  * Shell del Centro IA — tres paneles + barra de especialistas.
@@ -13,7 +14,14 @@ import { RightPanel }    from "./RightPanel.js";
 export function CentroIAShell() {
   const [leftOpen,   setLeftOpen]   = useState(true);
   const [rightOpen,  setRightOpen]  = useState(true);
-  const [specialist, setSpecialist] = useState("veterinario");
+  const [specialist, setSpecialistLocal] = useState("veterinario");
+
+  // Sincroniza el especialista activo con IAContext para el system prompt
+  const { setSpecialist: setCtxSpecialist } = useIA();
+  const setSpecialist = useCallback((id) => {
+    setSpecialistLocal(id);
+    setCtxSpecialist?.(id);
+  }, [setCtxSpecialist]);
 
   return (
     <>

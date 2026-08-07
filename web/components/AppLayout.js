@@ -36,6 +36,7 @@ const NAV_ITEMS_ADMIN = [
   { icon: "👥", label: "Personal y nómina",   href: "/equipo" },
   { icon: "📊", label: "Reportes",            href: "/reportes" },
   { icon: "🕐", label: "Actividad",           href: "/actividad", notifActividad: true },
+  { icon: "🤖", label: "Centro IA",           href: "/ia", badge: "Beta" },
 ];
 
 const NAV_MOBILE_PRIMARY = ["/dashboard", "/inventario", "/ventas", "/anuncios", "/incidentes"];

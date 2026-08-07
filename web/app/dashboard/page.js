@@ -1800,26 +1800,23 @@ export default function DashboardPage() {
         <ProximasActividadesCard onNavigate={router.push.bind(router)} />
       </div>
 
-      {/* ── CENTRO IA GANADERO ── */}
-      <CentroIA visible={showIA} onClose={() => setShowIA(false)} />
-
-      {/* Botón flotante para abrir IA */}
+      {/* Botón flotante → Centro IA */}
       <button
-        onClick={() => setShowIA(v => !v)}
+        onClick={() => router.push("/ia")}
         title="Centro IA Ganadero"
         style={{
-          position: "fixed", bottom: 28, right: showIA ? 376 : 24,
+          position: "fixed", bottom: 28, right: 24,
           width: 52, height: 52, borderRadius: "50%", border: "none",
           background: "linear-gradient(135deg,#16a34a,#15803d)",
           color: "#fff", fontSize: 22, cursor: "pointer", zIndex: 61,
           boxShadow: "0 4px 20px rgba(22,163,74,0.45)",
           display: "flex", alignItems: "center", justifyContent: "center",
-          transition: "right 0.3s cubic-bezier(.4,0,.2,1), transform 0.15s",
+          transition: "transform 0.15s",
         }}
         onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
         onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
       >
-        {showIA ? "✕" : "🤖"}
+        🤖
       </button>
 
       {/* ── MODAL: REGISTRAR MOVIMIENTO ── */}
