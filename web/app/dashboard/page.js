@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api, getUsuario } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
+import { DashboardWidget } from "../../modules/copiloto-ganadero/components/DashboardWidget.js";
 
 // ── Colores ──
 const COLOR = {
@@ -1798,6 +1799,11 @@ export default function DashboardPage() {
       {/* ── PRÓXIMAS ACTIVIDADES ── */}
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 20px 20px" }}>
         <ProximasActividadesCard onNavigate={router.push.bind(router)} />
+      </div>
+
+      {/* ── COPILOTO GANADERO WIDGET ── */}
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "0 20px 24px" }}>
+        <DashboardWidget />
       </div>
 
       {/* Botón flotante → Centro IA */}
