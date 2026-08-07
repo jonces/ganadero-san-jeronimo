@@ -23,6 +23,91 @@ const T = {
   danger:    "#EF4444",
 };
 
+// ── Especialistas ─────────────────────────────────────────────────────────────
+const ESPECIALISTAS = [
+  { id: "veterinario",     label: "Veterinario",     icono: "🩺", color: "#EF4444", bg: "#FEF2F2", border: "#FECACA", badge: "#DC2626" },
+  { id: "nutricionista",   label: "Nutricionista",   icono: "🌾", color: "#F59E0B", bg: "#FFFBEB", border: "#FDE68A", badge: "#D97706" },
+  { id: "reproduccion",    label: "Reproducción",    icono: "🐄", color: "#EC4899", bg: "#FDF2F8", border: "#FBCFE8", badge: "#DB2777" },
+  { id: "pasturas",        label: "Pasturas",        icono: "🌿", color: "#10A37F", bg: "#F0FDF4", border: "#A7F3D0", badge: "#059669" },
+  { id: "infraestructura", label: "Infraestructura", icono: "🏗️", color: "#6366F1", bg: "#EEF2FF", border: "#C7D2FE", badge: "#4F46E5" },
+  { id: "finanzas",        label: "Finanzas",        icono: "💰", color: "#0EA5E9", bg: "#F0F9FF", border: "#BAE6FD", badge: "#0284C7" },
+  { id: "administrador",   label: "Administrador",   icono: "📋", color: "#8B5CF6", bg: "#F5F3FF", border: "#DDD6FE", badge: "#7C3AED" },
+];
+
+// ── Barra de especialistas ─────────────────────────────────────────────────────
+function SpecialistBar({ active, onChange }) {
+  const esp = ESPECIALISTAS.find(e => e.id === active) ?? ESPECIALISTAS[0];
+
+  return (
+    <div style={{
+      borderBottom: `1px solid ${T.border}`,
+      background: T.panel,
+      padding: "0 20px",
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      overflowX: "auto",
+      flexShrink: 0,
+      height: 52,
+      scrollbarWidth: "none",
+    }}>
+      <style>{`.spec-bar::-webkit-scrollbar{display:none}`}</style>
+
+      {/* Etiqueta izquierda */}
+      <span style={{ fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap", marginRight: 6 }}>
+        Especialista:
+      </span>
+
+      {ESPECIALISTAS.map(e => {
+        const isActive = e.id === active;
+        return (
+          <button
+            key={e.id}
+            onClick={() => onChange(e.id)}
+            title={e.label}
+            style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "5px 12px",
+              borderRadius: 30,
+              border: isActive ? `2px solid ${e.badge}` : `1px solid ${T.border}`,
+              background: isActive ? e.bg : T.panel,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+              transition: "all 0.15s",
+              fontFamily: "inherit",
+            }}
+            onMouseEnter={e2 => {
+              if (!isActive) {
+                e2.currentTarget.style.background = e.bg;
+                e2.currentTarget.style.borderColor = e.border;
+              }
+            }}
+            onMouseLeave={e2 => {
+              if (!isActive) {
+                e2.currentTarget.style.background = T.panel;
+                e2.currentTarget.style.borderColor = T.border;
+              }
+            }}
+          >
+            <span style={{ fontSize: 15 }}>{e.icono}</span>
+            <span style={{
+              fontSize: 12, fontWeight: isActive ? 700 : 500,
+              color: isActive ? e.badge : T.muted,
+            }}>{e.label}</span>
+            {isActive && (
+              <span style={{
+                width: 6, height: 6, borderRadius: "50%",
+                background: e.badge, flexShrink: 0,
+              }} />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function ts(timestamp) {
   return new Date(timestamp).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
@@ -425,7 +510,7 @@ function RecordingPill({ onStop }) {
 // ─────────────────────────────────────────────────────────────────────────────
 //  PANEL CENTRAL — Conversación
 // ─────────────────────────────────────────────────────────────────────────────
-function CenterPanel({ sidebarCollapsed, onToggleSidebar }) {
+function CenterPanel({ sidebarCollapsed, onToggleSidebar, specialist }) {
   const { state, setInput, sendMessage, newConversation } = useIA();
   const { active }           = useConversation();
   const { isBusy, activeConfig } = useProvider();
@@ -528,10 +613,26 @@ function CenterPanel({ sidebarCollapsed, onToggleSidebar }) {
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2.2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
           </button>
         )}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
           <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {active ? active.title : "Centro IA Ganadero"}
           </p>
+          {/* Badge del especialista activo */}
+          {(() => {
+            const esp = ESPECIALISTAS.find(e => e.id === specialist);
+            if (!esp) return null;
+            return (
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: 4,
+                padding: "3px 10px", borderRadius: 20,
+                background: esp.bg, border: `1px solid ${esp.border}`,
+                fontSize: 11, fontWeight: 700, color: esp.badge,
+                whiteSpace: "nowrap", flexShrink: 0,
+              }}>
+                {esp.icono} {esp.label}
+              </span>
+            );
+          })()}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
           <div style={{ width: 7, height: 7, borderRadius: "50%", background: isBusy ? "#F59E0B" : "#22C55E" }} />
@@ -613,7 +714,7 @@ function CenterPanel({ sidebarCollapsed, onToggleSidebar }) {
               value={state.inputText}
               onChange={e => { setInput(e.target.value); autoResize(e.target); }}
               onKeyDown={handleKey}
-              placeholder={recording ? "Grabando audio… escribe o detén la grabación" : "Escribe tu consulta ganadera…"}
+              placeholder={recording ? "Grabando audio… escribe o detén la grabación" : `Consulta al ${ESPECIALISTAS.find(e => e.id === specialist)?.label ?? "Especialista"}…`}
               disabled={isBusy}
               rows={1}
               style={{
@@ -1518,35 +1619,43 @@ function TypingRow({ icon }) {
 //  SHELL PRINCIPAL — tres paneles
 // ─────────────────────────────────────────────────────────────────────────────
 export function CentroIAShell() {
-  const [leftOpen,  setLeftOpen]  = useState(true);
-  const [rightOpen, setRightOpen] = useState(true);
+  const [leftOpen,    setLeftOpen]    = useState(true);
+  const [rightOpen,   setRightOpen]   = useState(true);
+  const [specialist,  setSpecialist]  = useState("veterinario");
 
   return (
     <div style={{
-      display: "flex", height: "100vh", width: "100%",
+      display: "flex", flexDirection: "column", height: "100vh", width: "100%",
       overflow: "hidden", background: T.bg,
       fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     }}>
-      <LeftPanel  collapsed={!leftOpen}  onToggle={() => setLeftOpen(v => !v)} />
-      <CenterPanel
-        sidebarCollapsed={!leftOpen}
-        onToggleSidebar={() => setLeftOpen(v => !v)}
-      />
-      <RightPanel collapsed={!rightOpen} onToggle={() => setRightOpen(v => !v)} />
+      {/* Barra de especialistas — anchura completa */}
+      <SpecialistBar active={specialist} onChange={setSpecialist} />
 
-      {/* Botón flotante para abrir panel derecho si está cerrado */}
-      {!rightOpen && (
-        <button onClick={() => setRightOpen(true)} title="Herramientas IA" style={{
-          position: "absolute", top: "50%", right: 0, transform: "translateY(-50%)",
-          width: 20, height: 60, borderRadius: "8px 0 0 8px",
-          border: `1px solid ${T.border}`, borderRight: "none",
-          background: T.panel, cursor: "pointer", color: T.muted,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 10, zIndex: 10,
-        }}>
-          ‹
-        </button>
-      )}
+      {/* Los tres paneles debajo */}
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        <LeftPanel  collapsed={!leftOpen}  onToggle={() => setLeftOpen(v => !v)} />
+        <CenterPanel
+          sidebarCollapsed={!leftOpen}
+          onToggleSidebar={() => setLeftOpen(v => !v)}
+          specialist={specialist}
+        />
+        <RightPanel collapsed={!rightOpen} onToggle={() => setRightOpen(v => !v)} />
+
+        {/* Botón flotante para abrir panel derecho si está cerrado */}
+        {!rightOpen && (
+          <button onClick={() => setRightOpen(true)} title="Panel de finca" style={{
+            position: "absolute", top: "50%", right: 0, transform: "translateY(-50%)",
+            width: 20, height: 60, borderRadius: "8px 0 0 8px",
+            border: `1px solid ${T.border}`, borderRight: "none",
+            background: T.panel, cursor: "pointer", color: T.muted,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 10, zIndex: 10,
+          }}>
+            ‹
+          </button>
+        )}
+      </div>
     </div>
   );
 }
