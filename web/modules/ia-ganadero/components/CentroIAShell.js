@@ -34,30 +34,121 @@ function uuid() {
 // ─────────────────────────────────────────────────────────────────────────────
 //  PANEL IZQUIERDO — Historial de conversaciones
 // ─────────────────────────────────────────────────────────────────────────────
+// ── Fila individual de conversación ─────────────────────────────────────────
+function ConvRow({ conv, isActive, onSelect, onRename, onDelete, onToggleFav }) {
+  const [hov,     setHov]     = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft,   setDraft]   = useState(conv.title);
+  const [confirm, setConfirm] = useState(false);
+
+  function startEdit(e) { e.stopPropagation(); setDraft(conv.title); setEditing(true); }
+  function commitEdit()  { if (draft.trim()) onRename(conv.id, draft.trim()); setEditing(false); }
+  function handleKey(e)  { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") setEditing(false); }
+
+  function handleDelete(e) {
+    e.stopPropagation();
+    if (confirm) { onDelete(conv.id); }
+    else { setConfirm(true); setTimeout(() => setConfirm(false), 3000); }
+  }
+
+  const lastMsg = conv.messages?.[conv.messages.length - 1];
+
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => { setHov(false); setConfirm(false); }}
+      onClick={() => !editing && onSelect(conv.id)}
+      style={{
+        padding: "7px 8px", borderRadius: 8, cursor: "pointer",
+        background: isActive ? "#E8E8E8" : hov ? "#EBEBEB" : "transparent",
+        display: "flex", alignItems: "flex-start", gap: 8,
+        marginBottom: 1, transition: "background 0.1s", position: "relative",
+        border: isActive ? `1px solid ${T.border}` : "1px solid transparent",
+      }}>
+
+      {/* Estrella favorita */}
+      <button
+        onClick={e => { e.stopPropagation(); onToggleFav(conv.id); }}
+        title={conv.favorite ? "Quitar de favoritas" : "Marcar como favorita"}
+        style={{
+          background: "none", border: "none", cursor: "pointer", padding: 0,
+          fontSize: 12, lineHeight: 1, flexShrink: 0, marginTop: 2,
+          color: conv.favorite ? "#F59E0B" : "transparent",
+          transition: "color 0.15s",
+        }}>
+        {conv.favorite ? "★" : hov ? <span style={{ color: "#CBD5E1" }}>☆</span> : ""}
+      </button>
+
+      {/* Contenido */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {editing ? (
+          <input autoFocus value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onBlur={commitEdit} onKeyDown={handleKey}
+            onClick={e => e.stopPropagation()}
+            style={{ width: "100%", border: `1.5px solid ${T.accent}`, borderRadius: 5, padding: "2px 6px", fontSize: 12, fontWeight: 600, outline: "none", background: "#fff", color: T.text }} />
+        ) : (
+          <p style={{ margin: 0, fontSize: 13, fontWeight: isActive ? 600 : 400, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.4 }}>
+            {conv.title}
+          </p>
+        )}
+        {!editing && lastMsg && (
+          <p style={{ margin: "2px 0 0", fontSize: 11, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.3 }}>
+            {lastMsg.text?.slice(0, 48) || "…"}
+          </p>
+        )}
+      </div>
+
+      {/* Acciones (hover) */}
+      {hov && !editing && (
+        <div style={{ display: "flex", gap: 3, flexShrink: 0, alignItems: "center" }} onClick={e => e.stopPropagation()}>
+          <button onClick={startEdit} style={microBtn} title="Renombrar">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2.5" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button onClick={handleDelete}
+            style={{ ...microBtn, background: confirm ? "#FEF2F2" : undefined, borderColor: confirm ? "#FECACA" : undefined }}
+            title={confirm ? "Clic para confirmar" : "Eliminar"}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={confirm ? T.danger : T.muted} strokeWidth="2.5" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Panel izquierdo — Historial completo ─────────────────────────────────────
 function LeftPanel({ collapsed, onToggle }) {
   const { conversations, activeId, selectConversation,
           newConversation, deleteConversation, renameConversation } = useConversation();
+  const { toggleFavorite } = useIA();
   const router = useRouter();
-  const [editingId, setEditingId] = useState(null);
-  const [draft,     setDraft]     = useState("");
-  const [hovId,     setHovId]     = useState(null);
 
-  const groups = groupByDate(conversations);
+  const [query,       setQuery]       = useState("");
+  const [filterMode,  setFilterMode]  = useState("all"); // "all" | "fav"
+  const searchRef = useRef(null);
 
-  function startEdit(conv, e) {
-    e.stopPropagation();
-    setEditingId(conv.id);
-    setDraft(conv.title);
-  }
-  function commitEdit(id) {
-    if (draft.trim()) renameConversation(id, draft.trim());
-    setEditingId(null);
-  }
+  // Filtrado por búsqueda y modo
+  const filtered = conversations.filter(c => {
+    if (filterMode === "fav" && !c.favorite) return false;
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
+    return (
+      c.title.toLowerCase().includes(q) ||
+      c.messages?.some(m => m.text?.toLowerCase().includes(q))
+    );
+  });
+
+  // Favoritas siempre arriba, luego el resto agrupado por fecha
+  const favoritas  = filtered.filter(c => c.favorite);
+  const normales   = filtered.filter(c => !c.favorite);
+  const groups     = groupByDate(normales);
+  const totalCount = conversations.length;
+  const favCount   = conversations.filter(c => c.favorite).length;
 
   return (
     <aside style={{
-      width: collapsed ? 0 : 260,
-      minWidth: collapsed ? 0 : 260,
+      width: collapsed ? 0 : 268,
+      minWidth: collapsed ? 0 : 268,
       height: "100%",
       background: T.sidebar,
       borderRight: `1px solid ${T.border}`,
@@ -65,91 +156,125 @@ function LeftPanel({ collapsed, onToggle }) {
       overflow: "hidden",
       transition: "width 0.25s ease, min-width 0.25s ease",
     }}>
-      {/* Logo + colapsar */}
-      <div style={{ padding: "16px 14px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, background: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>🤖</div>
-          <span style={{ fontWeight: 700, fontSize: 13, color: T.text, whiteSpace: "nowrap" }}>Centro IA</span>
-        </div>
-        <button onClick={onToggle} title="Ocultar panel" style={iconBtn}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2.2" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-        </button>
-      </div>
 
-      {/* Nueva conversación */}
-      <div style={{ padding: "0 10px 12px", flexShrink: 0 }}>
+      {/* ── Cabecera ── */}
+      <div style={{ padding: "14px 12px 0", flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 26, height: 26, borderRadius: 7, background: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🤖</div>
+            <span style={{ fontWeight: 800, fontSize: 13, color: T.text }}>Centro IA</span>
+          </div>
+          <button onClick={onToggle} style={iconBtn} title="Colapsar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2.2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          </button>
+        </div>
+
+        {/* Botón nueva conversación */}
         <button onClick={newConversation} style={{
           width: "100%", padding: "9px 12px", borderRadius: 10,
-          border: `1px solid ${T.border}`, background: T.panel,
+          border: `1.5px dashed ${T.border}`, background: "transparent",
           color: T.text, fontWeight: 600, fontSize: 13, cursor: "pointer",
           display: "flex", alignItems: "center", gap: 8,
-          transition: "background 0.15s",
+          transition: "all 0.15s", marginBottom: 10,
         }}
-        onMouseEnter={e => e.currentTarget.style.background = T.hover}
-        onMouseLeave={e => e.currentTarget.style.background = T.panel}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        onMouseEnter={e => { e.currentTarget.style.background = T.hover; e.currentTarget.style.borderColor = "#C0C0C0"; }}
+        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = T.border; }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={T.accent} strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nueva conversación
         </button>
+
+        {/* Buscador */}
+        <div style={{ position: "relative", marginBottom: 8 }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2.2" strokeLinecap="round"
+            style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)" }}>
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            ref={searchRef}
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Buscar conversaciones…"
+            style={{
+              width: "100%", padding: "7px 28px 7px 28px", borderRadius: 8,
+              border: `1px solid ${T.border}`, background: T.panel,
+              fontSize: 12, color: T.text, outline: "none", boxSizing: "border-box",
+              transition: "border-color 0.15s",
+            }}
+            onFocus={e  => e.target.style.borderColor = T.accent}
+            onBlur={e   => e.target.style.borderColor = T.border}
+          />
+          {query && (
+            <button onClick={() => setQuery("")} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: T.muted, fontSize: 14, lineHeight: 1, padding: 0 }}>✕</button>
+          )}
+        </div>
+
+        {/* Filtros Todas / Favoritas */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+          {[
+            { id: "all", label: `Todas (${totalCount})` },
+            { id: "fav", label: `★ Favoritas (${favCount})` },
+          ].map(f => (
+            <button key={f.id} onClick={() => setFilterMode(f.id)} style={{
+              flex: 1, padding: "5px 0", borderRadius: 7, border: "none",
+              background: filterMode === f.id ? T.accent : T.panel,
+              color:      filterMode === f.id ? "#fff"   : T.muted,
+              fontSize: 11, fontWeight: 700, cursor: "pointer",
+              transition: "all 0.15s",
+            }}>{f.label}</button>
+          ))}
+        </div>
       </div>
 
-      {/* Lista de conversaciones */}
+      {/* ── Lista ── */}
       <div style={{ flex: 1, overflowY: "auto", padding: "0 6px 12px" }}>
-        {conversations.length === 0 ? (
-          <div style={{ padding: "32px 16px", textAlign: "center", color: T.muted }}>
-            <p style={{ fontSize: 28, margin: "0 0 10px" }}>💬</p>
-            <p style={{ fontSize: 12, margin: 0, lineHeight: 1.6 }}>Aún no tienes conversaciones.<br />¡Comienza una nueva!</p>
+
+        {/* Sin resultados */}
+        {filtered.length === 0 && (
+          <div style={{ padding: "28px 12px", textAlign: "center", color: T.muted }}>
+            <p style={{ fontSize: 26, margin: "0 0 8px" }}>{query ? "🔍" : "💬"}</p>
+            <p style={{ fontSize: 12, margin: 0, lineHeight: 1.6 }}>
+              {query ? `Sin resultados para "${query}"` : filterMode === "fav" ? "No tienes favoritas aún.\nHaz clic en ☆ para agregar." : "Aún no tienes conversaciones."}
+            </p>
           </div>
-        ) : (
-          groups.map(g => (
-            <div key={g.label}>
-              <p style={{ margin: "12px 8px 4px", fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.06em" }}>{g.label}</p>
-              {g.items.map(conv => (
-                <div key={conv.id}
-                  onMouseEnter={() => setHovId(conv.id)}
-                  onMouseLeave={() => setHovId(null)}
-                  onClick={() => editingId !== conv.id && selectConversation(conv.id)}
-                  style={{
-                    padding: "8px 10px", borderRadius: 8, cursor: "pointer",
-                    background: conv.id === activeId ? T.hover : hovId === conv.id ? "#E8E8E8" : "transparent",
-                    display: "flex", alignItems: "center", gap: 8,
-                    marginBottom: 1, transition: "background 0.1s", position: "relative",
-                  }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {editingId === conv.id ? (
-                      <input autoFocus value={draft}
-                        onChange={e => setDraft(e.target.value)}
-                        onBlur={() => commitEdit(conv.id)}
-                        onKeyDown={e => { if (e.key === "Enter") commitEdit(conv.id); if (e.key === "Escape") setEditingId(null); }}
-                        onClick={e => e.stopPropagation()}
-                        style={{ width: "100%", border: `1px solid ${T.accent}`, borderRadius: 4, padding: "1px 4px", fontSize: 12, outline: "none", background: "#fff" }} />
-                    ) : (
-                      <p style={{ margin: 0, fontSize: 13, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.4 }}>{conv.title}</p>
-                    )}
-                  </div>
-                  {/* Acciones hover */}
-                  {hovId === conv.id && editingId !== conv.id && (
-                    <div style={{ display: "flex", gap: 2, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                      <button onClick={e => startEdit(conv, e)} style={microBtn} title="Renombrar">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2.5" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      </button>
-                      <button onClick={() => deleteConversation(conv.id)} style={{ ...microBtn, color: T.danger }} title="Eliminar">
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ))
         )}
+
+        {/* Favoritas (siempre arriba) */}
+        {favoritas.length > 0 && filterMode === "all" && (
+          <div>
+            <SectionLabel label="⭐ Favoritas" />
+            {favoritas.map(c => (
+              <ConvRow key={c.id} conv={c} isActive={c.id === activeId}
+                onSelect={selectConversation} onRename={renameConversation}
+                onDelete={deleteConversation}  onToggleFav={toggleFavorite} />
+            ))}
+          </div>
+        )}
+
+        {/* Favoritas cuando filtro activo */}
+        {filterMode === "fav" && favoritas.map(c => (
+          <ConvRow key={c.id} conv={c} isActive={c.id === activeId}
+            onSelect={selectConversation} onRename={renameConversation}
+            onDelete={deleteConversation}  onToggleFav={toggleFavorite} />
+        ))}
+
+        {/* Grupos por fecha */}
+        {filterMode !== "fav" && groups.map(g => (
+          <div key={g.label}>
+            <SectionLabel label={g.label} />
+            {g.items.map(c => (
+              <ConvRow key={c.id} conv={c} isActive={c.id === activeId}
+                onSelect={selectConversation} onRename={renameConversation}
+                onDelete={deleteConversation}  onToggleFav={toggleFavorite} />
+            ))}
+          </div>
+        ))}
       </div>
 
-      {/* Footer sidebar */}
-      <div style={{ borderTop: `1px solid ${T.border}`, padding: "10px 12px", flexShrink: 0 }}>
+      {/* ── Footer ── */}
+      <div style={{ borderTop: `1px solid ${T.border}`, padding: "8px 10px", flexShrink: 0 }}>
         <button onClick={() => router.push("/dashboard")} style={{
           width: "100%", display: "flex", alignItems: "center", gap: 8,
-          padding: "8px 10px", borderRadius: 8, border: "none", background: "transparent",
+          padding: "7px 10px", borderRadius: 8, border: "none", background: "transparent",
           color: T.muted, fontSize: 12, cursor: "pointer", transition: "background 0.15s",
         }}
         onMouseEnter={e => e.currentTarget.style.background = T.hover}
@@ -159,6 +284,14 @@ function LeftPanel({ collapsed, onToggle }) {
         </button>
       </div>
     </aside>
+  );
+}
+
+function SectionLabel({ label }) {
+  return (
+    <p style={{ margin: "10px 8px 4px", fontSize: 10, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.07em", userSelect: "none" }}>
+      {label}
+    </p>
   );
 }
 

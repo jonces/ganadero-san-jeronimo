@@ -58,6 +58,10 @@ export function IAProvider({ children }) {
     dispatch({ type: IA_ACTION.RENAME_CONVERSATION, payload: { id, title } });
   }
 
+  function toggleFavorite(id) {
+    dispatch({ type: IA_ACTION.TOGGLE_FAVORITE, payload: id });
+  }
+
   function setInput(text) {
     dispatch({ type: IA_ACTION.SET_INPUT, payload: text });
   }
@@ -159,6 +163,7 @@ export function IAProvider({ children }) {
     newConversation,
     deleteConversation,
     renameConversation,
+    toggleFavorite,
     sendMessage,
     setInput,
     addAttachment,
