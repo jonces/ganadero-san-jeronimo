@@ -72,7 +72,9 @@ export class OpenAICoreProvider extends IAClient {
         });
 
         if (!res.ok) {
-          onError(new Error(`Error del servidor: ${res.status}`));
+          let detail = res.status;
+          try { const d = await res.json(); detail = d.error ?? d.message ?? res.status; } catch {}
+          onError(new Error(`Error del servidor: ${detail}`));
           return;
         }
 

@@ -6,7 +6,6 @@ export const dynamic = "force-dynamic";
 export async function POST(request) {
   const abort = new AbortController();
 
-  // Stream SSE to client
   const stream = new ReadableStream({
     async start(controller) {
       const enc = new TextEncoder();
@@ -18,8 +17,24 @@ export async function POST(request) {
       }
 
       try {
+        console.log("[AI/CHAT] ➡ Solicitud recibida");
+
         const body = await request.json();
+        console.log("[AI/CHAT] ➡ Body parseado — mensaje:", body.message?.slice(0, 80));
+        console.log("[AI/CHAT] ➡ API Key configurada:", !!process.env.OPENAI_API_KEY);
+
         const core = getAICore();
+        console.log("[AI/CHAT] ➡ AICore obtenido");
+
+        const providers = core.listAvailableProviders();
+        console.log("[AI/CHAT] ➡ Providers disponibles:", JSON.stringify(providers));
+
+        if (providers.length === 0) {
+          const msg = "No hay proveedor de IA disponible. OPENAI_API_KEY no está configurada en Railway.";
+          console.error("[AI/CHAT] ✗", msg);
+          send({ type: "error", message: msg });
+          return;
+        }
 
         for await (const chunk of core.stream({
           message:       body.message,
@@ -31,10 +46,16 @@ export async function POST(request) {
           signal:        abort.signal,
         })) {
           send(chunk);
+          if (chunk.type === "error") {
+            console.error("[AI/CHAT] ✗ Error del stream:", chunk.message);
+          }
           if (chunk.type === "done" || chunk.type === "error") break;
         }
+
+        console.log("[AI/CHAT] ✓ Stream completado");
       } catch (e) {
-        send({ type: "error", message: e.message });
+        console.error("[AI/CHAT] ✗ Excepción no capturada:", e.message, e.stack);
+        send({ type: "error", message: `Error interno: ${e.message}` });
       } finally {
         try { controller.close(); } catch {}
       }
