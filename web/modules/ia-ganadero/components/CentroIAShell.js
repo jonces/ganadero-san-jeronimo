@@ -857,44 +857,352 @@ function RightPanel({ collapsed, onToggle }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  PANTALLA DE BIENVENIDA
+//  DATOS DE CONSULTAS RÁPIDAS — 9 categorías con subconsultas
+// ─────────────────────────────────────────────────────────────────────────────
+const CATEGORIAS_IA = [
+  {
+    id: "alimentacion",
+    titulo: "Mi vaca no quiere comer",
+    icono: "🐄",
+    color: "#F59E0B",
+    bg: "#FFFBEB",
+    border: "#FDE68A",
+    hoverBg: "#FEF3C7",
+    descripcion: "Diagnóstico de inapetencia y problemas digestivos",
+    sugerencias: [
+      "Mi vaca no ha comido en 24 horas",
+      "La vaca rechaza el concentrado",
+      "Animal con pérdida de peso repentina",
+      "Vaca con timpanismo o distensión",
+    ],
+  },
+  {
+    id: "mastitis",
+    titulo: "Tengo mastitis",
+    icono: "🩺",
+    color: "#EF4444",
+    bg: "#FEF2F2",
+    border: "#FECACA",
+    hoverBg: "#FEE2E2",
+    descripcion: "Manejo, tratamiento y prevención de mastitis",
+    sugerencias: [
+      "Leche con grumos o sangre",
+      "Ubre caliente e inflamada",
+      "¿Qué antibiótico usar?",
+      "¿Cómo hacer el California Mastitis Test?",
+    ],
+  },
+  {
+    id: "desparasitacion",
+    titulo: "¿Cómo desparasito?",
+    icono: "💊",
+    color: "#8B5CF6",
+    bg: "#F5F3FF",
+    border: "#DDD6FE",
+    hoverBg: "#EDE9FE",
+    descripcion: "Protocolos de desparasitación interna y externa",
+    sugerencias: [
+      "¿Cada cuánto desparasito el hato?",
+      "Dosis de ivermectina por peso",
+      "Garrapatas resistentes al baño",
+      "Desparasitación en vacas preñadas",
+    ],
+  },
+  {
+    id: "potreros",
+    titulo: "Diseñar potreros",
+    icono: "🌿",
+    color: "#10A37F",
+    bg: "#F0FDF4",
+    border: "#BBF7D0",
+    hoverBg: "#DCFCE7",
+    descripcion: "Rotación, carga animal y manejo de pasturas",
+    sugerencias: [
+      "Plan de rotación para 40 animales",
+      "¿Cuántos potreros necesito?",
+      "Carga animal por hectárea",
+      "Período de descanso del pasto",
+    ],
+  },
+  {
+    id: "vacunacion",
+    titulo: "Plan de vacunación",
+    icono: "💉",
+    color: "#0EA5E9",
+    bg: "#F0F9FF",
+    border: "#BAE6FD",
+    hoverBg: "#E0F2FE",
+    descripcion: "Calendario sanitario y protocolos de inmunización",
+    sugerencias: [
+      "Vacunas obligatorias en Nicaragua",
+      "Esquema para terneros recién nacidos",
+      "¿Cuándo vacunar contra fiebre aftosa?",
+      "Vacunación en época lluviosa",
+    ],
+  },
+  {
+    id: "reproduccion",
+    titulo: "Reproducción",
+    icono: "🤰",
+    color: "#EC4899",
+    bg: "#FDF2F8",
+    border: "#FBCFE8",
+    hoverBg: "#FCE7F3",
+    descripcion: "Celo, inseminación, gestación y partos",
+    sugerencias: [
+      "Cómo detectar el celo",
+      "Inseminación artificial — pasos",
+      "Gestación: ¿qué revisar cada mes?",
+      "Vaca con parto difícil o distócico",
+    ],
+  },
+  {
+    id: "nutricion",
+    titulo: "Nutrición",
+    icono: "🌾",
+    color: "#F97316",
+    bg: "#FFF7ED",
+    border: "#FED7AA",
+    hoverBg: "#FFEDD5",
+    descripcion: "Dietas, suplementación y requerimientos nutricionales",
+    sugerencias: [
+      "Ración diaria para vaca lechera",
+      "Sales minerales: ¿cuánto y cuál?",
+      "Suplementación en época seca",
+      "Concentrado vs. pasto: balanceo",
+    ],
+  },
+  {
+    id: "pasturas",
+    titulo: "Pasturas",
+    icono: "🌱",
+    color: "#16A34A",
+    bg: "#F0FDF4",
+    border: "#86EFAC",
+    hoverBg: "#DCFCE7",
+    descripcion: "Establecimiento, manejo y mejoramiento de gramíneas",
+    sugerencias: [
+      "¿Qué pasto sembrar en verano?",
+      "Brachiaria vs. Marandú — cuál elegir",
+      "Fertilización de pasturas degradadas",
+      "Control de maleza en potreros nuevos",
+    ],
+  },
+  {
+    id: "medicamentos",
+    titulo: "Medicamentos",
+    icono: "🔬",
+    color: "#6366F1",
+    bg: "#EEF2FF",
+    border: "#C7D2FE",
+    hoverBg: "#E0E7FF",
+    descripcion: "Dosificación, vías de administración y tiempos de retiro",
+    sugerencias: [
+      "Dosis de oxitocina en bovinos",
+      "¿Qué antiinflamatorio usar?",
+      "Tiempo de retiro de antibióticos en leche",
+      "Vitaminas inyectables: dosis y frecuencia",
+    ],
+  },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PANTALLA DE BIENVENIDA + CONSULTAS RÁPIDAS
 // ─────────────────────────────────────────────────────────────────────────────
 function WelcomeScreen({ onPickQuery }) {
-  return (
-    <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 32px" }}>
-      <div style={{ maxWidth: 600, width: "100%", textAlign: "center" }}>
-        {/* Logo grande */}
-        <div style={{ width: 72, height: 72, borderRadius: 20, background: T.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, margin: "0 auto 24px", boxShadow: `0 8px 32px ${T.accent}33` }}>🤖</div>
-        <h1 style={{ margin: "0 0 10px", fontSize: 26, fontWeight: 900, color: T.text, letterSpacing: "-0.5px" }}>
-          Centro IA Ganadero
-        </h1>
-        <p style={{ margin: "0 0 40px", fontSize: 15, color: T.muted, lineHeight: 1.7, maxWidth: 420, marginLeft: "auto", marginRight: "auto" }}>
-          Tu asistente inteligente para gestión ganadera. Próximamente con inteligencia artificial real conectada a todos tus datos de finca.
-        </p>
+  const [expanded, setExpanded] = useState(null);   // id de la tarjeta expandida
+  const [busqueda, setBusqueda] = useState("");
+  const [filtro,   setFiltro]   = useState("todas"); // "todas" | id de categoría
 
-        {/* Grid de consultas rápidas */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, textAlign: "left" }}>
-          {QUICK_QUERIES.slice(0, 6).map(q => (
-            <button key={q.id} onClick={() => onPickQuery(q)} style={{
-              padding: "14px 16px", borderRadius: 14,
-              border: `1px solid ${T.border}`, background: T.bg,
-              cursor: "pointer", textAlign: "left",
-              transition: "all 0.18s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = "#E8F8F4"; e.currentTarget.style.borderColor = T.accent; }}
-            onMouseLeave={e => { e.currentTarget.style.background = T.bg; e.currentTarget.style.borderColor = T.border; }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                <span style={{ fontSize: 20, lineHeight: 1, marginTop: 1 }}>{q.icono}</span>
-                <p style={{ margin: 0, fontSize: 12, color: T.text, lineHeight: 1.5, fontWeight: 500 }}>{q.texto}</p>
-              </div>
-            </button>
-          ))}
+  const categoriasFiltradas = CATEGORIAS_IA.filter(c => {
+    if (!busqueda.trim()) return true;
+    const q = busqueda.toLowerCase();
+    return (
+      c.titulo.toLowerCase().includes(q) ||
+      c.descripcion.toLowerCase().includes(q) ||
+      c.sugerencias.some(s => s.toLowerCase().includes(q))
+    );
+  });
+
+  function handlePick(texto) {
+    onPickQuery({ texto, id: Math.random().toString(36).slice(2) });
+  }
+
+  return (
+    <div style={{ height: "100%", overflowY: "auto", padding: "32px 32px 48px" }}>
+      <div style={{ maxWidth: 800, margin: "0 auto" }}>
+
+        {/* ── Encabezado ── */}
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: 18, margin: "0 auto 18px",
+            background: `linear-gradient(135deg, ${T.accent}, #1A7F64)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 32, boxShadow: `0 8px 28px ${T.accent}30`,
+          }}>🤖</div>
+          <h1 style={{ margin: "0 0 8px", fontSize: 24, fontWeight: 900, color: T.text, letterSpacing: "-0.5px" }}>
+            ¿En qué te ayudo hoy?
+          </h1>
+          <p style={{ margin: 0, fontSize: 14, color: T.muted, lineHeight: 1.6 }}>
+            Selecciona una categoría o escribe tu consulta directamente abajo
+          </p>
         </div>
 
-        {/* Badge estado */}
-        <div style={{ marginTop: 32, display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 14px", borderRadius: 20, background: T.bg, border: `1px solid ${T.border}` }}>
-          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#F59E0B" }} />
-          <span style={{ fontSize: 12, color: T.muted, fontWeight: 500 }}>IA no conectada · Modo interfaz</span>
+        {/* ── Buscador de consultas ── */}
+        <div style={{ position: "relative", marginBottom: 24 }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2.2" strokeLinecap="round"
+            style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }}>
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            value={busqueda}
+            onChange={e => setBusqueda(e.target.value)}
+            placeholder="Buscar entre las consultas frecuentes…"
+            style={{
+              width: "100%", padding: "11px 16px 11px 40px",
+              borderRadius: 12, border: `1.5px solid ${T.border}`,
+              background: T.bg, fontSize: 14, color: T.text,
+              outline: "none", boxSizing: "border-box", transition: "border-color 0.2s",
+            }}
+            onFocus={e  => e.target.style.borderColor = T.accent}
+            onBlur={e   => e.target.style.borderColor = T.border}
+          />
+          {busqueda && (
+            <button onClick={() => setBusqueda("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: T.muted, fontSize: 16, lineHeight: 1 }}>✕</button>
+          )}
+        </div>
+
+        {/* ── Sin resultados ── */}
+        {categoriasFiltradas.length === 0 && (
+          <div style={{ textAlign: "center", padding: "40px 0", color: T.muted }}>
+            <p style={{ fontSize: 32, margin: "0 0 10px" }}>🔍</p>
+            <p style={{ fontSize: 14, margin: 0 }}>Sin resultados para <strong>"{busqueda}"</strong></p>
+            <p style={{ fontSize: 12, margin: "6px 0 0" }}>Prueba con otras palabras o escribe directamente en el chat</p>
+          </div>
+        )}
+
+        {/* ── Grid de categorías ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          {categoriasFiltradas.map(cat => {
+            const isOpen = expanded === cat.id;
+            return (
+              <div key={cat.id} style={{
+                borderRadius: 14, border: `1.5px solid ${isOpen ? cat.color : cat.border}`,
+                background: isOpen ? cat.bg : "#fff",
+                overflow: "hidden", transition: "all 0.2s",
+                boxShadow: isOpen ? `0 4px 20px ${cat.color}20` : "0 1px 4px rgba(0,0,0,0.05)",
+              }}>
+
+                {/* Cabecera de tarjeta */}
+                <button
+                  onClick={() => setExpanded(isOpen ? null : cat.id)}
+                  style={{
+                    width: "100%", padding: "14px 14px 12px", border: "none",
+                    background: "transparent", cursor: "pointer", textAlign: "left",
+                  }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                      background: cat.bg, border: `1px solid ${cat.border}`,
+                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
+                    }}>{cat.icono}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: "0 0 3px", fontSize: 13, fontWeight: 700, color: T.text, lineHeight: 1.3 }}>{cat.titulo}</p>
+                      <p style={{ margin: 0, fontSize: 11, color: T.muted, lineHeight: 1.4 }}>{cat.descripcion}</p>
+                    </div>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={T.muted} strokeWidth="2.5" strokeLinecap="round"
+                      style={{ flexShrink: 0, marginTop: 2, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </div>
+
+                  {/* Chip del color de la categoría */}
+                  <div style={{ marginTop: 10 }}>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20,
+                      color: cat.color, background: cat.bg, border: `1px solid ${cat.border}`,
+                    }}>
+                      {cat.sugerencias.length} consultas →
+                    </span>
+                  </div>
+                </button>
+
+                {/* Subconsultas expandibles */}
+                {isOpen && (
+                  <div style={{ borderTop: `1px solid ${cat.border}`, padding: "8px 10px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+                    {cat.sugerencias.map((s, i) => (
+                      <button key={i} onClick={() => handlePick(s)} style={{
+                        padding: "8px 12px", borderRadius: 9,
+                        border: `1px solid transparent`, background: "transparent",
+                        cursor: "pointer", textAlign: "left", fontSize: 12,
+                        color: T.text, display: "flex", alignItems: "center", gap: 8,
+                        transition: "all 0.13s",
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = cat.hoverBg; e.currentTarget.style.borderColor = cat.border; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "transparent"; }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={cat.color} strokeWidth="2.5" strokeLinecap="round" style={{ flexShrink: 0 }}>
+                          <polyline points="9 18 15 12 9 6"/>
+                        </svg>
+                        {s}
+                      </button>
+                    ))}
+
+                    {/* Botón escribir consulta libre */}
+                    <button onClick={() => handlePick(cat.titulo)} style={{
+                      marginTop: 4, padding: "8px 12px", borderRadius: 9,
+                      border: `1.5px dashed ${cat.border}`, background: "transparent",
+                      cursor: "pointer", textAlign: "center", fontSize: 11,
+                      color: cat.color, fontWeight: 700, transition: "background 0.13s",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = cat.bg}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                      + Hacer otra pregunta sobre {cat.titulo.toLowerCase()}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── Consultas de emergencia rápida ── */}
+        <div style={{ marginTop: 28, padding: "16px 20px", borderRadius: 14, background: "#FEF2F2", border: "1px solid #FECACA" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <span style={{ fontSize: 16 }}>🚨</span>
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 13, color: "#DC2626" }}>Emergencias frecuentes</p>
+            <span style={{ fontSize: 11, color: "#991B1B" }}>— Haz clic para consultar de inmediato</span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {[
+              "Animal caído sin poder levantarse",
+              "Vaca con fiebre alta",
+              "Diarrea en ternero recién nacido",
+              "Parto con complicaciones",
+              "Herida profunda o fractura",
+              "Intoxicación por planta o químico",
+              "Animal con dificultad para respirar",
+              "Aborto espontáneo en la manada",
+            ].map((q, i) => (
+              <button key={i} onClick={() => handlePick(q)} style={{
+                padding: "6px 12px", borderRadius: 20,
+                border: "1px solid #FECACA", background: "#fff",
+                cursor: "pointer", fontSize: 12, color: "#DC2626",
+                fontWeight: 600, transition: "all 0.13s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "#DC2626"; e.currentTarget.style.color = "#fff"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#DC2626"; }}>
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Badge estado ── */}
+        <div style={{ marginTop: 28, textAlign: "center" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20, background: T.bg, border: `1px solid ${T.border}`, fontSize: 11, color: T.muted }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#F59E0B" }} />
+            IA no conectada · Solo interfaz visual · Las respuestas serán simuladas
+          </span>
         </div>
       </div>
     </div>
