@@ -19,6 +19,11 @@ const COLOR = {
   purple:  "#7C3AED",
 };
 
+const cardStyle = {
+  background: COLOR.white, border: `1px solid ${COLOR.border}`,
+  borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+};
+
 // ── Keyframes CSS ──
 const CSS = `
 @keyframes pulse {
@@ -1337,10 +1342,7 @@ export default function DashboardPage() {
     fontSize: 13, color: COLOR.text, background: COLOR.white, outline: "none", cursor: "pointer",
   };
 
-  const cardStyle = {
-    background: COLOR.white, border: `1px solid ${COLOR.border}`,
-    borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-  };
+  // cardStyle definido a nivel de módulo (ver abajo)
 
   const hato = stats?.resumenHato || {};
   const graficaMeses = stats?.graficaMeses || [];
