@@ -3,6 +3,7 @@ import { T }              from "../constants/theme.js";
 import { ts }             from "../utils/date.js";
 import { SENDER, MESSAGE_STATUS } from "../constants/index.js";
 import { MarkdownMessage } from "./MarkdownMessage.js";
+import { ImageResultCard } from "../../ai-image-studio/components/ImageResultCard.js";
 
 /**
  * Fila de un mensaje en el chat (usuario o IA).
@@ -12,11 +13,49 @@ import { MarkdownMessage } from "./MarkdownMessage.js";
  *   specialistIcon?: string,   - ícono del especialista activo (avatar IA)
  * }} props
  */
-export function MessageRow({ message, specialistIcon }) {
+export function MessageRow({ message, specialistIcon, onImageRegenerate }) {
   const isUser      = message.sender === SENDER.USER;
   const isError     = message.status === MESSAGE_STATUS.ERROR;
   const isStreaming  = Boolean(message.isStreaming);
   const aiAvatar    = specialistIcon ?? "🤖";
+
+  // Mensajes de tipo "image" — renderizado especial
+  if (message.type === "image") {
+    return (
+      <article aria-label="Imagen generada por IA" style={{ marginBottom: 28, paddingLeft: 48 }}>
+        {message.imageStatus === "generating" && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "12px 16px", borderRadius: 12,
+            background: T.aiBub, border: `1px solid ${T.aiBorder}`,
+            maxWidth: 320, color: T.muted, fontSize: 13,
+          }}>
+            <div style={{
+              width: 18, height: 18, border: `2px solid ${T.border}`,
+              borderTopColor: "#6366F1", borderRadius: "50%",
+              animation: "ia-spin 0.8s linear infinite", flexShrink: 0,
+            }} />
+            <span>Generando imagen… puede tardar 15–30 seg.</span>
+          </div>
+        )}
+        {message.imageStatus === "error" && (
+          <div style={{
+            padding: "10px 14px", borderRadius: 10,
+            background: "#FEF2F2", border: "1px solid #FECACA",
+            fontSize: 13, color: "#DC2626", maxWidth: 360,
+          }}>
+            ⚠️ No se pudo generar la imagen: {message.imageError}
+          </div>
+        )}
+        {message.imageStatus === "ready" && message.imageData && (
+          <ImageResultCard
+            imageData={message.imageData}
+            onRegenerate={onImageRegenerate}
+          />
+        )}
+      </article>
+    );
+  }
 
   // Los adjuntos de imagen muestran miniaturas sobre el texto
   const imageAtts = (message.attachments ?? []).filter(

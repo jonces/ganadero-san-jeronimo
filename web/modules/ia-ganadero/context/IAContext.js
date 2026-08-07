@@ -7,6 +7,8 @@ import { createMessage, createConversation } from "../utils/message-factory.js";
 import { ConversationContextCtx }         from "./ConversationContextContext.js";
 import { AIEngine }                       from "../../ai-engine/index.js";
 import { loadConversations, saveConversations } from "../services/memory/conversation-memory.js";
+import { generateChatImage }                   from "../../ai-image-studio/services/image-studio-service.js";
+import { detectImageTrigger }                  from "../../ai-image-studio/constants/image-triggers.js";
 
 export const IAContext = createContext(null);
 
@@ -157,6 +159,47 @@ export function IAProvider({ children }) {
           });
           dispatch({ type: IA_ACTION.SET_STATUS, payload: CONVERSATION_STATUS.IDLE });
           cancelStreamRef.current = null;
+
+          // Generación de imagen si el mensaje del usuario lo requiere
+          const activeSpecialist = overrideSpecialist ?? specialistIdRef.current ?? "veterinario";
+          if (detectImageTrigger(text).shouldGenerate) {
+            const imgMsg = createMessage(SENDER.AI, "", [], MESSAGE_STATUS.SENDING);
+            imgMsg.type = "image";
+            imgMsg.imageStatus = "generating";
+            dispatch({ type: IA_ACTION.ADD_MESSAGE, payload: imgMsg });
+
+            generateChatImage({
+              userText:       text,
+              specialistId:   activeSpecialist,
+              conversationId: state.activeId,
+              messageId:      imgMsg.id,
+              fincaCtx:       activeConv?.context ?? convCtx?.context ?? null,
+              onStart:        () => {},
+              onSuccess: (imageData) => {
+                dispatch({
+                  type:    IA_ACTION.UPDATE_MESSAGE,
+                  payload: {
+                    id:      imgMsg.id,
+                    changes: {
+                      imageStatus:   "ready",
+                      imageUrl:      imageData.url,
+                      imageData,
+                      status:        MESSAGE_STATUS.RECEIVED,
+                    },
+                  },
+                });
+              },
+              onError: (errMsg) => {
+                dispatch({
+                  type:    IA_ACTION.UPDATE_MESSAGE,
+                  payload: {
+                    id:      imgMsg.id,
+                    changes: { imageStatus: "error", imageError: errMsg, status: MESSAGE_STATUS.ERROR },
+                  },
+                });
+              },
+            });
+          }
         },
         (err) => {
           dispatch({ type: IA_ACTION.SET_ERROR,  payload: err.message });
