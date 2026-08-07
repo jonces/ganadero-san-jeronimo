@@ -27,6 +27,7 @@ export { AttachmentPreview }  from "./components/AttachmentPreview.js";
 export { FileCard }           from "./components/FileCard.js";
 export { FileUploadZone }     from "./components/FileUploadZone.js";
 export { FilePreviewGrid }    from "./components/FilePreviewGrid.js";
+export { FilePreviewModal }   from "./components/FilePreviewModal.js";
 export { ProviderBadge }      from "./components/ProviderBadge.js";
 
 // Constantes y tipos (para uso externo si se necesita)

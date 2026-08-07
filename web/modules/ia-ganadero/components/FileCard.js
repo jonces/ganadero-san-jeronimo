@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { FILE_CATEGORY_CONFIG, UPLOAD_STATUS } from "../constants/files.js";
+import { FILE_CATEGORY_CONFIG, UPLOAD_STATUS, FILE_CATEGORY } from "../constants/files.js";
 import { formatFileSize } from "../utils/file-handler.js";
 
 const T = {
@@ -12,21 +12,26 @@ const T = {
   danger:  "#EF4444",
 };
 
+const PREVIEWABLE = [FILE_CATEGORY.IMAGE, FILE_CATEGORY.VIDEO, FILE_CATEGORY.PDF];
+
 /**
  * Tarjeta individual de archivo.
- * Muestra preview visual para imágenes y videos,
- * icono + metadata para el resto.
  *
- * @param {{ item: import('../utils/file-handler').FileItem, onRemove: (id:string)=>void }} props
+ * @param {{
+ *   item:     import('../utils/file-handler').FileItem,
+ *   onRemove: (id: string) => void,
+ *   onOpen?:  (item: FileItem) => void,   — abre el modal de vista previa
+ * }} props
  */
-export function FileCard({ item, onRemove }) {
+export function FileCard({ item, onRemove, onOpen }) {
   const [hovered,    setHovered]    = useState(false);
   const [imgError,   setImgError]   = useState(false);
   const [vidPlaying, setVidPlaying] = useState(false);
 
-  const cfg     = FILE_CATEGORY_CONFIG[item.category] ?? FILE_CATEGORY_CONFIG["unknown"];
-  const isError = item.status === UPLOAD_STATUS.ERROR;
-  const hasPreview = item.previewUrl && !isError;
+  const cfg         = FILE_CATEGORY_CONFIG[item.category] ?? FILE_CATEGORY_CONFIG["unknown"];
+  const isError     = item.status === UPLOAD_STATUS.ERROR;
+  const hasPreview  = item.previewUrl && !isError;
+  const canOpen     = !isError && PREVIEWABLE.includes(item.category) && onOpen;
 
   const cardBorder = isError
     ? `1px solid ${T.danger}30`
@@ -50,17 +55,21 @@ export function FileCard({ item, onRemove }) {
         flexDirection: "column",
       }}
     >
-      {/* ── Zona de preview ── */}
-      <div style={{
-        height:   120,
-        background: cfg.bg,
-        display:  "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        overflow: "hidden",
-        position: "relative",
-        flexShrink: 0,
-      }}>
+      {/* ── Zona de preview — clickeable si tiene modal ── */}
+      <div
+        onClick={() => canOpen && onOpen(item)}
+        style={{
+          height:   120,
+          background: cfg.bg,
+          display:  "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          position: "relative",
+          flexShrink: 0,
+          cursor: canOpen ? "pointer" : "default",
+        }}
+      >
 
         {/* Preview de imagen */}
         {item.category === "image" && hasPreview && !imgError && (
@@ -149,10 +158,33 @@ export function FileCard({ item, onRemove }) {
           </div>
         )}
 
+        {/* Overlay "Ver" — hover sobre archivos con preview disponible */}
+        {hovered && canOpen && (
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "rgba(0,0,0,0.38)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 1,
+          }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: "rgba(255,255,255,0.92)",
+              borderRadius: 20, padding: "5px 14px",
+              fontSize: 12, fontWeight: 700, color: "#0D0D0D",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
+            }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              Ver
+            </div>
+          </div>
+        )}
+
         {/* Botón eliminar — aparece al hover */}
         {hovered && (
           <button
-            onClick={() => onRemove(item.id)}
+            onClick={(e) => { e.stopPropagation(); onRemove(item.id); }}
             title="Quitar archivo"
             style={{
               position: "absolute", top: 6, right: 6,
@@ -160,7 +192,7 @@ export function FileCard({ item, onRemove }) {
               background: "rgba(0,0,0,0.55)", border: "none",
               color: "#fff", cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 12, lineHeight: 1, zIndex: 2,
+              fontSize: 12, lineHeight: 1, zIndex: 3,
             }}
           >
             ✕

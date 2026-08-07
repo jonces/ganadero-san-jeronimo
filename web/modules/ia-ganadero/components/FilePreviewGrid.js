@@ -1,9 +1,10 @@
 "use client";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FILE_CATEGORY, FILE_CATEGORY_CONFIG, UPLOAD_STATUS } from "../constants/files.js";
-import { processFiles, revokeFileUrls, formatFileSize } from "../utils/file-handler.js";
-import { FileCard }       from "./FileCard.js";
-import { FileUploadZone } from "./FileUploadZone.js";
+import { revokeFileUrls, formatFileSize } from "../utils/file-handler.js";
+import { FileCard }           from "./FileCard.js";
+import { FileUploadZone }     from "./FileUploadZone.js";
+import { FilePreviewModal }   from "./FilePreviewModal.js";
 
 const T = {
   panel:   "#FFFFFF",
@@ -30,8 +31,9 @@ const ALL_CATEGORIES = Object.values(FILE_CATEGORY).filter(c => c !== FILE_CATEG
  * }} props
  */
 export function FilePreviewGrid({ items, onAdd, onRemove, onClearAll, showZone = true }) {
-  const [filter,  setFilter]  = useState("all");
-  const [errors,  setErrors]  = useState([]);
+  const [filter,       setFilter]       = useState("all");
+  const [errors,       setErrors]       = useState([]);
+  const [previewItem,  setPreviewItem]  = useState(null);   // item abierto en el modal
 
   // Limpia errores de toast después de 4 s
   useEffect(() => {
@@ -193,12 +195,25 @@ export function FilePreviewGrid({ items, onAdd, onRemove, onClearAll, showZone =
               gap:                   10,
             }}>
               {visible.map(item => (
-                <FileCard key={item.id} item={item} onRemove={onRemove} />
+                <FileCard
+                  key={item.id}
+                  item={item}
+                  onRemove={onRemove}
+                  onOpen={setPreviewItem}
+                />
               ))}
             </div>
           )}
         </>
       )}
+
+      {/* ── Modal de vista previa ── */}
+      <FilePreviewModal
+        item={previewItem}
+        items={items}
+        onClose={() => setPreviewItem(null)}
+        onNavigate={setPreviewItem}
+      />
     </div>
   );
 }
