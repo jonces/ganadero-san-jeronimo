@@ -65,13 +65,13 @@ export const MODELS = {
 export const MODEL_ROUTING = {
   simple:    "gpt-4o-mini",   // greetings, yes/no, simple lookups
   standard:  "gpt-4o",       // normal conversation, analysis
-  complex:   "gpt-5.5",      // multi-step reasoning, large analysis
+  complex:   "gpt-4o",       // multi-step reasoning, large analysis
   image:     "dall-e-3",
-  vision:    "gpt-5.5",
-  code:      "gpt-5.5",
+  vision:    "gpt-4o",
+  code:      "gpt-4o",
 };
 
-export const PRIMARY_MODEL   = "gpt-5.5";
+export const PRIMARY_MODEL   = "gpt-4o";
 export const ECONOMY_MODEL   = "gpt-4o-mini";
 export const STANDARD_MODEL  = "gpt-4o";
 export const IMAGE_MODEL     = "dall-e-3";

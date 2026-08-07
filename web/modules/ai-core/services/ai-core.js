@@ -216,7 +216,7 @@ class AICore {
   }
 }
 
-// Singleton
+// Singleton — safe because isAvailable() reads process.env at call time
 let _core = null;
 export function getAICore() {
   if (!_core) _core = new AICore();

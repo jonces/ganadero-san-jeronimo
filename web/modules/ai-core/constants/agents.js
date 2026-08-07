@@ -11,7 +11,7 @@ Siempre consulta los incidentes activos y el inventario de medicamentos antes de
 Cuando hay animales enfermos, usa la herramienta get_incidents para ver el contexto real.
 Responde con evidencia científica adaptada al contexto colombiano (ICA, FEDEGAN).`,
     tools: ["get_animals", "get_incidents", "get_inventory", "get_events", "register_treatment", "create_event", "create_alert", "search_rag"],
-    model: "gpt-5.5",
+    model: "gpt-4o",
   },
   nutricionista: {
     id: "nutricionista",
@@ -24,7 +24,7 @@ Tu rol: diseñar planes nutricionales, recomendar suplementación, optimizar con
 Consulta siempre el inventario de alimentos y minerales disponibles antes de recomendar.
 Considera la estación, el estado fisiológico de los animales (preñez, lactancia, crecimiento) y los recursos disponibles.`,
     tools: ["get_animals", "get_inventory", "get_dashboard", "get_production", "search_rag"],
-    model: "gpt-5.5",
+    model: "gpt-4o",
   },
   reproduccion: {
     id: "reproduccion",
@@ -37,7 +37,7 @@ Tu rol: optimizar tasas de preñez, diseñar protocolos de IATF, interpretar dia
 Consulta siempre el estado de los animales y los eventos próximos antes de recomendar protocolos.
 Dominas sistemas: monta natural, IA, IATF, y transferencia de embriones.`,
     tools: ["get_animals", "get_events", "get_incidents", "register_treatment", "create_event", "search_rag"],
-    model: "gpt-5.5",
+    model: "gpt-4o",
   },
   pasturas: {
     id: "pasturas",
@@ -63,7 +63,7 @@ Tu rol: analizar rentabilidad, proyectar flujos de caja, evaluar inversiones, op
 Siempre consulta los datos financieros reales del dashboard antes de dar cifras.
 Usa benchmarks FEDEGAN como referencia para comparar el desempeño de la operación.`,
     tools: ["get_dashboard", "get_financial", "get_inventory", "get_production", "generate_report", "search_rag"],
-    model: "gpt-5.5",
+    model: "gpt-4o",
   },
   produccion: {
     id: "produccion",
@@ -116,7 +116,7 @@ Tienes acceso completo a todos los datos de la finca. Siempre usa datos reales c
 Cuando la consulta requiera un especialista, menciona que puedes conectarte con él.
 Responde siempre en español colombiano, de forma profesional y directa.`,
     tools: TOOLS_ALL(),
-    model: "gpt-5.5",
+    model: "gpt-4o",
   },
 };
 
