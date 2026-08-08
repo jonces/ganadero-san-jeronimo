@@ -33,7 +33,7 @@ export async function POST(req) {
 
   // DALL-E 3 solo acepta style "vivid" o "natural"; omitir si no es válido
   const validStyles = ["vivid", "natural"];
-  const requestBody = { prompt, n, size, model, quality, response_format: "url" };
+  const requestBody = { prompt, n, size, model, quality };
   if (style && validStyles.includes(style)) requestBody.style = style;
 
   try {
