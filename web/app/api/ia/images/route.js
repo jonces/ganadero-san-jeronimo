@@ -28,8 +28,7 @@ export async function POST(req) {
     return NextResponse.json({ error: "prompt es requerido" }, { status: 400 });
   }
 
-  // dall-e-2 es compatible con todas las cuentas; dall-e-3 requiere acceso especial
-  const requestBody = { prompt, n: 1, size: "1024x1024", model: "dall-e-2" };
+  const requestBody = { prompt, n: 1, size: "1024x1024", model: "dall-e-3" };
 
   try {
     const upstream = await fetch(OPENAI_API, {
