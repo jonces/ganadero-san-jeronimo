@@ -70,9 +70,9 @@ router.get("/", async (req, res, next) => {
     const totalVentasCobradas   = todasVentasCobradas.reduce((s, v) => s + (v.precioNIO || 0), 0);
     const capitalInvertido      = totalTodasCompras + totalGastosHistorico;
 
-    // ── Caja disponible = ventas cobradas − gastos − compras ──
-    const totalGastosPagados = totalGastosHistorico;
-    const cajaDisponible     = totalVentasCobradas - totalGastosPagados - totalTodasCompras;
+    // ── Caja disponible = ventas cobradas − gastos operativos
+    // Las compras de animales son activos (reflejados en valorEstimadoHato), no gastos
+    const cajaDisponible = totalVentasCobradas - totalGastosHistorico;
 
     // ── Valor estimado del hato ──
     // Valor hato: usa precioVenta del animal si tiene, sino C$15,000 por defecto
