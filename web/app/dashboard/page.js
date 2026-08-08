@@ -1685,7 +1685,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {false && !loading && stats?.fase && (() => {
+      {!loading && stats?.fase && (() => {
         const fase = stats.fase;
         const roi  = stats.roiHato || {};
         const base = stats.baseReproductora || {};
@@ -1802,44 +1802,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* ── Línea de tiempo: inversión vs ventas acumuladas ── */}
-            {tl.length > 1 && (
-              <div style={{ ...cardStyle, padding: 0 }}>
-                <div style={{ padding: "14px 20px 10px", borderBottom: `1px solid ${COLOR.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ fontWeight: 800, fontSize: 14, color: COLOR.text }}>Línea de tiempo — Inversión vs Ventas acumuladas</div>
-                    <div style={{ fontSize: 11, color: COLOR.muted, marginTop: 2 }}>Últimos 12 meses · El cruce de las líneas marca el punto de equilibrio</div>
-                  </div>
-                  <div style={{ display: "flex", gap: 14, fontSize: 12 }}>
-                    <span><span style={{ display: "inline-block", width: 12, height: 3, background: "#DC2626", borderRadius: 2, verticalAlign: "middle", marginRight: 4 }} />Inversión acumulada</span>
-                    <span><span style={{ display: "inline-block", width: 12, height: 3, background: COLOR.green, borderRadius: 2, verticalAlign: "middle", marginRight: 4 }} />Ventas acumuladas</span>
-                  </div>
-                </div>
-                <div style={{ padding: "16px 20px 12px", overflowX: "auto" }}>
-                  <svg viewBox={`0 0 ${W} ${H + 20}`} style={{ width: "100%", minWidth: 400 }}>
-                    {/* Grid lines */}
-                    {[0.25, 0.5, 0.75, 1].map(r => (
-                      <line key={r} x1={PAD} y1={yOf(maxInv * r)} x2={W - PAD} y2={yOf(maxInv * r)}
-                        stroke={COLOR.border} strokeWidth="1" strokeDasharray="4 4" />
-                    ))}
-                    {/* Inversión */}
-                    <path d={pathInv} fill="none" stroke="#DC2626" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    {/* Ventas */}
-                    <path d={pathVta} fill="none" stroke={COLOR.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    {/* Puntos finales */}
-                    <circle cx={xOf(tl.length - 1)} cy={yOf(tl[tl.length - 1].inversion)} r="4" fill="#DC2626" />
-                    <circle cx={xOf(tl.length - 1)} cy={yOf(tl[tl.length - 1].ventas)} r="4" fill={COLOR.green} />
-                    {/* Labels eje X */}
-                    {tl.filter((_, i) => i % 2 === 0 || i === tl.length - 1).map((t, _, arr) => {
-                      const origIdx = tl.indexOf(t);
-                      return (
-                        <text key={origIdx} x={xOf(origIdx)} y={H + 16} textAnchor="middle" fontSize="9" fill={COLOR.muted}>{t.mes}</text>
-                      );
-                    })}
-                  </svg>
-                </div>
-              </div>
-            )}
           </div>
         );
       })()}
