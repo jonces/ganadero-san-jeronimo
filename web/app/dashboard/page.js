@@ -1685,10 +1685,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* ══════════════════════════════════════════════════════
-           MÓDULO: FASE DE LA GANADERÍA
-          ══════════════════════════════════════════════════════ */}
-      {!loading && stats?.fase && (() => {
+      {false && !loading && stats?.fase && (() => {
         const fase = stats.fase;
         const roi  = stats.roiHato || {};
         const base = stats.baseReproductora || {};
