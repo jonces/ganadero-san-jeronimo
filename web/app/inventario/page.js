@@ -816,6 +816,7 @@ export default function InventarioPage() {
   const [busqueda, setBusqueda] = useState("");
   const [filtroPotrero, setFiltroPotrero] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("");
+  const [filtroFierro, setFiltroFierro] = useState("");
   const [pagina, setPagina] = useState(1);
   const [perPage, setPerPage] = useState(0); // 0 = todos
   const [animalSeleccionado, setAnimalSeleccionado] = useState(null);
@@ -887,7 +888,8 @@ export default function InventarioPage() {
         (a.fierro || "").toLowerCase().includes(q);
     })
     .filter(a => !filtroPotrero || a.potrero === filtroPotrero)
-    .filter(a => !filtroCategoria || categoriaAnimal(a) === filtroCategoria);
+    .filter(a => !filtroCategoria || categoriaAnimal(a) === filtroCategoria)
+    .filter(a => !filtroFierro || a.fierro === filtroFierro);
 
   const totalPags   = perPage === 0 ? 1 : Math.max(1, Math.ceil(filtrados.length / perPage));
   const paginaActual= Math.min(pagina, totalPags);
@@ -1040,6 +1042,30 @@ export default function InventarioPage() {
             <option value="50">50 por página</option>
           </select>
         </div>
+
+        {/* Chips de fierro */}
+        {(() => {
+          const fierros = [...new Set(animales.filter(a => a.fierro).map(a => a.fierro))].sort();
+          if (fierros.length === 0) return null;
+          return (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: T.textSec, alignSelf: "center", marginRight: 4 }}>Fierro:</span>
+              <button onClick={() => { setFiltroFierro(""); setPagina(1); }}
+                style={{ padding: "5px 14px", borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `2px solid ${filtroFierro === "" ? T.green : T.border}`, background: filtroFierro === "" ? T.green : T.white, color: filtroFierro === "" ? "#fff" : T.textSec, transition: "all .15s" }}>
+                Todos
+              </button>
+              {fierros.map(f => (
+                <button key={f} onClick={() => { setFiltroFierro(f === filtroFierro ? "" : f); setPagina(1); }}
+                  style={{ padding: "5px 14px", borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: "pointer", border: `2px solid ${filtroFierro === f ? T.green : T.border}`, background: filtroFierro === f ? T.green : T.white, color: filtroFierro === f ? "#fff" : T.text, transition: "all .15s" }}>
+                  🔥 {f}
+                  <span style={{ marginLeft: 6, background: filtroFierro === f ? "rgba(255,255,255,0.3)" : T.bg, borderRadius: 99, padding: "1px 7px", fontSize: 11 }}>
+                    {animales.filter(a => a.fierro === f).length}
+                  </span>
+                </button>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Contenido: se reduce cuando el panel está abierto */}
         <div style={{ marginRight: panelAbierto ? 448 : 0, transition: "margin-right 0.2s ease" }}>
