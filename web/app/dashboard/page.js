@@ -1685,6 +1685,168 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* ══════════════════════════════════════════════════════
+           MÓDULO: FASE DE LA GANADERÍA
+          ══════════════════════════════════════════════════════ */}
+      {!loading && stats?.fase && (() => {
+        const fase = stats.fase;
+        const roi  = stats.roiHato || {};
+        const base = stats.baseReproductora || {};
+        const tl   = stats.timelineInversion || [];
+
+        const FASE_CFG = {
+          INVERSION:  { color: "#DC2626", bg: "#FEF2F2", border: "#FECACA", emoji: "🔴", label: "Fase de Inversión" },
+          TRANSICION: { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", emoji: "🟡", label: "Fase de Transición" },
+          PRODUCTIVA: { color: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0", emoji: "🟢", label: "Fase Productiva"    },
+        };
+        const cfg = FASE_CFG[fase] || FASE_CFG.INVERSION;
+
+        const fmtN = v => "C$ " + Math.round(v).toLocaleString("es-NI");
+
+        // Timeline SVG mini-chart
+        const maxInv = Math.max(...tl.map(t => t.inversion), 1);
+        const W = 600, H = 120, PAD = 10;
+        const xOf = (i) => PAD + (i / (tl.length - 1)) * (W - PAD * 2);
+        const yOf = (v) => H - PAD - (v / maxInv) * (H - PAD * 2);
+        const pathInv = tl.map((t, i) => `${i === 0 ? "M" : "L"}${xOf(i)},${yOf(t.inversion)}`).join(" ");
+        const pathVta = tl.map((t, i) => `${i === 0 ? "M" : "L"}${xOf(i)},${yOf(t.ventas)}`).join(" ");
+
+        return (
+          <div style={{ marginBottom: 16 }}>
+            {/* ── Indicador de fase ── */}
+            <div style={{ background: cfg.bg, border: `1.5px solid ${cfg.border}`, borderRadius: 14, padding: "16px 20px", marginBottom: 12, display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ fontSize: 32, flexShrink: 0 }}>{cfg.emoji}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: 16, color: cfg.color }}>{cfg.label}</div>
+                <div style={{ fontSize: 13, color: COLOR.textSec, marginTop: 3 }}>{stats.faseDescripcion}</div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ fontSize: 11, color: COLOR.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Recuperado</div>
+                <div style={{ fontWeight: 800, fontSize: 20, color: cfg.color }}>
+                  {roi.invertido > 0 ? Math.round((stats.roiHato ? (stats.roiHato.invertido > 0 ? Math.min(100, (roi.roiPorcentaje + 100)) : 0) : 0)) : 0}%
+                </div>
+                <div style={{ fontSize: 11, color: COLOR.muted }}>del capital invertido</div>
+              </div>
+            </div>
+
+            {/* ── 3 cards: ROI · Base reproductora · Proyección lote ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+
+              {/* ROI del Hato */}
+              <div style={{ ...cardStyle, padding: 0 }}>
+                <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}` }}>
+                  <div style={{ fontSize: 11, color: COLOR.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>📈 ROI del Hato</div>
+                </div>
+                <div style={{ padding: "12px 16px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, color: COLOR.textSec }}>Lo que invertiste</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: COLOR.text }}>{fmtN(roi.invertido || 0)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, color: COLOR.textSec }}>Valor del hato hoy</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: COLOR.blue }}>{fmtN(roi.valorHato || 0)}</span>
+                  </div>
+                  <div style={{ height: 1, background: COLOR.border, margin: "8px 0" }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 12, color: COLOR.textSec }}>Ganancia latente</span>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: (roi.gananciasLatente || 0) >= 0 ? COLOR.green : COLOR.red }}>{fmtN(roi.gananciasLatente || 0)}</span>
+                  </div>
+                  <div style={{ marginTop: 10, background: "#F0FDF4", borderRadius: 8, padding: "6px 10px", textAlign: "center" }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: COLOR.green }}>+{Math.round(roi.roiPorcentaje || 0)}% ROI</span>
+                    <span style={{ fontSize: 11, color: COLOR.muted, marginLeft: 6 }}>sobre la inversión</span>
+                  </div>
+                  <div style={{ marginTop: 8, fontSize: 11, color: COLOR.muted, textAlign: "center" }}>Este valor se realiza cuando vendes</div>
+                </div>
+              </div>
+
+              {/* Base reproductora */}
+              <div style={{ ...cardStyle, padding: 0 }}>
+                <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}` }}>
+                  <div style={{ fontSize: 11, color: COLOR.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>🐄 Base Reproductora</div>
+                </div>
+                <div style={{ padding: "12px 16px" }}>
+                  {[
+                    { label: "Vacas reproductoras", val: base.vacas || 0, color: COLOR.green },
+                    { label: "Sementales",           val: base.sementales || 0, color: COLOR.blue },
+                    { label: "Novillas de reemplazo",val: base.novillas || 0, color: COLOR.purple },
+                  ].map(r => (
+                    <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                      <span style={{ fontSize: 12, color: COLOR.textSec }}>{r.label}</span>
+                      <span style={{ fontSize: 16, fontWeight: 800, color: r.color }}>{r.val}</span>
+                    </div>
+                  ))}
+                  <div style={{ height: 1, background: COLOR.border, margin: "6px 0 10px" }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: COLOR.orange }}>Candidatos a venta</span>
+                    <span style={{ fontSize: 16, fontWeight: 800, color: COLOR.orange }}>{base.candidatosVenta || 0}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: COLOR.muted, marginTop: 4 }}>Por edad (&gt;18 meses) o peso (&gt;350 lb)</div>
+                </div>
+              </div>
+
+              {/* Proyección primer lote */}
+              <div style={{ ...cardStyle, padding: 0 }}>
+                <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}` }}>
+                  <div style={{ fontSize: 11, color: COLOR.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>💰 Proyección Primer Lote</div>
+                </div>
+                <div style={{ padding: "12px 16px" }}>
+                  <div style={{ textAlign: "center", padding: "8px 0 12px" }}>
+                    <div style={{ fontSize: 36, fontWeight: 900, color: COLOR.green }}>{base.candidatosVenta || 0}</div>
+                    <div style={{ fontSize: 12, color: COLOR.textSec }}>animales listos para vender</div>
+                  </div>
+                  <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", textAlign: "center", marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: COLOR.muted, fontWeight: 600 }}>Si vendes ese lote hoy</div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: COLOR.green, marginTop: 4 }}>{fmtN(base.valorProyectado || 0)}</div>
+                  </div>
+                  <div style={{ fontSize: 11, color: COLOR.muted, textAlign: "center" }}>
+                    Precio estimado por animal sin publicar: C$18,000
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Línea de tiempo: inversión vs ventas acumuladas ── */}
+            {tl.length > 1 && (
+              <div style={{ ...cardStyle, padding: 0 }}>
+                <div style={{ padding: "14px 20px 10px", borderBottom: `1px solid ${COLOR.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: COLOR.text }}>Línea de tiempo — Inversión vs Ventas acumuladas</div>
+                    <div style={{ fontSize: 11, color: COLOR.muted, marginTop: 2 }}>Últimos 12 meses · El cruce de las líneas marca el punto de equilibrio</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 14, fontSize: 12 }}>
+                    <span><span style={{ display: "inline-block", width: 12, height: 3, background: "#DC2626", borderRadius: 2, verticalAlign: "middle", marginRight: 4 }} />Inversión acumulada</span>
+                    <span><span style={{ display: "inline-block", width: 12, height: 3, background: COLOR.green, borderRadius: 2, verticalAlign: "middle", marginRight: 4 }} />Ventas acumuladas</span>
+                  </div>
+                </div>
+                <div style={{ padding: "16px 20px 12px", overflowX: "auto" }}>
+                  <svg viewBox={`0 0 ${W} ${H + 20}`} style={{ width: "100%", minWidth: 400 }}>
+                    {/* Grid lines */}
+                    {[0.25, 0.5, 0.75, 1].map(r => (
+                      <line key={r} x1={PAD} y1={yOf(maxInv * r)} x2={W - PAD} y2={yOf(maxInv * r)}
+                        stroke={COLOR.border} strokeWidth="1" strokeDasharray="4 4" />
+                    ))}
+                    {/* Inversión */}
+                    <path d={pathInv} fill="none" stroke="#DC2626" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    {/* Ventas */}
+                    <path d={pathVta} fill="none" stroke={COLOR.green} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    {/* Puntos finales */}
+                    <circle cx={xOf(tl.length - 1)} cy={yOf(tl[tl.length - 1].inversion)} r="4" fill="#DC2626" />
+                    <circle cx={xOf(tl.length - 1)} cy={yOf(tl[tl.length - 1].ventas)} r="4" fill={COLOR.green} />
+                    {/* Labels eje X */}
+                    {tl.filter((_, i) => i % 2 === 0 || i === tl.length - 1).map((t, _, arr) => {
+                      const origIdx = tl.indexOf(t);
+                      return (
+                        <text key={origIdx} x={xOf(origIdx)} y={H + 16} textAnchor="middle" fontSize="9" fill={COLOR.muted}>{t.mes}</text>
+                      );
+                    })}
+                  </svg>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* ── GRÁFICA FINANCIERA — ancho completo ── */}
       <div style={{ ...cardStyle, marginBottom: 16 }}>
         <div style={{ padding: "16px 20px 0", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>

@@ -103,6 +103,70 @@ router.get("/", async (req, res, next) => {
       graficaMeses.push({ mes, ingresos, gastos, flujoNeto: ingresos - gastos });
     }
 
+    // ── Fase de la ganadería ──
+    const ratioRecuperacion = capitalInvertido > 0 ? totalVentasCobradas / capitalInvertido : 0;
+    let fase, faseDescripcion, faseColor;
+    if (ratioRecuperacion < 0.25) {
+      fase = "INVERSION";
+      faseDescripcion = "Estás construyendo tu hato. Todo lo invertido está creciendo en valor dentro de tus animales.";
+      faseColor = "rojo";
+    } else if (ratioRecuperacion < 0.75) {
+      fase = "TRANSICION";
+      faseDescripcion = "Tu hato ya genera ingresos pero aún no recupera la inversión total. Vas en buen camino.";
+      faseColor = "amarillo";
+    } else {
+      fase = "PRODUCTIVA";
+      faseDescripcion = "Tu ganadería ya genera retornos sobre la inversión. El hato trabaja para ti.";
+      faseColor = "verde";
+    }
+
+    // ── ROI del hato ──
+    const gananciasLatente = valorEstimadoHato - capitalInvertido;
+    const roiPorcentaje = capitalInvertido > 0 ? (gananciasLatente / capitalInvertido) * 100 : 0;
+
+    // ── Proyección de venta: animales listos (novillos/novillas > 18 meses o > 350 lb) ──
+    const animalesCompletos = await prisma.animal.findMany({
+      where: { fincaId, estado: "ACTIVO" },
+      select: { sexo: true, fechaNacimiento: true, pesoActual: true, precioVenta: true, estadoComercial: true },
+    });
+    const candidatosVenta = animalesCompletos.filter(a => {
+      const edadMeses = a.fechaNacimiento
+        ? (ahora - new Date(a.fechaNacimiento)) / (1000 * 60 * 60 * 24 * 30)
+        : null;
+      const pestoListo = a.pesoActual && a.pesoActual >= 350;
+      const edadLista = edadMeses && edadMeses >= 18;
+      const noReproductora = a.estadoComercial !== "RESERVADO";
+      return noReproductora && (pestoListo || edadLista);
+    });
+    const valorProyectadoLote = candidatosVenta.reduce((s, a) => s + (a.precioVenta || 18000), 0);
+
+    // ── Base reproductora ──
+    const baseReproductora = {
+      vacas:              animales.filter(a => a.sexo === "HEMBRA" && (!a.fechaNacimiento || (ahora - new Date(a.fechaNacimiento)) / (1000*60*60*24*365) >= 2)).length,
+      sementales:         animales.filter(a => a.sexo === "MACHO"  && (!a.fechaNacimiento || (ahora - new Date(a.fechaNacimiento)) / (1000*60*60*24*365) >= 2)).length,
+      novillas:           novillas,
+      candidatosVenta:    candidatosVenta.length,
+      valorProyectado:    valorProyectadoLote,
+    };
+
+    // ── Línea de tiempo: inversión acumulada mes a mes (12 meses) ──
+    const timelineInversion = [];
+    let acumuladoInv = 0;
+    let acumuladoVentas = 0;
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1);
+      const f = new Date(ahora.getFullYear(), ahora.getMonth() - i + 1, 1);
+      const mes = d.toLocaleDateString("es", { month: "short", year: "2-digit" });
+      const [cmpMes, gstMes, vtaMes] = await Promise.all([
+        prisma.compra.aggregate({ where: { fincaId, fecha: { gte: d, lt: f } }, _sum: { total: true } }),
+        prisma.gasto.aggregate({ where: { fincaId, fecha: { gte: d, lt: f } }, _sum: { monto: true } }),
+        prisma.venta.aggregate({ where: { fincaId, fecha: { gte: d, lt: f }, estadoPago: "PAGADO", estadoVenta: { not: "REVERSADA" } }, _sum: { precioNIO: true } }),
+      ]);
+      acumuladoInv    += (cmpMes._sum.total || 0) + (gstMes._sum.monto || 0);
+      acumuladoVentas += (vtaMes._sum.precioNIO || 0);
+      timelineInversion.push({ mes, inversion: acumuladoInv, ventas: acumuladoVentas });
+    }
+
     // ── Indicadores productivos ──
     const animalesConPeso = animales.filter(a => a.pesoActual);
     const pesoPromedio = animalesConPeso.length > 0
@@ -144,6 +208,10 @@ router.get("/", async (req, res, next) => {
       nacimientosMes: partosMes,
       natalidad,
       mortalidad,
+      fase, faseDescripcion, faseColor,
+      roiHato: { invertido: capitalInvertido, valorHato: valorEstimadoHato, gananciasLatente, roiPorcentaje },
+      baseReproductora,
+      timelineInversion,
       alertas: [],
     });
   } catch (err) { next(err); }
