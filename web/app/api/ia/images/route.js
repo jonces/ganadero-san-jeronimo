@@ -22,15 +22,14 @@ export async function POST(req) {
     prompt,
     n       = 1,
     size    = "1024x1024",
-    model   = "dall-e-3",
-    quality = "standard",
   } = body;
 
   if (!prompt?.trim()) {
     return NextResponse.json({ error: "prompt es requerido" }, { status: 400 });
   }
 
-  const requestBody = { prompt, n, size, model, quality };
+  // dall-e-2 es compatible con todas las cuentas; dall-e-3 requiere acceso especial
+  const requestBody = { prompt, n: 1, size: "1024x1024", model: "dall-e-2" };
 
   try {
     const upstream = await fetch(OPENAI_API, {
