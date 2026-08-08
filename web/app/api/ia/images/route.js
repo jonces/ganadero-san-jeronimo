@@ -24,21 +24,27 @@ export async function POST(req) {
     size  = "1024x1024",
     model = "dall-e-3",
     quality = "standard",
-    style   = "natural",
+    style,
   } = body;
 
   if (!prompt?.trim()) {
     return NextResponse.json({ error: "prompt es requerido" }, { status: 400 });
   }
 
+  // DALL-E 3 solo acepta style "vivid" o "natural"; omitir si no es válido
+  const validStyles = ["vivid", "natural"];
+  const requestBody = { prompt, n, size, model, quality, response_format: "url" };
+  if (style && validStyles.includes(style)) requestBody.style = style;
+
   try {
     const upstream = await fetch(OPENAI_API, {
       method:  "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${(process.env.OPENAI_API_KEY ?? "").replace(/\s+/g, "")}`,
         "Content-Type":  "application/json",
       },
-      body: JSON.stringify({ prompt, n, size, model, quality, style, response_format: "url" }),
+      body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!upstream.ok) {
