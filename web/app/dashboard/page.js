@@ -1280,6 +1280,8 @@ export default function DashboardPage() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState("mes");
+  const [mesSeleccionado, setMesSeleccionado] = useState(new Date().getMonth() + 1); // 1-12
+  const [añoSeleccionado, setAñoSeleccionado] = useState(new Date().getFullYear());
   const [moneda, setMoneda] = useState("NIO");
   const [tipoCambio, setTipoCambio] = useState(36.5);
   const [usuario, setUsuario] = useState(null);
@@ -1295,14 +1297,14 @@ export default function DashboardPage() {
   const cargar = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api(`/dashboard?periodo=${periodo}&moneda=${moneda}`);
+      const data = await api(`/dashboard?periodo=${periodo}&moneda=${moneda}&mes=${mesSeleccionado}&año=${añoSeleccionado}`);
       setStats(data);
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  }, [periodo, moneda]);
+  }, [periodo, moneda, mesSeleccionado, añoSeleccionado]);
 
   useEffect(() => {
     setUsuario(getUsuario());
@@ -1366,8 +1368,8 @@ export default function DashboardPage() {
     { iconKey: "animal",   label: "Animales activos",   valor: fmt(stats?.animalesActivos || 0, "numero"),                                sub: `${hato.enVenta || 0} en venta · ${hato.prenadas || 0} preñadas`, accentColor: COLOR.green,  iconBg: "#F0FDF4", iconColor: COLOR.green,  trend: null,         href: "/inventario"   },
     { iconKey: "hato",     label: "Valor del hato",     valor: fmt(stats?.valorEstimadoHato || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.valorEstimadoHato, moneda, tc),  sub: "Precio de venta estimado",                              accentColor: COLOR.blue,   iconBg: "#EFF6FF", iconColor: COLOR.blue,   trend: null,         href: "/inventario"   },
     { iconKey: "capital",  label: "Capital invertido",  valor: fmt(stats?.capitalInvertido || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.capitalInvertido, moneda, tc),   sub: "Compras + gastos históricos",                           accentColor: COLOR.purple, iconBg: "#F5F3FF", iconColor: COLOR.purple, trend: null,         href: "/finanzas"     },
-    { iconKey: "ventas",   label: "Ventas del mes",     valor: fmt(stats?.ventasMes?.total || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.ventasMes?.total, moneda, tc),   sub: `${stats?.ventasMes?.cantidad || 0} transacciones`,      accentColor: COLOR.green,  iconBg: "#F0FDF4", iconColor: COLOR.green,  trend: tendVentas,   href: "/ventas"       },
-    { iconKey: "gastos",   label: "Gastos del mes",     valor: fmt(stats?.gastosMes?.total || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.gastosMes?.total, moneda, tc),   sub: "Total de egresos registrados",                          accentColor: COLOR.red,    iconBg: "#FEF2F2", iconColor: COLOR.red,    trend: tendGastos,   href: "/gastos"       },
+    { iconKey: "ventas",   label: `Ventas · ${["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][mesSeleccionado-1]} ${añoSeleccionado}`, valor: fmt(stats?.ventasMes?.total || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.ventasMes?.total, moneda, tc),   sub: `${stats?.ventasMes?.cantidad || 0} transacciones`,      accentColor: COLOR.green,  iconBg: "#F0FDF4", iconColor: COLOR.green,  trend: tendVentas,   href: "/ventas"       },
+    { iconKey: "gastos",   label: `Gastos · ${["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][mesSeleccionado-1]} ${añoSeleccionado}`,  valor: fmt(stats?.gastosMes?.total || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.gastosMes?.total, moneda, tc),   sub: "Total de egresos registrados",                          accentColor: COLOR.red,    iconBg: "#FEF2F2", iconColor: COLOR.red,    trend: tendGastos,   href: "/gastos"       },
     { iconKey: "ganancia", label: "Ganancia neta",      valor: fmt(stats?.gananciaNeta || 0, "moneda", moneda, tc),      equiv: fmtSub(stats?.gananciaNeta, moneda, tc),        sub: `Margen: ${(stats?.margenGanancia || 0).toFixed(1)}%`,   accentColor: COLOR.purple, iconBg: "#F5F3FF", iconColor: COLOR.purple, trend: tendGanancia, href: "/finanzas"     },
     { iconKey: "cuentas",  label: "Cuentas por pagar",  valor: fmt(stats?.cuentasPagar || 0, "moneda", moneda, tc),      equiv: fmtSub(stats?.cuentasPagar, moneda, tc),        sub: "Pagos pendientes",                                      accentColor: COLOR.orange, iconBg: "#FFF7ED", iconColor: COLOR.orange, trend: null,         href: "/cuentas-pagar"},
     { iconKey: "caja",     label: "Caja disponible",    valor: fmt(stats?.cajaDisponible || 0, "moneda", moneda, tc),    equiv: fmtSub(stats?.cajaDisponible, moneda, tc),      sub: "Cobrado menos gastos",                                  accentColor: COLOR.green,  iconBg: "#F0FDF4", iconColor: COLOR.green,  trend: null,         href: "/finanzas"     },
@@ -1465,19 +1467,32 @@ export default function DashboardPage() {
             </svg>
           </div>
 
-          {/* ── Selector de período ── */}
+          {/* ── Selector de mes ── */}
           <div style={{ position:"relative", flexShrink:0 }}>
             <select
               style={{ ...TB.sel, paddingRight:26, appearance:"none", WebkitAppearance:"none" }}
-              value={periodo}
-              onChange={e => setPeriodo(e.target.value)}
+              value={mesSeleccionado}
+              onChange={e => setMesSeleccionado(Number(e.target.value))}
             >
-              <option value="mes">Este mes</option>
-              <option value="hoy">Hoy</option>
-              <option value="7d">Últ. 7 días</option>
-              <option value="30d">Últ. 30 días</option>
-              <option value="mes_anterior">Mes anterior</option>
-              <option value="año">Este año</option>
+              {["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].map((m,i) => (
+                <option key={i+1} value={i+1}>{m}</option>
+              ))}
+            </select>
+            <svg style={{ position:"absolute", right:7, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }} width="10" height="10" viewBox="0 0 10 6" fill="none">
+              <path d="M1 1l4 4 4-4" stroke={COLOR.muted} strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+
+          {/* ── Selector de año ── */}
+          <div style={{ position:"relative", flexShrink:0 }}>
+            <select
+              style={{ ...TB.sel, paddingRight:26, appearance:"none", WebkitAppearance:"none" }}
+              value={añoSeleccionado}
+              onChange={e => setAñoSeleccionado(Number(e.target.value))}
+            >
+              {[new Date().getFullYear(), new Date().getFullYear()-1, new Date().getFullYear()-2].map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
             </select>
             <svg style={{ position:"absolute", right:7, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }} width="10" height="10" viewBox="0 0 10 6" fill="none">
               <path d="M1 1l4 4 4-4" stroke={COLOR.muted} strokeWidth="1.5" strokeLinecap="round"/>

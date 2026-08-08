@@ -9,8 +9,12 @@ router.get("/", async (req, res, next) => {
   try {
     const fincaId = req.user.fincaId;
     const ahora = new Date();
-    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
-    const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1);
+
+    // Soporte para ?mes=8&año=2026 (mes 1-12)
+    const mesParam  = req.query.mes  ? parseInt(req.query.mes,  10) - 1 : ahora.getMonth(); // 0-indexed
+    const añoParam  = req.query.año  ? parseInt(req.query.año,  10)     : ahora.getFullYear();
+    const inicioMes = new Date(añoParam, mesParam, 1);
+    const finMes    = new Date(añoParam, mesParam + 1, 1);
 
     // ── Nombre de la finca ──
     const fincaData = await prisma.finca.findUnique({ where: { id: fincaId }, select: { nombre: true } });
