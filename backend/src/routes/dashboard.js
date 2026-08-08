@@ -16,9 +16,15 @@ router.get("/", async (req, res, next) => {
     const inicioMes = new Date(añoParam, mesParam, 1);
     const finMes    = new Date(añoParam, mesParam + 1, 1);
 
-    // ── Nombre de la finca ──
-    const fincaData = await prisma.finca.findUnique({ where: { id: fincaId }, select: { nombre: true } });
-    const nombreFinca = fincaData?.nombre || "Mi Finca";
+    // ── Nombre de la finca + config crecimiento ──
+    const fincaData = await prisma.finca.findUnique({
+      where: { id: fincaId },
+      select: { nombre: true, precioLibra: true, precioReproductora: true, metaAnimales: true },
+    });
+    const nombreFinca        = fincaData?.nombre           || "Mi Finca";
+    const precioLibra        = fincaData?.precioLibra       || 85;
+    const precioReproductora = fincaData?.precioReproductora|| 29000;
+    const metaAnimales       = fincaData?.metaAnimales      || 150;
 
     // ── Animales activos ──
     const animales = await prisma.animal.findMany({
@@ -124,29 +130,56 @@ router.get("/", async (req, res, next) => {
     const gananciasLatente = valorEstimadoHato - capitalInvertido;
     const roiPorcentaje = capitalInvertido > 0 ? (gananciasLatente / capitalInvertido) * 100 : 0;
 
-    // ── Proyección de venta: animales listos (novillos/novillas > 18 meses o > 350 lb) ──
+    // ── Plan de crecimiento: novillos/machos listos para venta ──
     const animalesCompletos = await prisma.animal.findMany({
       where: { fincaId, estado: "ACTIVO" },
-      select: { sexo: true, fechaNacimiento: true, pesoActual: true, precioVenta: true, estadoComercial: true },
+      select: { id: true, identificador: true, nombre: true, sexo: true, fechaNacimiento: true, pesoActual: true, precioVenta: true, estadoComercial: true, raza: true },
     });
-    const candidatosVenta = animalesCompletos.filter(a => {
-      const edadMeses = a.fechaNacimiento
-        ? (ahora - new Date(a.fechaNacimiento)) / (1000 * 60 * 60 * 24 * 30)
-        : null;
-      const pestoListo = a.pesoActual && a.pesoActual >= 350;
+
+    const novichoListos = animalesCompletos.filter(a => {
+      if (a.sexo !== "MACHO") return false;
+      if (a.estadoComercial === "RESERVADO") return false;
+      const edadMeses = a.fechaNacimiento ? (ahora - new Date(a.fechaNacimiento)) / (1000*60*60*24*30) : null;
+      const pesoListo = a.pesoActual && a.pesoActual >= 400;
       const edadLista = edadMeses && edadMeses >= 18;
-      const noReproductora = a.estadoComercial !== "RESERVADO";
-      return noReproductora && (pestoListo || edadLista);
+      return pesoListo || edadLista;
     });
-    const valorProyectadoLote = candidatosVenta.reduce((s, a) => s + (a.precioVenta || 18000), 0);
+
+    const valorLotePorLibra = novichoListos.reduce((s, a) => s + ((a.pesoActual || 0) * precioLibra), 0);
+    const reproductrasQueCompras = valorLotePorLibra > 0 ? Math.floor(valorLotePorLibra / precioReproductora) : 0;
+    const sobrante = valorLotePorLibra - (reproductrasQueCompras * precioReproductora);
+
+    const planCrecimiento = {
+      metaAnimales,
+      animalesActuales:     animalesActivos,
+      progresoPct:          Math.min(100, Math.round((animalesActivos / metaAnimales) * 100)),
+      animalesFaltantes:    Math.max(0, metaAnimales - animalesActivos),
+      precioLibra,
+      precioReproductora,
+      novichoListos:        novichoListos.map(a => ({
+        id: a.id,
+        identificador: a.identificador,
+        nombre: a.nombre,
+        raza: a.raza,
+        pesoActual: a.pesoActual || 0,
+        valorEstimado: (a.pesoActual || 0) * precioLibra,
+      })),
+      totalNovichoListos:   novichoListos.length,
+      valorTotalLote:       valorLotePorLibra,
+      reproductrasQueCompras,
+      sobrante,
+      animalesDespuesDeLote: animalesActivos - novichoListos.length + reproductrasQueCompras,
+    };
 
     // ── Base reproductora ──
+    const candidatosVenta = novichoListos;
+    const valorProyectadoLote = valorLotePorLibra;
     const baseReproductora = {
-      vacas:              animales.filter(a => a.sexo === "HEMBRA" && (!a.fechaNacimiento || (ahora - new Date(a.fechaNacimiento)) / (1000*60*60*24*365) >= 2)).length,
-      sementales:         animales.filter(a => a.sexo === "MACHO"  && (!a.fechaNacimiento || (ahora - new Date(a.fechaNacimiento)) / (1000*60*60*24*365) >= 2)).length,
-      novillas:           novillas,
-      candidatosVenta:    candidatosVenta.length,
-      valorProyectado:    valorProyectadoLote,
+      vacas:           animales.filter(a => a.sexo === "HEMBRA" && (!a.fechaNacimiento || (ahora - new Date(a.fechaNacimiento)) / (1000*60*60*24*365) >= 2)).length,
+      sementales:      animales.filter(a => a.sexo === "MACHO"  && (!a.fechaNacimiento || (ahora - new Date(a.fechaNacimiento)) / (1000*60*60*24*365) >= 2)).length,
+      novillas,
+      candidatosVenta: candidatosVenta.length,
+      valorProyectado: valorProyectadoLote,
     };
 
     // ── Línea de tiempo: inversión acumulada mes a mes (12 meses) ──
@@ -211,7 +244,7 @@ router.get("/", async (req, res, next) => {
       fase, faseDescripcion, faseColor,
       roiHato: { invertido: capitalInvertido, valorHato: valorEstimadoHato, gananciasLatente, roiPorcentaje },
       baseReproductora,
-      timelineInversion,
+      planCrecimiento,
       alertas: [],
     });
   } catch (err) { next(err); }

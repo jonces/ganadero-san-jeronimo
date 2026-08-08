@@ -31,6 +31,7 @@ const NAV_ITEMS_ADMIN = [
   { icon: "🛒", label: "Compras",             href: "/compras" },
   { icon: "🏭", label: "Proveedores",         href: "/proveedores" },
   { icon: "💳", label: "Finanzas",            href: "/finanzas" },
+  { icon: "📈", label: "Plan de Crecimiento", href: "/crecimiento" },
   { icon: "📑", label: "Cuentas por pagar",   href: "/cuentas-pagar" },
   { icon: "📦", label: "Insumos",             href: "/insumos" },
   { icon: "👥", label: "Personal y nómina",   href: "/equipo" },

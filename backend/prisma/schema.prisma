@@ -56,9 +56,12 @@ model Finca {
   id           String   @id @default(uuid())
   nombre       String
   ubicacion    String?
-  tipoCambio   Float    @default(36.5)
-  activa       Boolean  @default(true)
-  plan         String   @default("GRATUITO")
+  tipoCambio          Float    @default(36.5)
+  activa              Boolean  @default(true)
+  plan                String   @default("GRATUITO")
+  precioLibra         Float    @default(85)    // C$ por libra de novillo
+  precioReproductora  Float    @default(29000) // C$ precio promedio de vaca/novilla de vientre
+  metaAnimales        Int      @default(150)   // meta de cabezas de base
   createdAt    DateTime @default(now())
 
   usuarios    Usuario[]
