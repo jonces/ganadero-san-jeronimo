@@ -12,9 +12,7 @@ export class OpenAIProvider extends BaseProvider {
   }
 
   isAvailable() {
-    const ok = this.#key().length > 10;
-    console.log("[OpenAIProvider] isAvailable():", ok, "keyLen:", this.#key().length);
-    return ok;
+    return this.#key().length > 10;
   }
 
   #headers() {
@@ -37,8 +35,6 @@ export class OpenAIProvider extends BaseProvider {
       body.tool_choice = "auto";
     }
 
-    console.log("[OpenAIProvider] stream() — model:", model, "— key prefix:", process.env.OPENAI_API_KEY?.slice(0, 10));
-
     const res = await fetch(`${BASE}/chat/completions`, {
       method:  "POST",
       headers: this.#headers(),
@@ -46,12 +42,9 @@ export class OpenAIProvider extends BaseProvider {
       signal,
     });
 
-    console.log("[OpenAIProvider] HTTP status:", res.status);
-
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
       const msg = err.error?.message ?? JSON.stringify(err);
-      console.error("[OpenAIProvider] ✗ Error OpenAI:", res.status, msg);
       yield { type: "error", message: `OpenAI ${res.status}: ${msg}` };
       return;
     }
