@@ -44,17 +44,21 @@ export function useAICore({ agentId, providerId, userCtx } = {}) {
       .slice(-20)
       .map(m => ({ role: m.role, content: m.content }));
 
+    const token   = typeof window !== "undefined" ? localStorage.getItem("token") : "";
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
     try {
       const res = await fetch("/api/ai/chat", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        signal:  abortRef.current.signal,
-        body:    JSON.stringify({
-          message:  userMessage,
+        method: "POST",
+        headers,
+        signal: abortRef.current.signal,
+        body:   JSON.stringify({
+          message:    userMessage,
           history,
-          agentId:  options.agentId  ?? agentId,
+          agentId:    options.agentId    ?? agentId,
           providerId: options.providerId ?? providerId,
-          userCtx:  options.userCtx  ?? userCtx ?? {},
+          userCtx:    options.userCtx    ?? userCtx ?? {},
         }),
       });
 

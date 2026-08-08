@@ -60,7 +60,7 @@ class AICore {
    * @param {AbortSignal} req.signal
    */
   async *stream(req) {
-    const { message, history = [], agentId, providerId, overrideModel, userCtx = {}, signal } = req;
+    const { message, history = [], agentId, providerId, overrideModel, userCtx = {}, authToken = "", signal } = req;
     const startMs = Date.now();
 
     // 1. Security validation
@@ -87,7 +87,7 @@ class AICore {
     // 5. Context building
     let contextStr = "";
     try {
-      contextStr = await buildContext({ ...userCtx, agentId: agent.id });
+      contextStr = await buildContext({ ...userCtx, agentId: agent.id, authToken });
     } catch {}
 
     // 6. System prompt + tools
@@ -107,7 +107,7 @@ class AICore {
 
     try {
       // 8. Stream from provider (with tool-calling loop)
-      yield* this.#streamWithTools({ provider, model, messages, tools, signal, onToken: () => outputTokens++ });
+      yield* this.#streamWithTools({ provider, model, messages, tools, signal, authToken, onToken: () => outputTokens++ });
     } catch (e) {
       trackError({ model, provider: provider.id, agent: agent.id, error: e.message, durationMs: Date.now() - startMs });
       yield { type: "error", message: `Error IA: ${e.message}` };
@@ -123,7 +123,7 @@ class AICore {
     });
   }
 
-  async *#streamWithTools({ provider, model, messages, tools, signal, onToken }) {
+  async *#streamWithTools({ provider, model, messages, tools, signal, authToken, onToken }) {
     let loopMessages = [...messages];
     let iterations   = 0;
 
@@ -166,7 +166,7 @@ class AICore {
           pendingToolCalls.map(tc => {
             const guard = validateToolCall(tc.name, tc.args);
             if (!guard.ok) return Promise.resolve({ ok: false, data: { error: guard.reason } });
-            return executeTool(tc.name, tc.args);
+            return executeTool(tc.name, tc.args, authToken);
           })
         );
 

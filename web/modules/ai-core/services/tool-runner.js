@@ -3,20 +3,24 @@
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
-async function get(path) {
+async function get(path, authToken) {
   try {
-    const r = await fetch(`${API}${path}`, { cache: "no-store", signal: AbortSignal.timeout(8000) });
+    const headers = {};
+    if (authToken) headers["Authorization"] = authToken;
+    const r = await fetch(`${API}${path}`, { cache: "no-store", headers, signal: AbortSignal.timeout(8000) });
     return r.ok ? r.json() : null;
   } catch { return null; }
 }
 
-async function post(path, body) {
+async function post(path, body, authToken) {
   try {
+    const headers = { "Content-Type": "application/json" };
+    if (authToken) headers["Authorization"] = authToken;
     const r = await fetch(`${API}${path}`, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(body),
-      signal:  AbortSignal.timeout(8000),
+      method: "POST",
+      headers,
+      body:   JSON.stringify(body),
+      signal: AbortSignal.timeout(8000),
     });
     return r.ok ? r.json() : null;
   } catch { return null; }
@@ -73,38 +77,38 @@ async function searchRAG(query, categoria) {
   return results.slice(0, 4).map(r => r.doc);
 }
 
-export async function executeTool(name, args) {
+export async function executeTool(name, args, authToken = "") {
   const startMs = Date.now();
   try {
     let result;
 
     switch (name) {
       case "get_animals":
-        result = await get(`/dashboard`);
-        return { ok: true, data: result ?? { totalAnimales: 0, nota: "Sin datos en el backend" }, ms: Date.now() - startMs };
+        result = await get(`/animales`, authToken);
+        return { ok: true, data: result ?? [], ms: Date.now() - startMs };
 
       case "get_inventory":
-        result = await get(`/inventario`);
+        result = await get(`/insumos`, authToken);
         return { ok: true, data: result ?? [], ms: Date.now() - startMs };
 
       case "get_events":
-        result = await get(`/eventos`);
+        result = await get(`/eventos`, authToken);
         return { ok: true, data: result ?? [], ms: Date.now() - startMs };
 
       case "get_incidents":
-        result = await get(`/incidentes`);
+        result = await get(`/incidentes`, authToken);
         return { ok: true, data: result ?? [], ms: Date.now() - startMs };
 
       case "get_dashboard":
-        result = await get(`/dashboard`);
+        result = await get(`/dashboard`, authToken);
         return { ok: true, data: result ?? {}, ms: Date.now() - startMs };
 
       case "get_production":
-        result = await get(`/dashboard`);
+        result = await get(`/dashboard`, authToken);
         return { ok: true, data: { produccion: result?.produccion ?? {}, nota: "Datos del dashboard" }, ms: Date.now() - startMs };
 
       case "get_financial":
-        result = await get(`/dashboard`);
+        result = await get(`/dashboard`, authToken);
         return { ok: true, data: { ingresos: result?.ingresos, gastos: result?.gastos, utilidad: result?.utilidad ?? 0 }, ms: Date.now() - startMs };
 
       case "search_rag":
@@ -112,20 +116,19 @@ export async function executeTool(name, args) {
         return { ok: true, data: { fuentes: result, total: result.length }, ms: Date.now() - startMs };
 
       case "register_birth":
-        result = await post(`/animales`, { ...args, tipo: "nacimiento" });
+        result = await post(`/animales`, { ...args, tipo: "nacimiento" }, authToken);
         return { ok: !!result, data: result ?? { nota: "Backend no respondió" }, ms: Date.now() - startMs };
 
       case "register_treatment":
-        result = await post(`/incidentes`, { ...args, tipo: "tratamiento" });
+        result = await post(`/incidentes`, { ...args, tipo: "tratamiento" }, authToken);
         return { ok: !!result, data: result ?? { nota: "Backend no respondió" }, ms: Date.now() - startMs };
 
       case "create_event":
-        result = await post(`/eventos`, args);
+        result = await post(`/eventos`, args, authToken);
         return { ok: !!result, data: result ?? { nota: "Backend no respondió" }, ms: Date.now() - startMs };
 
       case "create_alert":
-        // Alerts stored via the copiloto endpoint
-        result = await post(`/alertas`, args).catch(() => null);
+        result = await post(`/tareas`, args, authToken);
         return { ok: true, data: { created: true, ...args }, ms: Date.now() - startMs };
 
       case "generate_report":

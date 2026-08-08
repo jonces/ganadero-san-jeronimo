@@ -17,8 +17,9 @@ export async function POST(request) {
       }
 
       try {
-        const body = await request.json();
-        const core = getAICore();
+        const body      = await request.json();
+        const authToken = request.headers.get("authorization") ?? "";
+        const core      = getAICore();
 
         for await (const chunk of core.stream({
           message:       body.message,
@@ -27,6 +28,7 @@ export async function POST(request) {
           providerId:    body.providerId    ?? null,
           overrideModel: body.overrideModel ?? null,
           userCtx:       body.userCtx       ?? {},
+          authToken,
           signal:        abort.signal,
         })) {
           send(chunk);

@@ -59,15 +59,19 @@ export class OpenAICoreProvider extends IAClient {
     // Ejecutar async en background
     (async () => {
       try {
+        const token   = typeof window !== "undefined" ? localStorage.getItem("token") : "";
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
         const res = await fetch("/api/ai/chat", {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
+          method: "POST",
+          headers,
           signal,
           body: JSON.stringify({
             message:   text,
             history:   this.#buildHistory(history),
             agentId:   specialistId ?? "orquestador",
-            userCtx:   { usuario: "Propietario", empresa: "Mi Empresa", finca: "Finca San Jerónimo" },
+            userCtx:   {},
           }),
         });
 

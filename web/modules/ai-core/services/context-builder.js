@@ -3,22 +3,25 @@
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
-async function safeFetch(path) {
+async function safeFetch(path, authToken) {
   try {
+    const headers = { "Content-Type": "application/json" };
+    if (authToken) headers["Authorization"] = authToken;
     const r = await fetch(`${API}${path}`, {
       cache:  "no-store",
+      headers,
       signal: AbortSignal.timeout(3000),
     });
     return r.ok ? r.json() : null;
   } catch { return null; }
 }
 
-export async function buildContext({ usuario, empresa, finca, idioma = "es-CO", agentId }) {
+export async function buildContext({ usuario, empresa, finca, idioma = "es-CO", agentId, authToken = "" }) {
   const [dashboard, eventos, incidentes, inventario] = await Promise.all([
-    safeFetch("/dashboard"),
-    safeFetch("/eventos"),
-    safeFetch("/incidentes"),
-    safeFetch("/inventario"),
+    safeFetch("/dashboard", authToken),
+    safeFetch("/eventos", authToken),
+    safeFetch("/incidentes", authToken),
+    safeFetch("/insumos", authToken),
   ]);
 
   const now    = new Date().toLocaleString("es-CO", { dateStyle: "full", timeStyle: "short" });
