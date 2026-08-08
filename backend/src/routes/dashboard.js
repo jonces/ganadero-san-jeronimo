@@ -59,26 +59,20 @@ router.get("/", async (req, res, next) => {
     const gananciaNeta = ventasMesTotal - costoAnimalesVendidos - gastosMesTotal;
     const margenGanancia = ventasMesTotal > 0 ? (gananciaNeta / ventasMesTotal) * 100 : 0;
 
-    // ── Capital invertido = costoCompra animales + todos los gastos + todas las compras ──
-    const [animalesComprados, todosLosGastos, todasLasCompras] = await Promise.all([
-      prisma.animal.findMany({ where: { fincaId, madreId: null, costoCompra: { not: null } }, select: { costoCompra: true } }),
+    // ── Capital invertido = TODAS las compras + todos los gastos históricos ──
+    const [todosLosGastos, todasLasCompras, todasVentasCobradas] = await Promise.all([
       prisma.gasto.findMany({ where: { fincaId }, select: { monto: true } }),
-      prisma.compra.findMany({ where: { fincaId, tipo: { not: "ANIMAL" } }, select: { total: true } }),
+      prisma.compra.findMany({ where: { fincaId }, select: { total: true } }),
+      prisma.venta.findMany({ where: { fincaId, estadoPago: "PAGADO", estadoVenta: { not: "REVERSADA" } }, select: { precioNIO: true } }),
     ]);
-    const totalCostoAnimales = animalesComprados.reduce((s, a) => s + (a.costoCompra || 0), 0);
-    const totalGastosHistorico = todosLosGastos.reduce((s, g) => s + (g.monto || 0), 0);
-    const totalComprasOtros = todasLasCompras.reduce((s, c) => s + (c.total || 0), 0);
-    const capitalInvertido = totalCostoAnimales + totalGastosHistorico + totalComprasOtros;
+    const totalGastosHistorico  = todosLosGastos.reduce((s, g) => s + (g.monto  || 0), 0);
+    const totalTodasCompras     = todasLasCompras.reduce((s, c) => s + (c.total  || 0), 0);
+    const totalVentasCobradas   = todasVentasCobradas.reduce((s, v) => s + (v.precioNIO || 0), 0);
+    const capitalInvertido      = totalTodasCompras + totalGastosHistorico;
 
-    // ── Caja disponible ──
-    const todosGastosPagados = await prisma.gasto.findMany({ where: { fincaId }, select: { monto: true } });
-    const totalGastosPagados = todosGastosPagados.reduce((s, g) => s + (g.monto || 0), 0);
-    const todasVentasCobradas = await prisma.venta.findMany({
-      where: { fincaId, estadoPago: "PAGADO", estadoVenta: { not: "REVERSADA" } },
-      select: { precioNIO: true },
-    });
-    const totalVentasCobradas = todasVentasCobradas.reduce((s, v) => s + (v.precioNIO || 0), 0);
-    const cajaDisponible = totalVentasCobradas - totalGastosPagados;
+    // ── Caja disponible = ventas cobradas − gastos − compras ──
+    const totalGastosPagados = totalGastosHistorico;
+    const cajaDisponible     = totalVentasCobradas - totalGastosPagados - totalTodasCompras;
 
     // ── Valor estimado del hato ──
     // Valor hato: usa precioVenta del animal si tiene, sino C$15,000 por defecto

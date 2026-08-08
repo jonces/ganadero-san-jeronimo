@@ -41,6 +41,8 @@ export default function ComprasPage() {
   const [guardando, setGuardando] = useState(false);
   const [animales, setAnimales] = useState([]);
   const [busqAnimal, setBusqAnimal] = useState("");
+  const [modoAnimal, setModoAnimal] = useState("nuevo"); // "nuevo" | "existente"
+  const [nuevoAnimal, setNuevoAnimal] = useState({ identificador: "", nombre: "", raza: "", sexo: "HEMBRA", pesoActual: "" });
 
   async function cargar() {
     setLoading(true);
@@ -64,6 +66,8 @@ export default function ComprasPage() {
   useEffect(() => {
     if (form.tipo === "ANIMAL") {
       api("/animales").then(d => setAnimales(Array.isArray(d) ? d : (d.items || []))).catch(() => {});
+      setModoAnimal("nuevo");
+      setNuevoAnimal({ identificador: "", nombre: "", raza: "", sexo: "HEMBRA", pesoActual: "" });
     }
   }, [form.tipo]);
 
@@ -86,17 +90,35 @@ export default function ComprasPage() {
 
   async function guardar() {
     if (!form.descripcion || !form.precioUnit) return alert("Completa descripción y precio");
-    if (form.tipo === "ANIMAL" && (!form.animalesIds || form.animalesIds.length === 0)) return alert("Selecciona al menos un animal");
     setGuardando(true);
     try {
+      let animalesIds = form.animalesIds;
+
+      if (form.tipo === "ANIMAL" && modoAnimal === "nuevo") {
+        if (!nuevoAnimal.identificador.trim()) { alert("El arete/identificador del animal es requerido"); setGuardando(false); return; }
+        const animal = await api("/animales", { method: "POST", body: {
+          identificador: nuevoAnimal.identificador.trim(),
+          nombre:        nuevoAnimal.nombre.trim() || null,
+          raza:          nuevoAnimal.raza.trim() || null,
+          sexo:          nuevoAnimal.sexo,
+          pesoActual:    nuevoAnimal.pesoActual ? Number(nuevoAnimal.pesoActual) : null,
+          costoCompra:   precioUnitNum,
+          origen:        "COMPRADO",
+        }});
+        animalesIds = [animal.id];
+      } else if (form.tipo === "ANIMAL" && modoAnimal === "existente" && (!animalesIds || animalesIds.length === 0)) {
+        alert("Selecciona al menos un animal"); setGuardando(false); return;
+      }
+
       await api("/compras", { method: "POST", body: {
         ...form,
-        cantidad: cantidadAnimales,
-        precioUnit: precioUnitNum,
-        animalesIds: form.animalesIds,
-      } });
+        cantidad:    form.tipo === "ANIMAL" ? animalesIds.length : Number(form.cantidad || 1),
+        precioUnit:  precioUnitNum,
+        animalesIds,
+      }});
       setShowModal(false);
       setForm(FORM_VACIO);
+      setNuevoAnimal({ identificador: "", nombre: "", raza: "", sexo: "HEMBRA", pesoActual: "" });
       await cargar();
     } catch (e) { alert(e.message); }
     finally { setGuardando(false); }
@@ -206,73 +228,89 @@ export default function ComprasPage() {
               </select>
             </div>
 
-            {/* Selector multi-animal */}
+            {/* Sección ANIMAL */}
             {form.tipo === "ANIMAL" && (
-              <div style={{ marginBottom: 14, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec }}>
-                    Animales comprados *
-                    <span style={{ fontWeight: 400, color: T.textLight }}> — solo comprados (crías nacidas en finca no aplican)</span>
-                  </div>
-                  {form.animalesIds.length > 0 && (
-                    <span style={{ background: T.green, color: "#fff", borderRadius: 99, fontSize: 11, fontWeight: 800, padding: "2px 10px" }}>
-                      {form.animalesIds.length} seleccionado{form.animalesIds.length > 1 ? "s" : ""}
-                    </span>
-                  )}
+              <div style={{ marginBottom: 14 }}>
+                {/* Toggle nuevo / existente */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                  {[{ key: "nuevo", label: "🐄 Registrar nuevo animal" }, { key: "existente", label: "🔗 Vincular a existente" }].map(opt => (
+                    <button key={opt.key} onClick={() => setModoAnimal(opt.key)} type="button"
+                      style={{ flex: 1, padding: "8px 0", borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: "pointer", border: `2px solid ${modoAnimal === opt.key ? T.green : T.border}`, background: modoAnimal === opt.key ? "#F0FDF4" : T.white, color: modoAnimal === opt.key ? T.green : T.textSec, transition: "all .15s" }}>
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
-                <input placeholder="Buscar por arete, raza o nombre..." value={busqAnimal} onChange={e => setBusqAnimal(e.target.value)}
-                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box", background: T.white }} />
-                <div style={{ maxHeight: 300, overflowY: "auto", borderRadius: 8, border: `1px solid ${T.border}`, background: T.white }}>
-                  {animalesFiltrados.length === 0 ? (
-                    <div style={{ padding: 16, color: T.textLight, fontSize: 13, textAlign: "center" }}>No se encontraron animales</div>
-                  ) : animalesFiltrados.map(a => {
-                    const yaSelec = (form.animalesIds || []).includes(a.id);
-                    const foto = a.media?.find(m => m.tipo === "imagen")?.url
-                      || a.media?.find(m => m.url)?.url
-                      || null;
-                    return (
-                      <div key={a.id}
-                        onClick={() => toggleAnimal(a.id)}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 10,
-                          padding: "9px 12px", borderBottom: `1px solid ${T.border}`,
-                          cursor: "pointer",
-                          background: yaSelec ? "#DCFCE7" : T.white,
-                          transition: "background .15s",
-                        }}>
-                        {/* Foto */}
-                        <div style={{ width: 60, height: 60, borderRadius: 8, overflow: "hidden", flexShrink: 0, border: `2px solid ${yaSelec ? T.green : T.border}`, background: "#F1F5F9" }}>
-                          {foto
-                            ? <img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                                onError={e => { e.target.style.display = "none"; e.target.parentNode.style.background = "#E2E8F0"; }} />
-                            : <div style={{ width: "100%", height: "100%", background: "#E2E8F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#94A3B8", fontWeight: 600 }}>SIN<br/>FOTO</div>}
-                        </div>
-                        {/* Info */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 800, fontSize: 15, color: yaSelec ? T.green : T.text }}>
-                            #{a.arete || "Sin arete"}
-                          </div>
-                          <div style={{ fontSize: 12, color: T.textSec }}>{a.raza || "Sin raza"} · {a.sexo === "MACHO" ? "Macho" : "Hembra"}</div>
-                          {a.costoCompra && (
-                            <div style={{ fontSize: 11, color: T.orange, marginTop: 1, fontWeight: 600 }}>
-                              Costo anterior: C$ {Number(a.costoCompra).toLocaleString("es-NI")} — se actualizará
-                            </div>
-                          )}
-                        </div>
-                        {/* Check */}
-                        {yaSelec
-                          ? <div style={{ width: 24, height: 24, borderRadius: "50%", background: T.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              <span style={{ color: "#fff", fontSize: 13, fontWeight: 900 }}>✓</span>
-                            </div>
-                          : <div style={{ width: 24, height: 24, borderRadius: "50%", border: `2px solid ${T.border}`, flexShrink: 0 }} />
-                        }
+
+                {/* Modo: NUEVO ANIMAL */}
+                {modoAnimal === "nuevo" && (
+                  <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: 14 }}>
+                    <p style={{ margin: "0 0 10px", fontSize: 12, color: T.textSec, fontWeight: 600 }}>Datos del animal que estás comprando</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <div style={{ gridColumn: "1 / -1" }}>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: T.textSec, display: "block", marginBottom: 4 }}>Arete / Identificador *</label>
+                        <input value={nuevoAnimal.identificador} onChange={e => setNuevoAnimal(n => ({ ...n, identificador: e.target.value }))}
+                          placeholder="Ej: 041" style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }} />
                       </div>
-                    );
-                  })}
-                </div>
-                {form.animalesIds.length > 0 && (
-                  <div style={{ marginTop: 8, fontSize: 12, color: T.green, fontWeight: 700 }}>
-                    ✓ {form.animalesIds.length} animal{form.animalesIds.length > 1 ? "es" : ""} seleccionado{form.animalesIds.length > 1 ? "s" : ""} — el precio se guardará como costo base de cada uno
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: T.textSec, display: "block", marginBottom: 4 }}>Nombre</label>
+                        <input value={nuevoAnimal.nombre} onChange={e => setNuevoAnimal(n => ({ ...n, nombre: e.target.value }))}
+                          placeholder="Opcional" style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: T.textSec, display: "block", marginBottom: 4 }}>Raza</label>
+                        <input value={nuevoAnimal.raza} onChange={e => setNuevoAnimal(n => ({ ...n, raza: e.target.value }))}
+                          placeholder="Ej: Brahman" style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: T.textSec, display: "block", marginBottom: 4 }}>Sexo</label>
+                        <select value={nuevoAnimal.sexo} onChange={e => setNuevoAnimal(n => ({ ...n, sexo: e.target.value }))}
+                          style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }}>
+                          <option value="HEMBRA">🐄 Hembra</option>
+                          <option value="MACHO">🐂 Macho</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: T.textSec, display: "block", marginBottom: 4 }}>Peso (lb)</label>
+                        <input type="number" value={nuevoAnimal.pesoActual} onChange={e => setNuevoAnimal(n => ({ ...n, pesoActual: e.target.value }))}
+                          placeholder="Opcional" style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }} />
+                      </div>
+                    </div>
+                    <p style={{ margin: "10px 0 0", fontSize: 11, color: T.green, fontWeight: 600 }}>✓ El animal se registrará automáticamente en tu inventario con el precio de compra como costo base</p>
+                  </div>
+                )}
+
+                {/* Modo: VINCULAR EXISTENTE */}
+                {modoAnimal === "existente" && (
+                  <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: T.textSec }}>Selecciona los animales</span>
+                      {form.animalesIds.length > 0 && (
+                        <span style={{ background: T.green, color: "#fff", borderRadius: 99, fontSize: 11, fontWeight: 800, padding: "2px 10px" }}>
+                          {form.animalesIds.length} seleccionado{form.animalesIds.length > 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+                    <input placeholder="Buscar por arete, raza o nombre..." value={busqAnimal} onChange={e => setBusqAnimal(e.target.value)}
+                      style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box", background: T.white }} />
+                    <div style={{ maxHeight: 240, overflowY: "auto", borderRadius: 8, border: `1px solid ${T.border}`, background: T.white }}>
+                      {animalesFiltrados.length === 0 ? (
+                        <div style={{ padding: 16, color: T.textLight, fontSize: 13, textAlign: "center" }}>No se encontraron animales</div>
+                      ) : animalesFiltrados.map(a => {
+                        const yaSelec = (form.animalesIds || []).includes(a.id);
+                        return (
+                          <div key={a.id} onClick={() => toggleAnimal(a.id)}
+                            style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderBottom: `1px solid ${T.border}`, cursor: "pointer", background: yaSelec ? "#DCFCE7" : T.white }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: yaSelec ? T.green : T.text }}>#{a.identificador || "Sin arete"}</div>
+                              <div style={{ fontSize: 12, color: T.textSec }}>{a.raza || "Sin raza"} · {a.sexo === "MACHO" ? "Macho" : "Hembra"}</div>
+                            </div>
+                            {yaSelec
+                              ? <div style={{ width: 22, height: 22, borderRadius: "50%", background: T.green, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><span style={{ color: "#fff", fontSize: 12 }}>✓</span></div>
+                              : <div style={{ width: 22, height: 22, borderRadius: "50%", border: `2px solid ${T.border}`, flexShrink: 0 }} />}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
