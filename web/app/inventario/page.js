@@ -1049,7 +1049,7 @@ export default function InventarioPage() {
             ) : (
               <>
                 {/* Tabla — escritorio */}
-                <div className="hidden sm:block" style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
+                <div style={{ display: isMobile ? "none" : "block", background: T.white, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
                   <div style={{ overflowX: "auto" }}>
                     <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
                       <thead>
@@ -1124,7 +1124,7 @@ export default function InventarioPage() {
                 </div>
 
                 {/* Tarjetas — móvil */}
-                <div className="sm:hidden" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: isMobile ? "flex" : "none", flexDirection: "column", gap: 10 }}>
                   {paginados.length === 0 ? (
                     <div style={{ textAlign: "center", color: T.textLight, padding: "48px 0" }}>Sin resultados</div>
                   ) : paginados.map(a => {
@@ -1207,8 +1207,7 @@ export default function InventarioPage() {
 
         {/* FAB móvil */}
         <button onClick={() => setShowForm(s => !s)}
-          className="sm:hidden"
-          style={{ position: "fixed", bottom: 24, right: 24, zIndex: 30, background: showForm ? "#6B7280" : "#16a34a", color: "#fff", border: "none", borderRadius: "50%", width: 56, height: 56, fontSize: 24, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          style={{ position: "fixed", bottom: 24, right: 24, zIndex: 30, background: showForm ? "#6B7280" : "#16a34a", color: "#fff", border: "none", borderRadius: "50%", width: 56, height: 56, fontSize: 24, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.2)", display: isMobile ? "flex" : "none", alignItems: "center", justifyContent: "center" }}>
           {showForm ? <IconX /> : "+"}
         </button>
 
