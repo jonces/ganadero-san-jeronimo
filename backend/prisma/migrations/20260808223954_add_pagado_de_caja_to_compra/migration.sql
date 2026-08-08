@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Compra" ADD COLUMN     "pagadoDeCaja" DOUBLE PRECISION NOT NULL DEFAULT 0;

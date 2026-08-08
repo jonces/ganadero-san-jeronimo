@@ -56,11 +56,12 @@ router.get("/", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { tipo, descripcion, proveedor, cantidad, precioUnit, fecha, factura, notas, animalesIds } = req.body;
+    const { tipo, descripcion, proveedor, cantidad, precioUnit, fecha, factura, notas, animalesIds, pagadoDeCaja } = req.body;
     const ids = Array.isArray(animalesIds) ? animalesIds : [];
     const cant = tipo === "ANIMAL" && ids.length > 0 ? ids.length : (Number(cantidad) || 1);
     const pu = Number(precioUnit);
     const total = cant * pu;
+    const montosDeCaja = Math.min(Number(pagadoDeCaja) || 0, total);
 
     const compra = await prisma.compra.create({
       data: {
@@ -71,6 +72,7 @@ router.post("/", async (req, res, next) => {
         cantidad: cant,
         precioUnit: pu,
         total,
+        pagadoDeCaja: montosDeCaja,
         fecha: fecha ? new Date(fecha + "T12:00:00") : new Date(),
         factura: factura || null,
         notas: notas || null,

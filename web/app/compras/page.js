@@ -26,7 +26,7 @@ const TIPO_COLORS = {
 
 const FORM_VACIO = {
   tipo: "INSUMO", descripcion: "", proveedor: "", cantidad: "1", precioUnit: "",
-  fecha: new Date().toISOString().slice(0, 10), factura: "", notas: "", animalesIds: [],
+  fecha: new Date().toISOString().slice(0, 10), factura: "", notas: "", animalesIds: [], pagadoDeCaja: "",
 };
 
 export default function ComprasPage() {
@@ -112,9 +112,10 @@ export default function ComprasPage() {
 
       await api("/compras", { method: "POST", body: {
         ...form,
-        cantidad:    form.tipo === "ANIMAL" ? animalesIds.length : Number(form.cantidad || 1),
-        precioUnit:  precioUnitNum,
+        cantidad:     form.tipo === "ANIMAL" ? animalesIds.length : Number(form.cantidad || 1),
+        precioUnit:   precioUnitNum,
         animalesIds,
+        pagadoDeCaja: Number(form.pagadoDeCaja) || 0,
       }});
       setShowModal(false);
       setForm(FORM_VACIO);
@@ -337,9 +338,35 @@ export default function ComprasPage() {
                 )}
               </div>
             ))}
-            <div style={{ background: T.bg, borderRadius: 8, padding: "10px 14px", marginBottom: 16, display: "flex", justifyContent: "space-between" }}>
+            {/* Total calculado */}
+            <div style={{ background: T.bg, borderRadius: 8, padding: "10px 14px", marginBottom: 12, display: "flex", justifyContent: "space-between" }}>
               <span style={{ fontWeight: 700, color: T.textSec }}>Total calculado:</span>
               <span style={{ fontWeight: 800, color: T.red, fontSize: 16 }}>{fmt(total)}</span>
+            </div>
+
+            {/* ¿Cuánto salió de la caja? */}
+            <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: 14, marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: "#92400E", marginBottom: 4 }}>
+                💰 ¿Cuánto pagaste de tu Caja disponible?
+              </div>
+              <div style={{ fontSize: 12, color: "#A16207", marginBottom: 8 }}>
+                Si usaste dinero de la caja del dashboard, escribe ese monto aquí para descontarlo. Si lo pagaste con capital propio o préstamo, déjalo en 0.
+              </div>
+              <input
+                type="number"
+                min="0"
+                max={total}
+                value={form.pagadoDeCaja ?? ""}
+                onChange={e => setForm(f => ({ ...f, pagadoDeCaja: e.target.value }))}
+                placeholder="0"
+                style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: "1px solid #FCD34D", fontSize: 14, boxSizing: "border-box", background: "#fff" }}
+              />
+              {Number(form.pagadoDeCaja) > 0 && (
+                <div style={{ marginTop: 6, fontSize: 12, color: "#065F46", fontWeight: 600 }}>
+                  ✓ Se descontarán {fmt(Math.min(Number(form.pagadoDeCaja), total))} de tu Caja disponible
+                  {Number(form.pagadoDeCaja) < total && ` · El resto (${fmt(total - Number(form.pagadoDeCaja))}) viene de capital externo`}
+                </div>
+              )}
             </div>
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => setShowModal(false)} disabled={guardando}

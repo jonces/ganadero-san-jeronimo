@@ -359,12 +359,13 @@ model Compra {
   proveedor   String?
   cantidad    Float    @default(1)
   precioUnit  Float
-  total       Float
-  fecha       DateTime @default(now())
-  factura     String?
-  notas       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  total        Float
+  pagadoDeCaja Float    @default(0) // cuánto de esta compra salió de la caja disponible
+  fecha        DateTime @default(now())
+  factura      String?
+  notas        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Proveedor {

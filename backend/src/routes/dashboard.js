@@ -62,17 +62,19 @@ router.get("/", async (req, res, next) => {
     // ── Capital invertido = TODAS las compras + todos los gastos históricos ──
     const [todosLosGastos, todasLasCompras, todasVentasCobradas] = await Promise.all([
       prisma.gasto.findMany({ where: { fincaId }, select: { monto: true } }),
-      prisma.compra.findMany({ where: { fincaId }, select: { total: true } }),
+      prisma.compra.findMany({ where: { fincaId }, select: { total: true, pagadoDeCaja: true } }),
       prisma.venta.findMany({ where: { fincaId, estadoPago: "PAGADO", estadoVenta: { not: "REVERSADA" } }, select: { precioNIO: true } }),
     ]);
     const totalGastosHistorico  = todosLosGastos.reduce((s, g) => s + (g.monto  || 0), 0);
     const totalTodasCompras     = todasLasCompras.reduce((s, c) => s + (c.total  || 0), 0);
+    const totalPagadoDeCaja     = todasLasCompras.reduce((s, c) => s + (c.pagadoDeCaja || 0), 0);
     const totalVentasCobradas   = todasVentasCobradas.reduce((s, v) => s + (v.precioNIO || 0), 0);
-    const capitalInvertido      = totalTodasCompras + totalGastosHistorico;
 
-    // ── Caja disponible = ventas cobradas − gastos operativos
-    // Las compras de animales son activos (reflejados en valorEstimadoHato), no gastos
-    const cajaDisponible = totalVentasCobradas - totalGastosHistorico;
+    // Capital invertido = todas las compras + todos los gastos (todo va a la ganadería)
+    const capitalInvertido = totalTodasCompras + totalGastosHistorico;
+
+    // Caja disponible = ventas cobradas − gastos − solo la parte de compras que salió de la caja
+    const cajaDisponible = totalVentasCobradas - totalGastosHistorico - totalPagadoDeCaja;
 
     // ── Valor estimado del hato ──
     // Valor hato: usa precioVenta del animal si tiene, sino C$15,000 por defecto
