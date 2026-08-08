@@ -85,7 +85,13 @@ export async function executeTool(name, args, authToken = "") {
     switch (name) {
       case "get_animals":
         result = await get(`/animales`, authToken);
-        return { ok: true, data: result ?? [], ms: Date.now() - startMs };
+        // Filtrar solo activos para que la IA no cuente vendidos/muertos como parte del hato
+        if (Array.isArray(result)) {
+          const activos  = result.filter(a => a.estado === "ACTIVO");
+          const vendidos = result.filter(a => a.estado === "VENDIDO");
+          return { ok: true, data: { activos, vendidos, totalActivos: activos.length, totalVendidos: vendidos.length }, ms: Date.now() - startMs };
+        }
+        return { ok: true, data: { activos: [], vendidos: [], totalActivos: 0, totalVendidos: 0 }, ms: Date.now() - startMs };
 
       case "get_inventory":
         result = await get(`/insumos`, authToken);

@@ -39,25 +39,37 @@ export async function buildContext({ usuario, empresa, finca, idioma = "es-CO", 
     .join("\n");
 
   const invResumen = (inventario ?? []).slice(0, 8)
-    .map(i => `${i.nombre}: ${i.cantidad} ${i.unidad ?? ""}`)
+    .map(i => `${i.nombre}: ${i.stockActual ?? i.cantidad ?? 0} ${i.unidad ?? ""}`)
     .join(", ");
+
+  const d = dashboard;
+  const h = d?.resumenHato ?? {};
+  const monedaFinca = "NIO (córdobas nicaragüenses)";
 
   return `=== CONTEXTO DE LA OPERACIÓN GANADERA ===
 Fecha y hora: ${now}
-Idioma: Español colombiano | Moneda: ${moneda}
+Moneda: ${monedaFinca}
 
-USUARIO: ${usuario ?? "Propietario"}
-EMPRESA: ${empresa ?? "Empresa Ganadera"}
-FINCA ACTIVA: ${finca ?? "Finca Principal"}
+FINCA ACTIVA: ${d?.nombreFinca ?? finca ?? "Finca"}
 ESPECIALISTA IA: ${agentId ?? "Asistente General"}
 
-RESUMEN DEL HATO:
-${dashboard
-  ? `• Total animales: ${dashboard.totalAnimales ?? "—"}
-• Categorías: ${JSON.stringify(dashboard.categorias ?? {})}
-• Ingresos mes: ${dashboard.ingresos ? `$${(dashboard.ingresos / 1e6).toFixed(1)}M COP` : "—"}
-• Gastos mes: ${dashboard.gastos ? `$${(dashboard.gastos / 1e6).toFixed(1)}M COP` : "—"}`
-  : "• Backend no disponible — usar datos estimados"}
+HATO (animales con estado ACTIVO):
+• Total activos: ${d?.animalesActivos ?? "—"}
+• Vacas: ${h.vacas ?? "—"} | Toros: ${h.toros ?? "—"} | Novillos: ${h.novillos ?? "—"} | Novillas: ${h.novillas ?? "—"}
+• Terneros: ${h.terneros ?? "—"} | Terneras: ${h.terneras ?? "—"}
+• Preñadas: ${h.prenadas ?? "—"} | En venta: ${h.enVenta ?? "—"} | Reservados: ${h.reservados ?? "—"}
+• Peso promedio: ${d?.pesoPromedio ? `${Math.round(d.pesoPromedio)} kg` : "—"}
+• Tasa de preñez: ${d?.tasaPrenez ? `${d.tasaPrenez.toFixed(1)}%` : "—"}
+• Nacimientos este mes: ${h.nacimientosMes ?? "—"}
+• Natalidad anual: ${d?.natalidad ? `${d.natalidad.toFixed(1)}%` : "—"}
+• Mortalidad anual: ${d?.mortalidad ? `${d.mortalidad.toFixed(1)}%` : "—"}
+
+FINANZAS DEL MES:
+• Ventas: ${d?.ventasMes?.total ? `C$${d.ventasMes.total.toLocaleString("es-NI")}` : "—"} (${d?.ventasMes?.cantidad ?? 0} animales)
+• Gastos: ${d?.gastosMes?.total ? `C$${d.gastosMes.total.toLocaleString("es-NI")}` : "—"}
+• Ganancia neta: ${d?.gananciaNeta != null ? `C$${d.gananciaNeta.toLocaleString("es-NI")}` : "—"}
+• Caja disponible: ${d?.cajaDisponible != null ? `C$${d.cajaDisponible.toLocaleString("es-NI")}` : "—"}
+• Valor estimado del hato: ${d?.valorEstimadoHato ? `C$${d.valorEstimadoHato.toLocaleString("es-NI")}` : "—"}
 
 ALERTAS SANITARIAS ACTIVAS:
 ${alertasCriticas || "• Sin alertas activas"}
@@ -68,7 +80,8 @@ ${eventosPrximos || "• Sin eventos programados"}
 INVENTARIO DESTACADO:
 ${invResumen || "• Sin datos de inventario"}
 
-INSTRUCCIÓN: Usa este contexto para responder con información precisa de la finca.
-Nunca inventes datos que no estén en el contexto. Si necesitas más información, usa las herramientas disponibles.
+INSTRUCCIÓN CRÍTICA: Los datos del HATO y FINANZAS de arriba son los datos REALES y ACTUALES de la finca.
+Úsalos como fuente de verdad. Nunca inventes ni estimes cifras que no aparezcan en este contexto.
+Si el usuario pregunta algo que no está aquí, usa las herramientas disponibles para obtenerlo.
 === FIN DEL CONTEXTO ===`;
 }
