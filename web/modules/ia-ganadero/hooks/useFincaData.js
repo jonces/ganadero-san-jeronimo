@@ -7,22 +7,30 @@ export function useFincaData() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
+  const safeApi = useCallback(async (path) => {
+    try { return await api(path); } catch { return null; }
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const [dashboard, insumos, incidentes] = await Promise.all([
-        api("/dashboard"),
-        api("/insumos"),
-        api("/incidentes"),
+        safeApi("/dashboard"),
+        safeApi("/insumos"),
+        safeApi("/incidentes"),
       ]);
-      setData({ dashboard, insumos: insumos ?? [], incidentes: incidentes ?? [] });
+      if (!dashboard) {
+        setError("No se pudo conectar con el servidor");
+      } else {
+        setData({ dashboard, insumos: Array.isArray(insumos) ? insumos : [], incidentes: Array.isArray(incidentes) ? incidentes : [] });
+      }
     } catch (e) {
-      setError(e.message);
+      setError(e?.message ?? "Error desconocido");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [safeApi]);
 
   useEffect(() => { load(); }, [load]);
 
