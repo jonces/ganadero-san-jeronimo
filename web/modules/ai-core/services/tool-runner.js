@@ -5,7 +5,7 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
 async function get(path) {
   try {
-    const r = await fetch(`${API}${path}`, { cache: "no-store" });
+    const r = await fetch(`${API}${path}`, { cache: "no-store", signal: AbortSignal.timeout(8000) });
     return r.ok ? r.json() : null;
   } catch { return null; }
 }
@@ -16,6 +16,7 @@ async function post(path, body) {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify(body),
+      signal:  AbortSignal.timeout(8000),
     });
     return r.ok ? r.json() : null;
   } catch { return null; }

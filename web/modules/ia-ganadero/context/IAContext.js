@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useReducer, useRef, useEffect, useContext, useCallback } from "react";
+import { createContext, useReducer, useRef, useState, useEffect, useContext, useCallback } from "react";
 import { iaReducer, INITIAL_STATE }       from "./IAReducer.js";
 import { createProvider }                 from "../services/providers/index.js";
 import { IA_ACTION, CONVERSATION_STATUS, MESSAGE_STATUS, SENDER } from "../constants/index.js";
@@ -19,6 +19,7 @@ export function IAProvider({ children }) {
     : INITIAL_STATE;
 
   const [state, dispatch]  = useReducer(iaReducer, initialWithMemory);
+  const [isConnected, setIsConnected] = useState(false);
   const clientRef          = useRef(null);
   const cancelStreamRef    = useRef(null);
   const engineRef          = useRef(AIEngine.create());
@@ -42,9 +43,15 @@ export function IAProvider({ children }) {
       const client = createProvider(state.providerId);
       try {
         await client.initialize();
-        if (!destroyed) clientRef.current = client;
+        if (!destroyed) {
+          clientRef.current = client;
+          setIsConnected(true);
+        }
       } catch (err) {
-        if (!destroyed) dispatch({ type: IA_ACTION.SET_ERROR, payload: err.message });
+        if (!destroyed) {
+          setIsConnected(false);
+          dispatch({ type: IA_ACTION.SET_ERROR, payload: err.message });
+        }
       }
     }
 
@@ -235,6 +242,7 @@ export function IAProvider({ children }) {
     state,
     dispatch,
     engine: engineRef.current,
+    isConnected,
     // Acciones
     selectConversation,
     newConversation,

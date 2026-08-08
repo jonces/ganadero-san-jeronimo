@@ -95,7 +95,7 @@ function RecordingPill({ onStop }) {
  * @param {{ sidebarCollapsed: boolean, onToggleSidebar: () => void, specialist: string }} props
  */
 export function CenterPanel({ sidebarCollapsed, onToggleSidebar, specialist }) {
-  const { state, setInput, sendMessage, newConversation } = useIA();
+  const { state, setInput, sendMessage, newConversation, isConnected } = useIA();
   const { active }              = useConversation();
   const { isBusy, activeConfig } = useProvider();
 
@@ -359,7 +359,7 @@ export function CenterPanel({ sidebarCollapsed, onToggleSidebar, specialist }) {
           </div>
 
           <p style={{ textAlign: "center", fontSize: 10, color: T.muted, margin: "6px 0 0", lineHeight: 1.5 }}>
-            Enter para enviar · Shift+Enter nueva línea · IA no conectada — solo interfaz
+            Enter para enviar · Shift+Enter nueva línea · {isConnected ? "IA conectada — GPT-4o" : "IA no conectada — solo interfaz"}
           </p>
         </div>
       </div>
