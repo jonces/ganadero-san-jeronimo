@@ -39,8 +39,9 @@ export default function CrecimientoPage() {
   const [plan, setPlan]       = useState(null);
   const [config, setConfig]   = useState(null);
   const [loading, setLoading] = useState(true);
-  const [guardando, setGuardando] = useState(false);
-  const [editando, setEditando]   = useState(false);
+  const [guardando, setGuardando]       = useState(false);
+  const [editando, setEditando]         = useState(false);
+  const [animalDetalle, setAnimalDetalle] = useState(null);
   const [form, setForm] = useState({ precioLibra: "", precioReproductora: "", metaAnimales: "" });
 
   const cargar = useCallback(async () => {
@@ -167,46 +168,131 @@ export default function CrecimientoPage() {
       </div>
 
       {/* ── Lista de novillos listos ── */}
-      {p.novichoListos?.length > 0 && (
-        <Card style={{ marginBottom: 16 }}>
-          <CardHeader title="Novillos listos para vender" sub={`${p.novichoListos.length} animales identificados · precio C$${p.precioLibra}/lb`} />
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-              <thead>
-                <tr style={{ background: T.bg }}>
-                  {["Arete", "Nombre", "Raza", "Peso (lb)", "Valor estimado"].map(h => (
-                    <th key={h} style={{ textAlign: "left", padding: "10px 16px", fontWeight: 700, color: T.textSec, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: `1px solid ${T.border}` }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {p.novichoListos.map((a, i) => (
-                  <tr key={a.id} style={{ borderBottom: `1px solid ${T.border}`, background: i % 2 === 0 ? T.white : T.bg }}>
-                    <td style={{ padding: "10px 16px", fontWeight: 800, color: T.text }}>#{a.identificador || "—"}</td>
-                    <td style={{ padding: "10px 16px", color: T.textSec }}>{a.nombre || "Sin nombre"}</td>
-                    <td style={{ padding: "10px 16px", color: T.textSec }}>{a.raza || "Sin raza"}</td>
-                    <td style={{ padding: "10px 16px", fontWeight: 700, color: T.text }}>{a.pesoActual ? `${a.pesoActual} lb` : "—"}</td>
-                    <td style={{ padding: "10px 16px", fontWeight: 800, color: T.green }}>{fmt(a.valorEstimado)}</td>
-                  </tr>
-                ))}
-                <tr style={{ background: T.greenBg, borderTop: `2px solid ${T.greenBorder}` }}>
-                  <td colSpan={4} style={{ padding: "10px 16px", fontWeight: 800, color: T.green, textAlign: "right" }}>TOTAL DEL LOTE</td>
-                  <td style={{ padding: "10px 16px", fontWeight: 900, color: T.green, fontSize: 15 }}>{fmt(p.valorTotalLote)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
+      <Card style={{ marginBottom: 16 }}>
+        <CardHeader
+          title="🐂 Novillos listos para vender"
+          sub={p.novichoListos?.length > 0 ? `${p.novichoListos.length} animales · C$${p.precioLibra}/lb · toca un animal para ver su ficha` : "Los machos con ≥400 lb o ≥18 meses aparecen aquí"}
+        />
 
-      {p.novichoListos?.length === 0 && (
-        <Card style={{ marginBottom: 16 }}>
-          <div style={{ padding: "40px 24px", textAlign: "center", color: T.textLight }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>🐂</div>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>No hay novillos listos aún</div>
-            <div style={{ fontSize: 13 }}>Los machos con ≥400 lb o ≥18 meses aparecerán aquí automáticamente</div>
+        {p.novichoListos?.length === 0 ? (
+          <div style={{ padding: "48px 24px", textAlign: "center", color: T.textLight }}>
+            <div style={{ fontSize: 40, marginBottom: 10 }}>🐂</div>
+            <div style={{ fontWeight: 700, fontSize: 14 }}>No hay novillos listos aún</div>
           </div>
-        </Card>
+        ) : (
+          <>
+            {/* Grid de cards con foto */}
+            <div style={{ padding: 16, display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+              {p.novichoListos.map(a => (
+                <div key={a.id} onClick={() => setAnimalDetalle(a)}
+                  style={{ borderRadius: 12, border: `2px solid ${animalDetalle?.id === a.id ? T.green : T.border}`, overflow: "hidden", cursor: "pointer", background: T.white, transition: "all .15s", boxShadow: animalDetalle?.id === a.id ? `0 0 0 3px ${T.greenBorder}` : "none" }}>
+                  {/* Foto */}
+                  <div style={{ width: "100%", aspectRatio: "4/3", background: "#E2E8F0", overflow: "hidden", position: "relative" }}>
+                    {a.foto
+                      ? <img src={a.foto} alt={`Novillo #${a.identificador}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 4 }}>
+                          <span style={{ fontSize: 32 }}>🐂</span>
+                          <span style={{ fontSize: 10, color: T.textLight, fontWeight: 600 }}>Sin foto</span>
+                        </div>
+                    }
+                    {/* Badge valor */}
+                    <div style={{ position: "absolute", top: 8, right: 8, background: T.green, color: "#fff", borderRadius: 99, fontSize: 11, fontWeight: 800, padding: "3px 9px" }}>
+                      {fmt(a.valorEstimado)}
+                    </div>
+                  </div>
+                  {/* Info */}
+                  <div style={{ padding: "10px 12px 12px" }}>
+                    <div style={{ fontWeight: 800, fontSize: 15, color: T.text }}>#{a.identificador || "—"}</div>
+                    <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>{a.raza || "Sin raza"}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, alignItems: "center" }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: T.text }}>{a.pesoActual ? `${a.pesoActual} lb` : "—"}</span>
+                      <span style={{ fontSize: 11, color: T.textLight }}>Ver ficha →</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Total del lote */}
+            <div style={{ margin: "0 16px 16px", background: T.greenBg, border: `1px solid ${T.greenBorder}`, borderRadius: 10, padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontWeight: 700, color: T.green }}>Total del lote ({p.novichoListos.length} animales)</span>
+              <span style={{ fontWeight: 900, fontSize: 18, color: T.green }}>{fmt(p.valorTotalLote)}</span>
+            </div>
+          </>
+        )}
+      </Card>
+
+      {/* ── Panel lateral de detalle ── */}
+      {animalDetalle && (
+        <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, width: 360, background: T.white, boxShadow: "-4px 0 24px rgba(0,0,0,0.12)", zIndex: 1000, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+          {/* Foto grande */}
+          <div style={{ width: "100%", height: 240, background: "#E2E8F0", flexShrink: 0, position: "relative" }}>
+            {animalDetalle.foto
+              ? <img src={animalDetalle.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 64 }}>🐂</div>
+            }
+            <button onClick={() => setAnimalDetalle(null)}
+              style={{ position: "absolute", top: 12, right: 12, width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.5)", color: "#fff", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>
+              ✕
+            </button>
+            <div style={{ position: "absolute", bottom: 12, left: 12, background: T.green, color: "#fff", borderRadius: 10, padding: "6px 14px" }}>
+              <div style={{ fontSize: 11, opacity: 0.8 }}>Valor estimado</div>
+              <div style={{ fontWeight: 900, fontSize: 18 }}>{fmt(animalDetalle.valorEstimado)}</div>
+            </div>
+          </div>
+
+          {/* Contenido */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px" }}>
+            <div style={{ fontSize: 22, fontWeight: 900, color: T.text }}>
+              #{animalDetalle.identificador || "Sin arete"}
+            </div>
+            {animalDetalle.nombre && (
+              <div style={{ fontSize: 14, color: T.textSec, marginTop: 2 }}>{animalDetalle.nombre}</div>
+            )}
+
+            <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 0 }}>
+              {[
+                { label: "Raza",            val: animalDetalle.raza || "Sin raza" },
+                { label: "Sexo",            val: "Macho" },
+                { label: "Peso actual",     val: animalDetalle.pesoActual ? `${animalDetalle.pesoActual} lb` : "—" },
+                { label: "Potrero",         val: animalDetalle.potrero || "—" },
+                { label: "Estado reprod.",  val: animalDetalle.estadoReproductivo || "—" },
+                { label: "Fecha nacimiento",val: animalDetalle.fechaNacimiento ? new Date(animalDetalle.fechaNacimiento).toLocaleDateString("es-NI") : "—" },
+                { label: "Costo de compra", val: fmt(animalDetalle.costoCompra) },
+                { label: "Precio de venta", val: animalDetalle.precioVenta ? fmt(animalDetalle.precioVenta) : "Sin publicar" },
+              ].map(({ label, val }) => (
+                <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: `1px solid ${T.border}` }}>
+                  <span style={{ fontSize: 13, color: T.textSec }}>{label}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{val}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Cálculo de venta */}
+            <div style={{ marginTop: 20, background: T.greenBg, border: `1px solid ${T.greenBorder}`, borderRadius: 12, padding: "14px 16px" }}>
+              <div style={{ fontWeight: 800, fontSize: 13, color: T.green, marginBottom: 10 }}>Cálculo de venta</div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 6 }}>
+                <span style={{ color: T.textSec }}>Peso × C${p.precioLibra}/lb</span>
+                <span style={{ fontWeight: 700 }}>{animalDetalle.pesoActual || 0} × {p.precioLibra}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, fontWeight: 900, color: T.green, borderTop: `1px solid ${T.greenBorder}`, paddingTop: 8, marginTop: 4 }}>
+                <span>Total estimado</span>
+                <span>{fmt(animalDetalle.valorEstimado)}</span>
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12, color: T.textSec, textAlign: "center" }}>
+                Con este animal puedes comprar {Math.floor(animalDetalle.valorEstimado / (p.precioReproductora || 29000))} reproductora{Math.floor(animalDetalle.valorEstimado / (p.precioReproductora || 29000)) !== 1 ? "s" : ""}
+              </div>
+            </div>
+
+            <a href={`/inventario`} style={{ display: "block", marginTop: 14, textAlign: "center", padding: "10px 0", borderRadius: 8, border: `1px solid ${T.border}`, color: T.textSec, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+              Ver ficha completa en Inventario →
+            </a>
+          </div>
+        </div>
+      )}
+      {animalDetalle && (
+        <div onClick={() => setAnimalDetalle(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 999 }} />
       )}
 
       {/* ── Configuración ── */}

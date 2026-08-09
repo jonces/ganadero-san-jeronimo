@@ -133,7 +133,7 @@ router.get("/", async (req, res, next) => {
     // ── Plan de crecimiento: novillos/machos listos para venta ──
     const animalesCompletos = await prisma.animal.findMany({
       where: { fincaId, estado: "ACTIVO" },
-      select: { id: true, identificador: true, nombre: true, sexo: true, fechaNacimiento: true, pesoActual: true, precioVenta: true, estadoComercial: true, raza: true },
+      select: { id: true, identificador: true, nombre: true, sexo: true, fechaNacimiento: true, pesoActual: true, precioVenta: true, estadoComercial: true, raza: true, estadoReproductivo: true, potrero: true, costoCompra: true, media: { select: { url: true, tipo: true }, take: 3 } },
     });
 
     const novichoListos = animalesCompletos.filter(a => {
@@ -163,6 +163,12 @@ router.get("/", async (req, res, next) => {
         raza: a.raza,
         pesoActual: a.pesoActual || 0,
         valorEstimado: (a.pesoActual || 0) * precioLibra,
+        precioVenta: a.precioVenta,
+        costoCompra: a.costoCompra,
+        estadoReproductivo: a.estadoReproductivo,
+        potrero: a.potrero,
+        fechaNacimiento: a.fechaNacimiento,
+        foto: a.media?.find(m => m.tipo === "FOTO" || m.tipo === "imagen")?.url || null,
       })),
       totalNovichoListos:   novichoListos.length,
       valorTotalLote:       valorLotePorLibra,
