@@ -39,20 +39,25 @@ export default function CrecimientoPage() {
   const [plan, setPlan]       = useState(null);
   const [config, setConfig]   = useState(null);
   const [loading, setLoading] = useState(true);
-  const [guardando, setGuardando]       = useState(false);
-  const [editando, setEditando]         = useState(false);
+  const [guardando, setGuardando]         = useState(false);
+  const [editando, setEditando]           = useState(false);
   const [animalDetalle, setAnimalDetalle] = useState(null);
+  const [showAgregar, setShowAgregar]     = useState(false);
+  const [todosAnimales, setTodosAnimales] = useState([]);
+  const [busqAgregar, setBusqAgregar]     = useState("");
   const [form, setForm] = useState({ precioLibra: "", precioReproductora: "", metaAnimales: "" });
 
   const cargar = useCallback(async () => {
     setLoading(true);
     try {
-      const [dash, cfg] = await Promise.all([
+      const [dash, cfg, animList] = await Promise.all([
         api("/dashboard"),
         api("/fincas/config-crecimiento"),
+        api("/animales?estado=ACTIVO&sexo=MACHO"),
       ]);
       setPlan(dash.planCrecimiento || null);
       setConfig(cfg);
+      setTodosAnimales(Array.isArray(animList) ? animList : (animList?.items || []));
       setForm({
         precioLibra:        cfg.precioLibra        || 85,
         precioReproductora: cfg.precioReproductora || 29000,
@@ -169,10 +174,18 @@ export default function CrecimientoPage() {
 
       {/* ── Lista de novillos listos ── */}
       <Card style={{ marginBottom: 16 }}>
-        <CardHeader
-          title="🐂 Novillos listos para vender"
-          sub={p.novichoListos?.length > 0 ? `${p.novichoListos.length} animales · C$${p.precioLibra}/lb · toca un animal para ver su ficha` : "Los machos con ≥400 lb o ≥18 meses aparecen aquí"}
-        />
+        <div style={{ padding: "14px 18px 12px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: T.text }}>🐂 Novillos listos para vender</div>
+            <div style={{ fontSize: 12, color: T.textLight, marginTop: 2 }}>
+              {p.novichoListos?.length > 0 ? `${p.novichoListos.length} animales · C$${p.precioLibra}/lb · toca un animal para ver su ficha` : "Los machos con ≥400 lb o ≥18 meses aparecen aquí"}
+            </div>
+          </div>
+          <button onClick={() => { setBusqAgregar(""); setShowAgregar(true); }}
+            style={{ padding: "8px 16px", borderRadius: 10, border: `2px solid ${T.orange}`, background: T.orangeBg, color: T.orange, fontWeight: 800, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" }}>
+            + Agregar al lote
+          </button>
+        </div>
 
         {p.novichoListos?.length === 0 ? (
           <div style={{ padding: "48px 24px", textAlign: "center", color: T.textLight }}>
@@ -293,6 +306,77 @@ export default function CrecimientoPage() {
       {animalDetalle && (
         <div onClick={() => setAnimalDetalle(null)}
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.3)", zIndex: 999 }} />
+      )}
+
+      {/* ── Modal: Agregar animal al lote ── */}
+      {showAgregar && (
+        <>
+          <div onClick={() => setShowAgregar(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 1100 }} />
+          <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "min(480px, 95vw)", background: T.white, borderRadius: 16, zIndex: 1101, overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            {/* Header */}
+            <div style={{ padding: "18px 20px 14px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: T.text }}>Agregar animal al lote</div>
+                <div style={{ fontSize: 12, color: T.textLight, marginTop: 2 }}>Selecciona machos de tu inventario</div>
+              </div>
+              <button onClick={() => setShowAgregar(false)} style={{ width: 30, height: 30, borderRadius: "50%", border: `1px solid ${T.border}`, background: T.bg, cursor: "pointer", fontWeight: 700, fontSize: 16, color: T.textSec }}>✕</button>
+            </div>
+            {/* Buscador */}
+            <div style={{ padding: "12px 20px", borderBottom: `1px solid ${T.border}` }}>
+              <input
+                autoFocus
+                value={busqAgregar}
+                onChange={e => setBusqAgregar(e.target.value)}
+                placeholder="Buscar por arete, nombre o raza..."
+                style={{ width: "100%", padding: "9px 14px", borderRadius: 10, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }}
+              />
+            </div>
+            {/* Lista */}
+            <div style={{ maxHeight: 340, overflowY: "auto" }}>
+              {todosAnimales
+                .filter(a => a.estadoComercial !== "SEMENTAL")
+                .filter(a => {
+                  const q = busqAgregar.toLowerCase();
+                  return !q || (a.identificador||"").toLowerCase().includes(q) || (a.nombre||"").toLowerCase().includes(q) || (a.raza||"").toLowerCase().includes(q);
+                })
+                .map(a => {
+                  const yaEnLote = p.novichoListos?.some(n => n.id === a.id);
+                  const foto = a.media?.find(m => m.tipo === "FOTO" || m.tipo === "imagen")?.url;
+                  return (
+                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 20px", borderBottom: `1px solid ${T.border}`, background: yaEnLote ? T.greenBg : T.white }}>
+                      {/* Foto mini */}
+                      <div style={{ width: 48, height: 48, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: "#E2E8F0" }}>
+                        {foto ? <img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🐂</div>}
+                      </div>
+                      {/* Info */}
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 800, fontSize: 14, color: T.text }}>#{a.identificador}</div>
+                        <div style={{ fontSize: 12, color: T.textSec }}>{a.raza || "Sin raza"} · {a.pesoActual ? `${a.pesoActual} lb` : "Sin peso"}</div>
+                        {yaEnLote && <div style={{ fontSize: 11, color: T.green, fontWeight: 700 }}>✓ Ya está en el lote</div>}
+                      </div>
+                      {/* Botón */}
+                      <button
+                        onClick={async () => {
+                          await api(`/animales/${a.id}`, { method: "PATCH", body: { enPlanVenta: !a.enPlanVenta } });
+                          await cargar();
+                        }}
+                        style={{ padding: "7px 14px", borderRadius: 8, border: `2px solid ${a.enPlanVenta ? T.red : T.green}`, background: a.enPlanVenta ? T.redBg : T.greenBg, color: a.enPlanVenta ? T.red : T.green, fontWeight: 800, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
+                        {a.enPlanVenta ? "Quitar" : "+ Agregar"}
+                      </button>
+                    </div>
+                  );
+                })}
+              {todosAnimales.filter(a => a.estadoComercial !== "SEMENTAL").length === 0 && (
+                <div style={{ padding: "32px", textAlign: "center", color: T.textLight }}>No hay machos activos registrados</div>
+              )}
+            </div>
+            <div style={{ padding: "14px 20px", borderTop: `1px solid ${T.border}`, textAlign: "right" }}>
+              <button onClick={() => setShowAgregar(false)} style={{ padding: "9px 24px", borderRadius: 10, border: "none", background: T.green, color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer" }}>
+                Listo
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* ── Configuración ── */}

@@ -133,12 +133,13 @@ router.get("/", async (req, res, next) => {
     // ── Plan de crecimiento: novillos/machos listos para venta ──
     const animalesCompletos = await prisma.animal.findMany({
       where: { fincaId, estado: "ACTIVO" },
-      select: { id: true, identificador: true, nombre: true, sexo: true, fechaNacimiento: true, pesoActual: true, precioVenta: true, estadoComercial: true, raza: true, estadoReproductivo: true, potrero: true, costoCompra: true, media: { select: { url: true, tipo: true }, take: 3 } },
+      select: { id: true, identificador: true, nombre: true, sexo: true, fechaNacimiento: true, pesoActual: true, precioVenta: true, estadoComercial: true, raza: true, estadoReproductivo: true, potrero: true, costoCompra: true, enPlanVenta: true, media: { select: { url: true, tipo: true }, take: 3 } },
     });
 
     const novichoListos = animalesCompletos.filter(a => {
       if (a.sexo !== "MACHO") return false;
-      if (a.estadoComercial === "RESERVADO") return false;
+      if (a.estadoComercial === "SEMENTAL") return false; // sementales excluidos siempre
+      if (a.enPlanVenta) return true;                    // manual siempre incluido
       const edadMeses = a.fechaNacimiento ? (ahora - new Date(a.fechaNacimiento)) / (1000*60*60*24*30) : null;
       const pesoListo = a.pesoActual && a.pesoActual >= 400;
       const edadLista = edadMeses && edadMeses >= 18;
@@ -169,6 +170,7 @@ router.get("/", async (req, res, next) => {
         potrero: a.potrero,
         fechaNacimiento: a.fechaNacimiento,
         foto: a.media?.find(m => m.tipo === "FOTO" || m.tipo === "imagen")?.url || null,
+        enPlanVenta: a.enPlanVenta,
       })),
       totalNovichoListos:   novichoListos.length,
       valorTotalLote:       valorLotePorLibra,

@@ -18,10 +18,12 @@ const includeAnimal = {
 
 router.get("/", async (req, res, next) => {
   try {
-    const { estadoComercial, potrero } = req.query;
+    const { estadoComercial, potrero, sexo, estado } = req.query;
     const where = { fincaId: req.user.fincaId };
     if (estadoComercial) where.estadoComercial = estadoComercial;
     if (potrero) where.potrero = { contains: potrero, mode: "insensitive" };
+    if (sexo)   where.sexo   = sexo;
+    if (estado) where.estado = estado;
 
     const animales = await prisma.animal.findMany({
       where,
@@ -112,7 +114,7 @@ router.patch("/:id", async (req, res, next) => {
     const animal = await prisma.animal.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
     if (!animal) return res.status(404).json({ error: "Animal no encontrado" });
 
-    const { nombre, raza, fierro, pesoActual, estado, estadoReproductivo, fechaParto, fechaSecado, madreId, observacion, fechaNacimiento, potrero, estadoComercial, costoCompra, precioVenta } = req.body;
+    const { nombre, raza, fierro, pesoActual, estado, estadoReproductivo, fechaParto, fechaSecado, madreId, observacion, fechaNacimiento, potrero, estadoComercial, costoCompra, precioVenta, enPlanVenta } = req.body;
 
     const str = (v) => (v === "" || v === undefined) ? null : v;
     const data = {};
@@ -127,6 +129,7 @@ router.patch("/:id", async (req, res, next) => {
     if (estadoComercial !== undefined) data.estadoComercial = estadoComercial;
     if (costoCompra !== undefined) data.costoCompra = costoCompra ? Number(costoCompra) : null;
     if (precioVenta !== undefined) data.precioVenta = precioVenta ? Number(precioVenta) : null;
+    if (enPlanVenta !== undefined) data.enPlanVenta = Boolean(enPlanVenta);
     if (fechaParto !== undefined) data.fechaParto = fechaParto ? new Date(fechaParto) : null;
     if (fechaSecado !== undefined) data.fechaSecado = fechaSecado ? new Date(fechaSecado) : null;
 

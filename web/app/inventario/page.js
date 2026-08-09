@@ -757,11 +757,38 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
         )}
 
         {/* Botón poner en venta */}
-        {!enVenta && animal.estado === "ACTIVO" && animal.estadoComercial !== "VENTA_COMPLETADA" && (
+        {!enVenta && animal.estado === "ACTIVO" && animal.estadoComercial !== "VENTA_COMPLETADA" && animal.estadoComercial !== "SEMENTAL" && (
           <button onClick={() => setModal("venta")}
             style={{ background: "#16a34a", color: "#fff", borderRadius: 12, padding: "12px 0", fontWeight: 800, fontSize: 14, cursor: "pointer", width: "100%", border: "none" }}>
             Poner en venta
           </button>
+        )}
+
+        {/* Toggles plan de crecimiento — solo machos activos */}
+        {animal.sexo === "MACHO" && animal.estado === "ACTIVO" && (
+          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+            {/* Toggle Semental */}
+            <button
+              onClick={async () => {
+                const esSemental = animal.estadoComercial === "SEMENTAL";
+                await api(`/animales/${animal.id}`, { method: "PATCH", body: { estadoComercial: esSemental ? "NO_DISPONIBLE" : "SEMENTAL" } });
+                onRefresh();
+              }}
+              style={{ width: "100%", padding: "11px 0", borderRadius: 12, fontWeight: 800, fontSize: 14, cursor: "pointer", border: `2px solid ${animal.estadoComercial === "SEMENTAL" ? "#7C3AED" : "#E2E8F0"}`, background: animal.estadoComercial === "SEMENTAL" ? "#F5F3FF" : "#fff", color: animal.estadoComercial === "SEMENTAL" ? "#7C3AED" : "#475569" }}>
+              {animal.estadoComercial === "SEMENTAL" ? "✓ Marcado como Semental — toca para quitar" : "🐂 Marcar como Semental"}
+            </button>
+            {/* Toggle Plan de venta */}
+            {animal.estadoComercial !== "SEMENTAL" && (
+              <button
+                onClick={async () => {
+                  await api(`/animales/${animal.id}`, { method: "PATCH", body: { enPlanVenta: !animal.enPlanVenta } });
+                  onRefresh();
+                }}
+                style={{ width: "100%", padding: "11px 0", borderRadius: 12, fontWeight: 800, fontSize: 14, cursor: "pointer", border: `2px solid ${animal.enPlanVenta ? "#EA580C" : "#E2E8F0"}`, background: animal.enPlanVenta ? "#FFF7ED" : "#fff", color: animal.enPlanVenta ? "#EA580C" : "#475569" }}>
+                {animal.enPlanVenta ? "✓ En Plan de Venta — toca para quitar" : "📋 Agregar al Plan de Venta"}
+              </button>
+            )}
+          </div>
         )}
       </div>
 
