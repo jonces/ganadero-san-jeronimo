@@ -4,20 +4,10 @@ function decodePayload(token) {
   try { return JSON.parse(atob(token.split(".")[1])); } catch { return null; }
 }
 
-function tokenKey(userId) {
-  return userId ? `token_${userId}` : "token";
-}
-
 function getToken() {
   if (typeof window === "undefined") return null;
-  // Intentar con clave específica de usuario primero
-  const keys = Object.keys(localStorage).filter(k => k.startsWith("token_"));
-  for (const k of keys) {
-    const t = localStorage.getItem(k);
-    if (t) return t;
-  }
-  // Fallback: clave genérica (usuarios que aún no migraron)
-  return localStorage.getItem("token");
+  // sessionStorage es por pestaña — cada tab tiene su propia sesión independiente
+  return sessionStorage.getItem("token");
 }
 
 export async function api(path, { method = "GET", body, isForm = false } = {}) {
@@ -35,28 +25,27 @@ export async function api(path, { method = "GET", body, isForm = false } = {}) {
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     if (data?.error === "FINCA_SUSPENDIDA") {
-      if (typeof window !== "undefined") localStorage.setItem("finca_suspendida", "1");
+      if (typeof window !== "undefined") sessionStorage.setItem("finca_suspendida", "1");
     }
     throw new Error(data?.error || "Error en la solicitud");
   }
-  if (typeof window !== "undefined") localStorage.removeItem("finca_suspendida");
+  if (typeof window !== "undefined") sessionStorage.removeItem("finca_suspendida");
   return data;
 }
 
 export function saveToken(token) {
-  // Guardar con clave específica del usuario
-  const payload = decodePayload(token);
-  const key = tokenKey(payload?.sub);
-  // Limpiar token genérico viejo si existe
-  localStorage.removeItem("token");
-  localStorage.setItem(key, token);
+  // Guardar en sessionStorage (solo esta pestaña)
+  sessionStorage.setItem("token", token);
+  // Limpiar tokens viejos de localStorage si existen
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("token");
+    Object.keys(localStorage).filter(k => k.startsWith("token_")).forEach(k => localStorage.removeItem(k));
+  }
 }
 
 export function logout() {
-  // Limpiar token del usuario actual
-  const keys = Object.keys(localStorage).filter(k => k.startsWith("token_"));
-  keys.forEach(k => localStorage.removeItem(k));
-  localStorage.removeItem("token"); // legacy
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("finca_suspendida");
 }
 
 export function getUsuario() {
