@@ -1,13 +1,14 @@
 const express = require("express");
 const multer = require("multer");
 const prisma = require("../prisma");
-const { requireAuth } = require("../middleware/auth");
+const { requireAuth, requireNoEsCampo } = require("../middleware/auth");
 const { uploadMedia } = require("../lib/storage");
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
 router.use(requireAuth);
+router.use(requireNoEsCampo);
 
 router.get("/", async (req, res, next) => {
   try {

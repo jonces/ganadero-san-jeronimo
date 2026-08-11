@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const prisma = require("../prisma");
-const { requireAuth } = require("../middleware/auth");
+const { requireAuth, requireNoEsCampo } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -13,6 +13,7 @@ function requireAdmin(req, res, next) {
 }
 
 router.use(requireAuth);
+router.use(requireNoEsCampo);
 
 const CARGOS_VALIDOS = [
   "GERENTE_GENERAL",

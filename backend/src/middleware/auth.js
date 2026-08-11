@@ -35,4 +35,19 @@ function requireRole(...roles) {
   };
 }
 
-module.exports = { requireAuth, requireRole };
+// Bloquea cargos de campo (TRABAJADOR_CAMPO, VAQUERO) de rutas financieras/admin
+async function requireNoEsCampo(req, res, next) {
+  try {
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: req.user.sub },
+      select: { cargo: true },
+    });
+    const cargosCampo = ["TRABAJADOR_CAMPO", "VAQUERO"];
+    if (cargosCampo.includes(usuario?.cargo)) {
+      return res.status(403).json({ error: "No tienes permiso para acceder a esta sección" });
+    }
+    next();
+  } catch (err) { next(err); }
+}
+
+module.exports = { requireAuth, requireRole, requireNoEsCampo };

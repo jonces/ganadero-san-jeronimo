@@ -18,6 +18,15 @@ const C = {
   red:       "#E74C3C",
 };
 
+// Cargos con acceso limitado (solo campo/operativo)
+const CARGOS_CAMPO = ["TRABAJADOR_CAMPO", "VAQUERO"];
+
+// Rutas bloqueadas para trabajadores de campo y vaqueros
+const RUTAS_SOLO_ADMIN = [
+  "/ventas", "/gastos", "/finanzas", "/compras", "/proveedores",
+  "/cuentas-pagar", "/equipo", "/reportes", "/documentos", "/crecimiento", "/actividad",
+];
+
 const NAV_ITEMS_ADMIN = [
   { icon: "⊞",  label: "Dashboard",          href: "/dashboard" },
   { icon: "🐄", label: "Animales",            href: "/inventario" },
@@ -85,10 +94,13 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
   const enActividad = pathname === "/actividad";
   const enNotificaciones = pathname === "/notificaciones";
   const esTrabajador = usuario?.role === "TRABAJADOR";
+  const esCampo = CARGOS_CAMPO.includes(usuario?.cargo);
   const navItemsBase = isSuperAdmin ? NAV_ITEMS_SUPER : NAV_ITEMS_ADMIN;
-  const navItems = esTrabajador
-    ? navItemsBase.filter(i => i.href !== "/equipo" && i.href !== "/actividad" && i.href !== "/reportes")
-    : navItemsBase;
+  const navItems = esCampo
+    ? navItemsBase.filter(i => !RUTAS_SOLO_ADMIN.some(r => i.href.startsWith(r)))
+    : esTrabajador
+      ? navItemsBase.filter(i => i.href !== "/equipo" && i.href !== "/actividad" && i.href !== "/reportes")
+      : navItemsBase;
   const mobileItems = navItems.filter(i => NAV_MOBILE_PRIMARY.includes(i.href));
 
   useEffect(() => {
@@ -144,6 +156,27 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
 
   function handleLogout() { logout(); router.push("/"); }
   function go(href) { router.push(href); setMenuOpen(false); }
+
+  // Bloquear acceso a rutas restringidas para trabajadores de campo y vaqueros
+  const rutaBloqueada = esCampo && RUTAS_SOLO_ADMIN.some(r => pathname?.startsWith(r));
+  if (rutaBloqueada) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: C.bg }}>
+        <div className="rounded-2xl p-8 max-w-md w-full text-center shadow-xl" style={{ background: C.white, border: `1px solid ${C.border}` }}>
+          <div className="text-6xl mb-4">🔒</div>
+          <h2 className="font-black text-2xl mb-2" style={{ color: C.text }}>Acceso restringido</h2>
+          <p className="text-sm mb-6 leading-relaxed" style={{ color: C.textLight }}>
+            No tienes permiso para ver esta sección. Contacta a tu administrador o gerente si necesitas acceso.
+          </p>
+          <button onClick={() => router.push("/dashboard")}
+            className="w-full py-3 rounded-xl font-bold text-sm"
+            style={{ background: C.primary, color: "#FFF" }}>
+            Ir al Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (suspendida) {
     return (

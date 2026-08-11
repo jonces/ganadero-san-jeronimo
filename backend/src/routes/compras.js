@@ -1,9 +1,10 @@
 const express = require("express");
 const prisma = require("../prisma");
-const { requireAuth } = require("../middleware/auth");
+const { requireAuth, requireNoEsCampo } = require("../middleware/auth");
 
 const router = express.Router();
 router.use(requireAuth);
+router.use(requireNoEsCampo);
 
 router.get("/estadisticas", async (req, res, next) => {
   try {
