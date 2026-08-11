@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { getToken } from "@/lib/api";
 
 export default function SuperAdminLayout({ children }) {
   const router = useRouter();
@@ -8,11 +9,11 @@ export default function SuperAdminLayout({ children }) {
   useEffect(() => {
     try {
       const token = getToken();
-      if (!token) { router.replace("/login"); return; }
+      if (!token) { router.replace("/"); return; }
       const payload = JSON.parse(atob(token.split(".")[1]));
       if (payload.role !== "SUPER_ADMIN") router.replace("/dashboard");
     } catch {
-      router.replace("/login");
+      router.replace("/");
     }
   }, []);
 
