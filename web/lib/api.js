@@ -6,8 +6,19 @@ function decodePayload(token) {
 
 function getToken() {
   if (typeof window === "undefined") return null;
-  // sessionStorage es por pestaña — cada tab tiene su propia sesión independiente
-  return sessionStorage.getItem("token");
+  // Buscar en sessionStorage (nuevo sistema — por pestaña)
+  const fromSession = sessionStorage.getItem("token");
+  if (fromSession) return fromSession;
+  // Migración automática: si hay token viejo en localStorage, moverlo a sessionStorage
+  const fromLocal = localStorage.getItem("token")
+    || Object.keys(localStorage).filter(k => k.startsWith("token_")).map(k => localStorage.getItem(k))[0];
+  if (fromLocal) {
+    sessionStorage.setItem("token", fromLocal);
+    localStorage.removeItem("token");
+    Object.keys(localStorage).filter(k => k.startsWith("token_")).forEach(k => localStorage.removeItem(k));
+    return fromLocal;
+  }
+  return null;
 }
 
 export async function api(path, { method = "GET", body, isForm = false } = {}) {
