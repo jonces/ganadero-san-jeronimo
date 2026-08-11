@@ -20,12 +20,30 @@ async function requireAuth(req, res, next) {
       }
     }
 
-    // Actualizar lastSeen en background (sin bloquear la respuesta)
+    // Verificar tokenVersion y actualizar lastSeen
     if (req.user.sub) {
-      prisma.usuario.update({
+      prisma.usuario.findUnique({
         where: { id: req.user.sub },
-        data: { lastSeen: new Date() },
+        select: { tokenVersion: true },
+      }).then(u => {
+        if (u && u.tokenVersion !== (req.user.tokenVersion ?? 0)) {
+          // Token desactualizado — el cargo cambió
+          return; // El error se maneja en la verificación de abajo
+        }
+        prisma.usuario.update({
+          where: { id: req.user.sub },
+          data: { lastSeen: new Date() },
+        }).catch(() => {});
       }).catch(() => {});
+
+      // Verificación síncrona de tokenVersion
+      const usuario = await prisma.usuario.findUnique({
+        where: { id: req.user.sub },
+        select: { tokenVersion: true },
+      });
+      if (usuario && usuario.tokenVersion !== (req.user.tokenVersion ?? 0)) {
+        return res.status(401).json({ error: "ROL_ACTUALIZADO" });
+      }
     }
 
     next();

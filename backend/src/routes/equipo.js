@@ -131,6 +131,8 @@ router.patch("/:id", async (req, res, next) => {
     const data = {};
     if (cargo) data.cargo = cargo;
     if (role === "ADMIN" || role === "TRABAJADOR") data.role = role;
+    // Incrementar tokenVersion para invalidar sesión activa del usuario
+    data.tokenVersion = { increment: 1 };
 
     const actualizado = await prisma.usuario.update({
       where: { id: objetivo.id },

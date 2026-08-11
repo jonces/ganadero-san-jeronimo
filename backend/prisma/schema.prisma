@@ -90,9 +90,10 @@ model Usuario {
   resetCodigo  String?
   resetExpira  DateTime?
   fotoPerfil   String?
-  cargo        String?  // GERENTE_GENERAL, ADMINISTRADOR, RESPONSABLE_NOMINA, TRABAJADOR_CAMPO, VAQUERO, OTRO
-  lastSeen     DateTime?
-  createdAt    DateTime @default(now())
+  cargo           String?  // GERENTE_GENERAL, ADMINISTRADOR, RESPONSABLE_NOMINA, TRABAJADOR_CAMPO, VAQUERO, OTRO
+  lastSeen        DateTime?
+  tokenVersion    Int      @default(0)
+  createdAt       DateTime @default(now())
 
   eventos    Evento[]
   ventas     Venta[]

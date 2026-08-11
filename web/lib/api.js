@@ -38,6 +38,15 @@ export async function api(path, { method = "GET", body, isForm = false } = {}) {
     if (data?.error === "FINCA_SUSPENDIDA") {
       if (typeof window !== "undefined") sessionStorage.setItem("finca_suspendida", "1");
     }
+    if (data?.error === "ROL_ACTUALIZADO") {
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("finca_suspendida");
+        alert("Tu rol fue actualizado. Por favor vuelve a iniciar sesión.");
+        window.location.href = "/";
+      }
+      return;
+    }
     throw new Error(data?.error || "Error en la solicitud");
   }
   if (typeof window !== "undefined") sessionStorage.removeItem("finca_suspendida");
