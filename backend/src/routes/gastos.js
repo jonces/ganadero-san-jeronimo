@@ -47,12 +47,19 @@ router.get("/", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Lista de usuarios de la finca (para selector)
-router.get("/usuarios-finca", requireRole("ADMIN", "SUPER_ADMIN"), async (req, res, next) => {
+// Lista de usuarios de la finca (para selector) — accesible para ADMIN y RESPONSABLE_NOMINA
+router.get("/usuarios-finca", async (req, res, next) => {
   try {
+    const me = await prisma.usuario.findUnique({
+      where: { id: req.user.sub },
+      select: { role: true, cargo: true },
+    });
+    const esAutorizado = me?.role === "ADMIN" || me?.role === "SUPER_ADMIN" || me?.cargo === "RESPONSABLE_NOMINA";
+    if (!esAutorizado) return res.status(403).json({ error: "Sin permiso" });
+
     const usuarios = await prisma.usuario.findMany({
-      where: { fincaId: req.user.fincaId },
-      select: { id: true, nombre: true, role: true },
+      where: { fincaId: req.user.fincaId, role: { not: "SUPER_ADMIN" } },
+      select: { id: true, nombre: true, role: true, cargo: true },
       orderBy: { nombre: "asc" },
     });
     res.json(usuarios);

@@ -75,14 +75,20 @@ export default function NominaPage() {
       setFinca(f);
       setUsuarioActual(me);
 
-      // Auto-seleccionar responsable de nómina si la finca ya tiene uno registrado
-      const responsableNomina = lista.find(usr => usr.cargo === "RESPONSABLE_NOMINA");
-      if (responsableNomina) {
+      // Auto-seleccionar: primero el usuario actual si es Responsable de Nómina, si no buscar en la lista
+      const cargoLabel = (cargo) => {
+        const map = { GERENTE_GENERAL: "Gerente General", ADMINISTRADOR: "Administrador", RESPONSABLE_NOMINA: "Responsable de Nómina", TRABAJADOR_CAMPO: "Trabajador de Campo", VAQUERO: "Vaquero", OTRO: "Otro" };
+        return map[cargo] || cargo || "";
+      };
+      const candidato = me?.cargo === "RESPONSABLE_NOMINA"
+        ? me
+        : lista.find(usr => usr.cargo === "RESPONSABLE_NOMINA");
+      if (candidato) {
         setForm(prev => ({
           ...prev,
-          responsableId: responsableNomina.id,
-          responsableNombre: responsableNomina.nombre,
-          responsableRol: responsableNomina.cargo === "RESPONSABLE_NOMINA" ? "Responsable de Nómina" : roleLabel(responsableNomina.role),
+          responsableId: candidato.id,
+          responsableNombre: candidato.nombre,
+          responsableRol: cargoLabel(candidato.cargo) || roleLabel(candidato.role),
         }));
       }
     });
@@ -122,7 +128,7 @@ export default function NominaPage() {
       ...f,
       responsableId: u.id,
       responsableNombre: u.nombre,
-      responsableRol: roleLabel(u.role),
+      responsableRol: cargoDisplay(u),
       pagarmeAMiMismo: false,
       receptorId: "", receptorNombre: "", receptorCargo: "",
     }));
@@ -130,12 +136,15 @@ export default function NominaPage() {
     setBusquedaResp("");
   }
 
+  const CARGO_LABELS = { GERENTE_GENERAL: "Gerente General", ADMINISTRADOR: "Administrador", RESPONSABLE_NOMINA: "Responsable de Nómina", TRABAJADOR_CAMPO: "Trabajador de Campo", VAQUERO: "Vaquero", OTRO: "Otro" };
+  const cargoDisplay = (u) => CARGO_LABELS[u.cargo] || roleLabel(u.role);
+
   function seleccionarReceptor(u) {
     setForm(f => ({
       ...f,
       receptorId: u.id,
       receptorNombre: u.nombre,
-      receptorCargo: roleLabel(u.role),
+      receptorCargo: cargoDisplay(u),
     }));
     setMostrarSelectorReceptor(false);
     setBusquedaRecep("");
@@ -504,7 +513,7 @@ export default function NominaPage() {
                           </div>
                           <div>
                             <p className="font-semibold text-sm text-gray-800">{u.nombre}</p>
-                            <p className="text-xs text-gray-400">{roleLabel(u.role)}</p>
+                            <p className="text-xs text-gray-400">{cargoDisplay(u)}</p>
                           </div>
                         </button>
                       ))}
@@ -579,7 +588,7 @@ export default function NominaPage() {
                               </div>
                               <div>
                                 <p className="font-semibold text-sm text-gray-800">{u.nombre}</p>
-                                <p className="text-xs text-gray-400">{roleLabel(u.role)} · Activo</p>
+                                <p className="text-xs text-gray-400">{cargoDisplay(u)}</p>
                               </div>
                             </button>
                           ))}
