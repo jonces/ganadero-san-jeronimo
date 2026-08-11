@@ -1293,6 +1293,14 @@ export default function DashboardPage() {
   const [fotoPerfil, setFotoPerfil] = useState(null);
   const [clima, setClima] = useState(null);
   const [showIA, setShowIA] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -1442,7 +1450,7 @@ export default function DashboardPage() {
         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
 
           {/* ── Selector de finca ── */}
-          <div style={{ display:"flex", alignItems:"center", gap:7, height:36, padding:"0 12px", borderRadius:9, border:`1px solid ${COLOR.border}`, background:COLOR.white, cursor:"default", flexShrink:0, maxWidth:180, overflow:"hidden" }}>
+          <div style={{ display: isMobile ? "none" : "flex", alignItems:"center", gap:7, height:36, padding:"0 12px", borderRadius:9, border:`1px solid ${COLOR.border}`, background:COLOR.white, cursor:"default", flexShrink:0, maxWidth:180, overflow:"hidden" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COLOR.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
@@ -1453,7 +1461,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ── Selector de moneda ── */}
-          <div style={{ position:"relative", flexShrink:0 }}>
+          <div style={{ position:"relative", flexShrink:0, display: isMobile ? "none" : "block" }}>
             <select
               style={{ ...TB.sel, paddingRight:26, appearance:"none", WebkitAppearance:"none" }}
               value={moneda}
@@ -1470,11 +1478,14 @@ export default function DashboardPage() {
           {/* ── Selector de mes ── */}
           <div style={{ position:"relative", flexShrink:0 }}>
             <select
-              style={{ ...TB.sel, paddingRight:26, appearance:"none", WebkitAppearance:"none" }}
+              style={{ ...TB.sel, paddingRight:26, appearance:"none", WebkitAppearance:"none", maxWidth: isMobile ? 90 : undefined }}
               value={mesSeleccionado}
               onChange={e => setMesSeleccionado(Number(e.target.value))}
             >
-              {["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].map((m,i) => (
+              {(isMobile
+                ? ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"]
+                : ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
+              ).map((m,i) => (
                 <option key={i+1} value={i+1}>{m}</option>
               ))}
             </select>
@@ -1500,7 +1511,7 @@ export default function DashboardPage() {
           </div>
 
           {/* ── Calendario ── */}
-          <div style={{ position:"relative", flexShrink:0 }}>
+          <div style={{ position:"relative", flexShrink:0, display: isMobile ? "none" : "block" }}>
             <button
               onClick={() => setShowCalendario(v => !v)}
               style={{ ...TB.icon, gap:5, width:"auto", padding:"0 10px", fontSize:12, fontWeight:600, color:showCalendario ? COLOR.green : COLOR.muted }}
@@ -1547,7 +1558,7 @@ export default function DashboardPage() {
           {/* ── Perfil (visible en desktop, ya está en sidebar pero no en topbar) ── */}
           <button
             onClick={() => router.push("/perfil")}
-            style={{ display:"flex", alignItems:"center", gap:8, height:36, padding:"0 10px 0 6px", borderRadius:9, border:`1px solid ${COLOR.border}`, background:COLOR.white, cursor:"pointer", flexShrink:0, transition:"all 0.15s" }}
+            style={{ display: isMobile ? "none" : "flex", alignItems:"center", gap:8, height:36, padding:"0 10px 0 6px", borderRadius:9, border:`1px solid ${COLOR.border}`, background:COLOR.white, cursor:"pointer", flexShrink:0, transition:"all 0.15s" }}
             onMouseEnter={e => { e.currentTarget.style.background="#F8FAFC"; e.currentTarget.style.borderColor="#CBD5E1"; }}
             onMouseLeave={e => { e.currentTarget.style.background=COLOR.white; e.currentTarget.style.borderColor=COLOR.border; }}
           >
@@ -1589,10 +1600,10 @@ export default function DashboardPage() {
         overflow: "hidden",
       }}>
         {/* Fila superior: saludo + finca | clima | chips de estado */}
-        <div style={{ display: "flex", alignItems: "center", gap: 0, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", gap: 0, flexWrap: "wrap", flexDirection: isMobile ? "column" : "row" }}>
 
           {/* Saludo y nombre de finca */}
-          <div style={{ padding: "14px 20px", borderRight: `1px solid ${COLOR.border}`, minWidth: 220 }}>
+          <div style={{ padding: "12px 16px", borderRight: isMobile ? "none" : `1px solid ${COLOR.border}`, borderBottom: isMobile ? `1px solid ${COLOR.border}` : "none", minWidth: isMobile ? 0 : 220 }}>
             <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>
               {saludo}
             </p>
@@ -1608,7 +1619,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Clima */}
-          <div style={{ padding: "14px 20px", borderRight: `1px solid ${COLOR.border}`, minWidth: 160 }}>
+          <div style={{ padding: "12px 16px", borderRight: isMobile ? "none" : `1px solid ${COLOR.border}`, borderBottom: isMobile ? `1px solid ${COLOR.border}` : "none", minWidth: isMobile ? 0 : 160 }}>
             {clima ? (
               <>
                 <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Clima ahora</p>
@@ -1632,7 +1643,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Estado del hato */}
-          <div style={{ padding: "14px 20px", borderRight: `1px solid ${COLOR.border}`, minWidth: 160 }}>
+          <div style={{ padding: "12px 16px", borderRight: isMobile ? "none" : `1px solid ${COLOR.border}`, borderBottom: isMobile ? `1px solid ${COLOR.border}` : "none", minWidth: isMobile ? 0 : 160 }}>
             <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Estado del hato</p>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
               {loading ? <Sk w={100} h={22} r={20} /> : (
@@ -1649,7 +1660,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Alertas del día */}
-          <div style={{ padding: "14px 20px", borderRight: `1px solid ${COLOR.border}`, minWidth: 150 }}>
+          <div style={{ padding: "12px 16px", borderRight: isMobile ? "none" : `1px solid ${COLOR.border}`, borderBottom: isMobile ? `1px solid ${COLOR.border}` : "none", minWidth: isMobile ? 0 : 150 }}>
             <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Alertas del día</p>
             <div style={{ marginTop: 6 }}>
               {loading ? <Sk w={90} h={22} r={20} /> : (() => {
@@ -1665,7 +1676,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Tratamientos pendientes */}
-          <div style={{ padding: "14px 20px", flex: 1, minWidth: 150 }}>
+          <div style={{ padding: "12px 16px", flex: isMobile ? "none" : 1, minWidth: isMobile ? 0 : 150 }}>
             <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Tratamientos</p>
             <div style={{ marginTop: 6 }}>
               <button onClick={() => router.push("/incidentes")}
@@ -1679,7 +1690,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── KPI GRID UNIFICADO 4×2 ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: isMobile ? 10 : 14, marginBottom: 24 }}>
         {kpiCards.map(c => (
           <KpiCard key={c.label} loading={loading} {...c} onClick={() => router.push(c.href)} />
         ))}
@@ -1711,11 +1722,11 @@ export default function DashboardPage() {
         return (
           <div style={{ marginBottom: 16 }}>
             {/* ── Indicador de fase ── */}
-            <div style={{ background: cfg.bg, border: `1.5px solid ${cfg.border}`, borderRadius: 14, padding: "16px 20px", marginBottom: 12, display: "flex", alignItems: "center", gap: 14 }}>
+            <div style={{ background: cfg.bg, border: `1.5px solid ${cfg.border}`, borderRadius: 14, padding: "16px 20px", marginBottom: 12, display: "flex", alignItems: isMobile ? "flex-start" : "center", gap: 14, flexWrap: "wrap" }}>
               <div style={{ fontSize: 32, flexShrink: 0 }}>{cfg.emoji}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 800, fontSize: 16, color: cfg.color }}>{cfg.label}</div>
-                <div style={{ fontSize: 13, color: COLOR.textSec, marginTop: 3 }}>{stats.faseDescripcion}</div>
+                <div style={{ fontSize: 13, color: COLOR.muted, marginTop: 3 }}>{stats.faseDescripcion}</div>
               </div>
               <div style={{ textAlign: "right", flexShrink: 0 }}>
                 <div style={{ fontSize: 11, color: COLOR.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Recuperado</div>
@@ -1727,7 +1738,7 @@ export default function DashboardPage() {
             </div>
 
             {/* ── 3 cards: ROI · Base reproductora · Proyección lote ── */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
 
               {/* ROI del Hato */}
               <div style={{ ...cardStyle, padding: 0 }}>
@@ -1736,16 +1747,16 @@ export default function DashboardPage() {
                 </div>
                 <div style={{ padding: "12px 16px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, color: COLOR.textSec }}>Lo que invertiste</span>
+                    <span style={{ fontSize: 12, color: COLOR.muted }}>Lo que invertiste</span>
                     <span style={{ fontSize: 12, fontWeight: 700, color: COLOR.text }}>{fmtN(roi.invertido || 0)}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, color: COLOR.textSec }}>Valor del hato hoy</span>
+                    <span style={{ fontSize: 12, color: COLOR.muted }}>Valor del hato hoy</span>
                     <span style={{ fontSize: 12, fontWeight: 700, color: COLOR.blue }}>{fmtN(roi.valorHato || 0)}</span>
                   </div>
                   <div style={{ height: 1, background: COLOR.border, margin: "8px 0" }} />
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 12, color: COLOR.textSec }}>Ganancia latente</span>
+                    <span style={{ fontSize: 12, color: COLOR.muted }}>Ganancia latente</span>
                     <span style={{ fontSize: 14, fontWeight: 800, color: (roi.gananciasLatente || 0) >= 0 ? COLOR.green : COLOR.red }}>{fmtN(roi.gananciasLatente || 0)}</span>
                   </div>
                   <div style={{ marginTop: 10, background: "#F0FDF4", borderRadius: 8, padding: "6px 10px", textAlign: "center" }}>
@@ -1768,7 +1779,7 @@ export default function DashboardPage() {
                     { label: "Novillas de reemplazo",val: base.novillas || 0, color: COLOR.purple },
                   ].map(r => (
                     <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <span style={{ fontSize: 12, color: COLOR.textSec }}>{r.label}</span>
+                      <span style={{ fontSize: 12, color: COLOR.muted }}>{r.label}</span>
                       <span style={{ fontSize: 16, fontWeight: 800, color: r.color }}>{r.val}</span>
                     </div>
                   ))}
@@ -1789,7 +1800,7 @@ export default function DashboardPage() {
                 <div style={{ padding: "12px 16px" }}>
                   <div style={{ textAlign: "center", padding: "8px 0 12px" }}>
                     <div style={{ fontSize: 36, fontWeight: 900, color: COLOR.green }}>{base.candidatosVenta || 0}</div>
-                    <div style={{ fontSize: 12, color: COLOR.textSec }}>animales listos para vender</div>
+                    <div style={{ fontSize: 12, color: COLOR.muted }}>animales listos para vender</div>
                   </div>
                   <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", textAlign: "center", marginBottom: 8 }}>
                     <div style={{ fontSize: 11, color: COLOR.muted, fontWeight: 600 }}>Si vendes ese lote hoy</div>
@@ -1818,7 +1829,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── 2 COLUMNAS: Resumen hato | Alertas ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, marginBottom: 16 }}>
 
         {/* ── Resumen del hato — Donut ── */}
         <div style={cardStyle}>
@@ -1862,7 +1873,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── 3 COLUMNAS: Capital invertido | Insumos | Indicadores ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
 
         {/* Capital invertido por categoría */}
         <div style={cardStyle}>
@@ -1947,7 +1958,7 @@ export default function DashboardPage() {
         onClick={() => router.push("/ia")}
         title="Centro IA Ganadero"
         style={{
-          position: "fixed", bottom: 28, right: 24,
+          position: "fixed", bottom: isMobile ? 80 : 28, right: 24,
           width: 52, height: 52, borderRadius: "50%", border: "none",
           background: "linear-gradient(135deg,#16a34a,#15803d)",
           color: "#fff", fontSize: 22, cursor: "pointer", zIndex: 61,

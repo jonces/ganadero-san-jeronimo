@@ -10,9 +10,18 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 const router = express.Router();
 router.use(requireAuth);
 
+const CARGOS_VALIDOS = [
+  "GERENTE_GENERAL",
+  "ADMINISTRADOR",
+  "RESPONSABLE_NOMINA",
+  "TRABAJADOR_CAMPO",
+  "VAQUERO",
+  "OTRO",
+];
+
 // Un ADMIN invita/crea trabajadores dentro de su misma finca
 router.post("/", requireRole("ADMIN"), async (req, res) => {
-  const { nombre, email, password, role } = req.body;
+  const { nombre, email, password, role, cargo } = req.body;
   if (!nombre || !email || !password) {
     return res.status(400).json({ error: "Faltan campos requeridos" });
   }
@@ -27,17 +36,18 @@ router.post("/", requireRole("ADMIN"), async (req, res) => {
       email,
       passwordHash,
       role: role === "ADMIN" ? "ADMIN" : "TRABAJADOR",
+      cargo: CARGOS_VALIDOS.includes(cargo) ? cargo : "TRABAJADOR_CAMPO",
       fincaId: req.user.fincaId,
     },
   });
 
-  res.status(201).json({ id: usuario.id, nombre, email, role: usuario.role });
+  res.status(201).json({ id: usuario.id, nombre, email, role: usuario.role, cargo: usuario.cargo });
 });
 
 router.get("/", requireRole("ADMIN"), async (req, res) => {
   const usuarios = await prisma.usuario.findMany({
     where: { fincaId: req.user.fincaId },
-    select: { id: true, nombre: true, email: true, role: true, createdAt: true },
+    select: { id: true, nombre: true, email: true, role: true, cargo: true, createdAt: true },
   });
   res.json(usuarios);
 });
@@ -47,7 +57,7 @@ router.get("/perfil", async (req, res, next) => {
   try {
     const usuario = await prisma.usuario.findUnique({
       where: { id: req.user.sub },
-      select: { id: true, nombre: true, email: true, role: true, fotoPerfil: true, createdAt: true },
+      select: { id: true, nombre: true, email: true, role: true, cargo: true, fotoPerfil: true, createdAt: true },
     });
     if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
     res.json(usuario);

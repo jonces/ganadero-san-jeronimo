@@ -14,12 +14,21 @@ function requireAdmin(req, res, next) {
 
 router.use(requireAuth);
 
+const CARGOS_VALIDOS = [
+  "GERENTE_GENERAL",
+  "ADMINISTRADOR",
+  "RESPONSABLE_NOMINA",
+  "TRABAJADOR_CAMPO",
+  "VAQUERO",
+  "OTRO",
+];
+
 // Ver trabajadores de la finca
 router.get("/", async (req, res, next) => {
   try {
     const usuarios = await prisma.usuario.findMany({
       where: { fincaId: req.user.fincaId, role: { not: "SUPER_ADMIN" } },
-      select: { id: true, nombre: true, email: true, role: true, createdAt: true },
+      select: { id: true, nombre: true, email: true, role: true, cargo: true, createdAt: true },
       orderBy: { createdAt: "asc" },
     });
     res.json(usuarios);
@@ -29,9 +38,12 @@ router.get("/", async (req, res, next) => {
 // Crear trabajador (solo ADMIN)
 router.post("/", requireAdmin, async (req, res, next) => {
   try {
-    const { nombre, email, password, role } = req.body;
+    const { nombre, email, password, role, cargo } = req.body;
     if (!nombre || !email || !password) {
       return res.status(400).json({ error: "nombre, email y password son requeridos" });
+    }
+    if (!cargo || !CARGOS_VALIDOS.includes(cargo)) {
+      return res.status(400).json({ error: "Debes seleccionar el cargo del usuario" });
     }
 
     const existente = await prisma.usuario.findUnique({ where: { email } });
@@ -54,9 +66,10 @@ router.post("/", requireAdmin, async (req, res, next) => {
         email,
         passwordHash,
         role: role === "ADMIN" ? "ADMIN" : "TRABAJADOR",
+        cargo,
         fincaId: req.user.fincaId,
       },
-      select: { id: true, nombre: true, email: true, role: true, createdAt: true },
+      select: { id: true, nombre: true, email: true, role: true, cargo: true, createdAt: true },
     });
     res.status(201).json(usuario);
   } catch (err) { next(err); }

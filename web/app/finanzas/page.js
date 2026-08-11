@@ -109,10 +109,79 @@ export default function FinanzasPage() {
         </div>
       )}
 
-      {/* Tabla de movimientos */}
+      {/* ── Tabla comparativa mes a mes ── */}
+      {meses.length > 0 && (
+        <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", marginBottom: 24 }}>
+          <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontWeight: 700, fontSize: 15, color: T.text }}>Comparativa mensual</div>
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: T.bg }}>
+                  {["Mes", "Ingresos", "Gastos", "Flujo neto", "Margen"].map(h => (
+                    <th key={h} style={{ padding: "10px 16px", textAlign: h === "Mes" ? "left" : "right", fontSize: 11, fontWeight: 700, color: T.textSec, borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...meses].reverse().map((m, i) => {
+                  const flujo = (m.ingresos || 0) - (m.gastos || 0);
+                  const margen = m.ingresos > 0 ? ((flujo / m.ingresos) * 100).toFixed(1) : "—";
+                  const esPositivo = flujo >= 0;
+                  const [año, mes] = m.mes.split("-");
+                  const nombreMes = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][Number(mes) - 1];
+                  return (
+                    <tr key={m.mes} style={{ borderBottom: `1px solid ${T.border}`, background: i === 0 ? "#F0FDF4" : undefined }}>
+                      <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: i === 0 ? 700 : 400, color: T.text }}>
+                        {nombreMes} {año} {i === 0 && <span style={{ fontSize: 10, background: T.green, color: "#fff", borderRadius: 99, padding: "1px 6px", marginLeft: 6, fontWeight: 700 }}>ACTUAL</span>}
+                      </td>
+                      <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, fontWeight: 600, color: T.green }}>
+                        {fmt(m.ingresos || 0)}
+                      </td>
+                      <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, fontWeight: 600, color: T.red }}>
+                        {fmt(m.gastos || 0)}
+                      </td>
+                      <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, fontWeight: 700, color: esPositivo ? T.green : T.red }}>
+                        {esPositivo ? "+" : ""}{fmt(flujo)}
+                      </td>
+                      <td style={{ padding: "10px 16px", textAlign: "right", fontSize: 13, fontWeight: 600, color: esPositivo ? T.green : T.red }}>
+                        {margen !== "—" ? `${margen}%` : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Tabla de movimientos ── */}
       <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
-        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}`, fontWeight: 700, fontSize: 15, color: T.text }}>
-          Movimientos recientes
+        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: T.text }}>Movimientos recientes</div>
+          {movimientos.length > 0 && (
+            <button
+              onClick={() => {
+                const rows = [["Fecha","Tipo","Descripción","Categoría","Monto (C$)"]];
+                movimientos.forEach(m => rows.push([
+                  new Date(m.fecha).toLocaleDateString("es-NI"),
+                  m.tipo === "INGRESO" ? "Ingreso" : "Egreso",
+                  m.descripcion,
+                  m.categoria || "",
+                  m.monto,
+                ]));
+                const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+                const a = document.createElement("a");
+                a.href = "data:text/csv;charset=utf-8,﻿" + encodeURIComponent(csv);
+                a.download = `movimientos-${new Date().toISOString().slice(0,10)}.csv`;
+                a.click();
+              }}
+              style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.white, fontSize: 12, fontWeight: 700, color: T.blue, cursor: "pointer" }}>
+              ⬇ Exportar CSV
+            </button>
+          )}
         </div>
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: T.textSec }}>Cargando...</div>
@@ -135,11 +204,9 @@ export default function FinanzasPage() {
                       {new Date(m.fecha).toLocaleDateString("es-NI")}
                     </td>
                     <td style={{ padding: "10px 14px" }}>
-                      <span style={{
-                        background: m.tipo === "INGRESO" ? T.greenBg : T.redBg,
-                        color: m.tipo === "INGRESO" ? T.green : T.red,
-                        padding: "2px 10px", borderRadius: 99, fontSize: 12, fontWeight: 600,
-                      }}>{m.tipo === "INGRESO" ? "Ingreso" : "Egreso"}</span>
+                      <span style={{ background: m.tipo === "INGRESO" ? T.greenBg : T.redBg, color: m.tipo === "INGRESO" ? T.green : T.red, padding: "2px 10px", borderRadius: 99, fontSize: 12, fontWeight: 600 }}>
+                        {m.tipo === "INGRESO" ? "Ingreso" : "Egreso"}
+                      </span>
                     </td>
                     <td style={{ padding: "10px 14px", fontSize: 13, color: T.text, maxWidth: 220 }}>{m.descripcion}</td>
                     <td style={{ padding: "10px 14px", fontSize: 13, color: T.textSec }}>{m.categoria}</td>

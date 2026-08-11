@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
@@ -339,8 +339,24 @@ const REPORTES = [
   },
 ];
 
+function Sk({ w = "100%", h = 14, r = 6 }) {
+  return <div style={{ width: w, height: h, borderRadius: r, background: "#E2E8F0", animation: "pulse 1.5s ease-in-out infinite" }} />;
+}
+
 export default function ReportesPage() {
   const [generando, setGenerando] = useState(null);
+  const [resumen, setResumen] = useState(null);
+  const [loadingResumen, setLoadingResumen] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      api("/dashboard").catch(() => null),
+      api("/reproduccion/estadisticas").catch(() => null),
+      api("/finanzas?periodo=mes").catch(() => null),
+    ]).then(([dash, rep, fin]) => {
+      setResumen({ dash, rep, fin });
+    }).finally(() => setLoadingResumen(false));
+  }, []);
 
   async function exportar(reporte) {
     setGenerando(reporte.id);
@@ -354,14 +370,42 @@ export default function ReportesPage() {
     }
   }
 
+  const stats = [
+    { label: "Animales activos",  value: resumen?.dash?.animalesActivos ?? "—",                      icon: "🐄", color: T.green  },
+    { label: "Ventas este mes",   value: fmt(resumen?.dash?.ventasMes?.total),                        icon: "💰", color: T.blue   },
+    { label: "Gastos este mes",   value: fmt(resumen?.dash?.gastosMes?.total),                        icon: "💸", color: T.red    },
+    { label: "Hembras preñadas",  value: resumen?.rep?.totalPreñadas ?? "—",                          icon: "🤰", color: T.purple },
+    { label: "Caja disponible",   value: fmt(resumen?.dash?.cajaDisponible),                          icon: "🏦", color: T.green  },
+    { label: "Capital invertido", value: fmt(resumen?.dash?.capitalInvertido),                        icon: "📈", color: T.orange },
+  ];
+
   return (
     <AppLayout title="Reportes" subtitle="Exporta datos de tu finca en PDF">
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ color: T.textSec, fontSize: 14 }}>
-          Exporta reportes en PDF con los datos reales de tu finca.
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
+
+      {/* ── Resumen en tiempo real ── */}
+      <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 24px", marginBottom: 28 }}>
+        <div style={{ fontWeight: 800, fontSize: 15, color: T.text, marginBottom: 16 }}>📊 Resumen en tiempo real</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
+          {stats.map(s => (
+            <div key={s.label} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ fontSize: 20, marginBottom: 4 }}>{s.icon}</div>
+              {loadingResumen
+                ? <><Sk h={22} w="70%" /><Sk h={10} w="80%" /></>
+                : <>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: s.color }}>{s.value}</div>
+                    <div style={{ fontSize: 11, color: T.textSec, fontWeight: 600, marginTop: 2 }}>{s.label}</div>
+                  </>
+              }
+            </div>
+          ))}
         </div>
       </div>
 
+      {/* ── Tarjetas de exportación ── */}
+      <div style={{ fontWeight: 700, fontSize: 14, color: T.textSec, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        Exportar en PDF
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 16 }}>
         {REPORTES.map(r => (
           <div key={r.id} style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 14, padding: 24, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -389,7 +433,7 @@ export default function ReportesPage() {
                 cursor: generando === r.id ? "not-allowed" : "pointer",
                 transition: "opacity .15s",
               }}>
-              {generando === r.id ? "Generando PDF..." : "Exportar PDF"}
+              {generando === r.id ? "⏳ Generando PDF..." : "⬇ Exportar PDF"}
             </button>
           </div>
         ))}

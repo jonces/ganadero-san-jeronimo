@@ -602,13 +602,64 @@ function Row({ label, value }) {
 }
 
 // ─── Panel de detalle (columna derecha) ───────────────────────────────────────
+function GraficaPeso({ pesajes }) {
+  if (!pesajes || pesajes.length < 2) return null;
+  const W = 280, H = 70, PAD = 10;
+  const pesos = pesajes.map(p => p.peso);
+  const min = Math.min(...pesos);
+  const max = Math.max(...pesos);
+  const rng = max - min || 1;
+  const xOf = i => PAD + (i / (pesajes.length - 1)) * (W - PAD * 2);
+  const yOf = v => H - PAD - ((v - min) / rng) * (H - PAD * 2);
+  const path = pesajes.map((p, i) => `${i === 0 ? "M" : "L"}${xOf(i).toFixed(1)},${yOf(p.peso).toFixed(1)}`).join(" ");
+  const fill = `${path} L${xOf(pesajes.length-1).toFixed(1)},${H} L${PAD},${H} Z`;
+  const ultimo = pesajes[pesajes.length - 1];
+  const primero = pesajes[0];
+  const ganancia = ultimo.peso - primero.peso;
+  return (
+    <div style={{ marginBottom: 14, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "12px 14px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#15803D" }}>📈 Curva de peso</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: ganancia >= 0 ? "#16a34a" : "#DC2626" }}>
+          {ganancia >= 0 ? "+" : ""}{ganancia.toFixed(0)} lb totales
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: H }}>
+        <path d={fill} fill="#16a34a" opacity="0.1" />
+        <path d={path} fill="none" stroke="#16a34a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {pesajes.map((p, i) => (
+          <circle key={i} cx={xOf(i)} cy={yOf(p.peso)} r="3" fill="#16a34a" />
+        ))}
+      </svg>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+        <span style={{ fontSize: 10, color: "#64748B" }}>{new Date(primero.fecha).toLocaleDateString("es-NI", { day: "2-digit", month: "short" })}: {primero.peso} lb</span>
+        <span style={{ fontSize: 10, color: "#64748B" }}>{new Date(ultimo.fecha).toLocaleDateString("es-NI", { day: "2-digit", month: "short" })}: {ultimo.peso} lb</span>
+      </div>
+    </div>
+  );
+}
+
 function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
   const [modal, setModal] = useState(null);
   const [quitandoVenta, setQuitandoVenta] = useState(false);
   const [fotoIdx, setFotoIdx] = useState(0);
+  const [pesajes, setPesajes] = useState([]);
 
   // Resetear índice cuando cambia el animal
   useEffect(() => { setFotoIdx(0); }, [animal?.id]);
+
+  useEffect(() => {
+    if (!animal?.id) return;
+    api(`/eventos?animalId=${animal.id}`)
+      .then(eventos => {
+        const ps = (Array.isArray(eventos) ? eventos : [])
+          .filter(e => e.tipo === "PESAJE" && e.peso)
+          .map(e => ({ peso: Number(e.peso), fecha: e.fecha }))
+          .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        setPesajes(ps);
+      })
+      .catch(() => {});
+  }, [animal?.id]);
 
   useEffect(() => {
     function onKey(e) { if (e.key === "Escape" && !modal) onClose(); }
@@ -707,6 +758,9 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
             <Badge text={cat} color="#15803D" bg="#DCFCE7" border="#86EFAC" />
           </div>
         </div>
+
+        {/* Gráfica de peso */}
+        <GraficaPeso pesajes={pesajes} />
 
         {/* Grid de datos */}
         <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
