@@ -39,6 +39,109 @@ const CSS = `
   from { transform: scale(0.7); opacity:0; }
   to   { transform: scale(1);   opacity:1; }
 }
+
+/* ── Dashboard Campo — grid responsivo con CSS puro ── */
+.campo-accesos {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.campo-acceso-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.campo-acceso-btn:active {
+  transform: scale(0.96);
+}
+.campo-acceso-emoji {
+  font-size: 30px;
+}
+.campo-acceso-label {
+  font-size: 13px;
+  font-weight: 700;
+}
+.campo-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.campo-alertas {
+  grid-column: auto;
+}
+.campo-hero-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.campo-hero-stat {
+  background: rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 12px 16px;
+  text-align: center;
+  min-width: 80px;
+  flex: 1;
+}
+
+@media (max-width: 767px) {
+  .campo-accesos {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .campo-acceso-btn {
+    padding: 12px 4px;
+    gap: 5px;
+    border-radius: 12px;
+  }
+  .campo-acceso-emoji {
+    font-size: 22px;
+  }
+  .campo-acceso-label {
+    font-size: 10px;
+  }
+  .campo-main-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .campo-alertas {
+    grid-column: 1;
+  }
+  .campo-hero-stats {
+    gap: 8px;
+  }
+  .campo-hero-stat {
+    min-width: 70px;
+    padding: 10px 10px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .campo-main-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .campo-alertas {
+    grid-column: 1 / -1;
+  }
+  .campo-acceso-btn {
+    padding: 16px 10px;
+  }
+  .campo-acceso-emoji {
+    font-size: 26px;
+  }
+  .campo-acceso-label {
+    font-size: 12px;
+  }
+}
 `;
 
 // ── Donut del Hato ──
@@ -1601,107 +1704,98 @@ export default function DashboardPage() {
           DASHBOARD CAMPO — solo para TRABAJADOR_CAMPO / VAQUERO
       ══════════════════════════════════════════════════════ */}
       {esCampo && (() => {
-        const cols = isMobile ? 1 : isTablet ? 2 : 3;
-        const gap = isMobile ? 12 : 16;
-
-        // Cargo label
         const cargoLabel = usuario?.cargo === "VAQUERO" ? "Vaquero" : "Trabajador de Campo";
-
-        // Accesos rápidos para campo
         const accesos = [
-          { icono: "🐄", label: "Animales",  color: COLOR.green,  bg: "#F0FDF4", href: "/inventario" },
-          { icono: "📋", label: "Eventos",   color: COLOR.blue,   bg: "#EFF6FF", href: "/eventos"    },
-          { icono: "🚨", label: "Incidentes",color: COLOR.red,    bg: "#FEF2F2", href: "/incidentes" },
-          { icono: "💊", label: "Salud",     color: COLOR.orange, bg: "#FFF7ED", href: "/incidentes" },
+          { icono: "🐄", label: "Animales",   color: COLOR.green,  bg: "#F0FDF4", border: "#BBF7D0", href: "/inventario" },
+          { icono: "📋", label: "Eventos",    color: COLOR.blue,   bg: "#EFF6FF", border: "#BFDBFE", href: "/eventos"    },
+          { icono: "🚨", label: "Incidentes", color: COLOR.red,    bg: "#FEF2F2", border: "#FECACA", href: "/incidentes" },
+          { icono: "💊", label: "Salud",      color: COLOR.orange, bg: "#FFF7ED", border: "#FED7AA", href: "/incidentes" },
         ];
 
         return (
           <>
             {/* ── HERO CAMPO ── */}
             <div style={{
-              background: `linear-gradient(135deg, #14532d 0%, #166534 60%, #15803d 100%)`,
-              borderRadius: 18, marginBottom: gap,
-              padding: isMobile ? "20px 16px" : "20px 28px",
+              background: "linear-gradient(135deg, #14532d 0%, #166534 60%, #15803d 100%)",
+              borderRadius: 18, marginBottom: 14,
+              padding: "18px 16px",
               boxShadow: "0 4px 20px rgba(22,101,52,0.25)",
               position: "relative", overflow: "hidden",
             }}>
-              {/* Patrón decorativo de fondo */}
-              <div style={{ position:"absolute", inset:0, pointerEvents:"none", opacity:0.06 }}>
+              <div style={{ position:"absolute", inset:0, pointerEvents:"none", opacity:0.05 }}>
                 <svg viewBox="0 0 400 160" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
-                  <text x="10"  y="80"  fontSize="80" fill="white">🐄</text>
-                  <text x="200" y="50"  fontSize="60" fill="white">🌿</text>
+                  <text x="10" y="80" fontSize="80" fill="white">🐄</text>
+                  <text x="200" y="50" fontSize="60" fill="white">🌿</text>
                   <text x="310" y="120" fontSize="70" fill="white">🐄</text>
                 </svg>
               </div>
 
-              <div style={{ position:"relative", display:"flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center", justifyContent:"space-between", gap:14 }}>
+              <div style={{ position:"relative" }}>
                 {/* Saludo */}
-                <div>
-                  <p style={{ margin:0, fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.65)", letterSpacing:1, textTransform:"uppercase" }}>
-                    {saludo}
-                  </p>
-                  <p style={{ margin:"4px 0 0", fontSize: isMobile ? 22 : 26, fontWeight:900, color:"#fff", lineHeight:1.1 }}>
-                    {usuario?.nombre || "Usuario"}
-                  </p>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:8, flexWrap:"wrap" }}>
-                    <span style={{ fontSize:12, fontWeight:700, color:"#86efac", background:"rgba(255,255,255,0.12)", borderRadius:20, padding:"3px 10px" }}>
-                      🏷️ {cargoLabel}
-                    </span>
-                    <span style={{ fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.8)", background:"rgba(255,255,255,0.10)", borderRadius:20, padding:"3px 10px" }}>
-                      🏡 {loading ? "—" : (stats?.nombreFinca || "Mi Finca")}
-                    </span>
-                  </div>
+                <p style={{ margin:0, fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.65)", letterSpacing:1, textTransform:"uppercase" }}>
+                  {saludo}
+                </p>
+                <p style={{ margin:"4px 0 6px", fontSize:24, fontWeight:900, color:"#fff", lineHeight:1.1 }}>
+                  {usuario?.nombre || "Usuario"}
+                </p>
+                <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:14 }}>
+                  <span style={{ fontSize:11, fontWeight:700, color:"#86efac", background:"rgba(255,255,255,0.12)", borderRadius:20, padding:"3px 10px" }}>
+                    🏷️ {cargoLabel}
+                  </span>
+                  <span style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.8)", background:"rgba(255,255,255,0.10)", borderRadius:20, padding:"3px 10px" }}>
+                    🏡 {loading ? "—" : (stats?.nombreFinca || "Mi Finca")}
+                  </span>
                 </div>
 
-                {/* Clima + animales activos */}
-                <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+                {/* Stats en fila — siempre horizontal */}
+                <div className="campo-hero-stats">
                   {clima && (
-                    <div style={{ background:"rgba(255,255,255,0.12)", borderRadius:14, padding:"12px 16px", textAlign:"center", minWidth:90 }}>
-                      <div style={{ fontSize:28, lineHeight:1 }}>{clima.icono}</div>
-                      <div style={{ fontSize:18, fontWeight:900, color:"#fff", marginTop:4 }}>{clima.temp}°C</div>
-                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", marginTop:2 }}>{clima.desc}</div>
+                    <div className="campo-hero-stat">
+                      <div style={{ fontSize:24, lineHeight:1 }}>{clima.icono}</div>
+                      <div style={{ fontSize:17, fontWeight:900, color:"#fff", marginTop:3 }}>{clima.temp}°C</div>
+                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", marginTop:1 }}>{clima.desc}</div>
                     </div>
                   )}
-                  <div style={{ background:"rgba(255,255,255,0.12)", borderRadius:14, padding:"12px 16px", textAlign:"center", minWidth:90 }}>
-                    <div style={{ fontSize:28, lineHeight:1 }}>🐄</div>
-                    <div style={{ fontSize:22, fontWeight:900, color:"#86efac", marginTop:4 }}>
+                  <div className="campo-hero-stat">
+                    <div style={{ fontSize:24, lineHeight:1 }}>🐄</div>
+                    <div style={{ fontSize:20, fontWeight:900, color:"#86efac", marginTop:3 }}>
                       {loading ? "—" : (stats?.animalesActivos ?? "—")}
                     </div>
-                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", marginTop:2 }}>Activos</div>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", marginTop:1 }}>Activos</div>
                   </div>
-                  <div style={{ background:"rgba(255,255,255,0.12)", borderRadius:14, padding:"12px 16px", textAlign:"center", minWidth:90 }}>
-                    <div style={{ fontSize:28, lineHeight:1 }}>🤰</div>
-                    <div style={{ fontSize:22, fontWeight:900, color:"#fde68a", marginTop:4 }}>
+                  <div className="campo-hero-stat">
+                    <div style={{ fontSize:24, lineHeight:1 }}>🤰</div>
+                    <div style={{ fontSize:20, fontWeight:900, color:"#fde68a", marginTop:3 }}>
                       {loading ? "—" : (stats?.resumenHato?.prenadas ?? "—")}
                     </div>
-                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", marginTop:2 }}>Preñadas</div>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", marginTop:1 }}>Preñadas</div>
+                  </div>
+                  <div className="campo-hero-stat">
+                    <div style={{ fontSize:24, lineHeight:1 }}>🚨</div>
+                    <div style={{ fontSize:20, fontWeight:900, color:"#fca5a5", marginTop:3 }}>
+                      {loading ? "—" : (stats?.alertas?.length ?? 0)}
+                    </div>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", marginTop:1 }}>Alertas</div>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* ── ACCESOS RÁPIDOS ── */}
-            <div style={{ display:"grid", gridTemplateColumns:`repeat(4, 1fr)`, gap:isMobile ? 10 : 14, marginBottom:gap }}>
+            <div className="campo-accesos">
               {accesos.map(a => (
-                <button key={a.href} onClick={() => router.push(a.href)} style={{
-                  display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-                  gap: isMobile ? 6 : 8,
-                  padding: isMobile ? "14px 8px" : "18px 12px",
-                  borderRadius:14, border:`1.5px solid ${a.bg === "#F0FDF4" ? "#BBF7D0" : a.bg === "#EFF6FF" ? "#BFDBFE" : a.bg === "#FEF2F2" ? "#FECACA" : "#FED7AA"}`,
-                  background:a.bg, cursor:"pointer",
-                  boxShadow:"0 1px 4px rgba(0,0,0,0.06)", transition:"transform 0.12s, box-shadow 0.12s",
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow=`0 4px 16px ${a.color}22`; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)"; }}
+                <button key={a.href} onClick={() => router.push(a.href)}
+                  className="campo-acceso-btn"
+                  style={{ border:`1.5px solid ${a.border}`, background:a.bg, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}
                 >
-                  <span style={{ fontSize: isMobile ? 24 : 30 }}>{a.icono}</span>
-                  <span style={{ fontSize: isMobile ? 11 : 13, fontWeight:700, color:a.color }}>{a.label}</span>
+                  <span className="campo-acceso-emoji">{a.icono}</span>
+                  <span className="campo-acceso-label" style={{ color:a.color }}>{a.label}</span>
                 </button>
               ))}
             </div>
 
-            {/* ── FILA PRINCIPAL: Hato + Indicadores (+ Alertas en desktop) ── */}
-            <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr", gap, marginBottom:gap }}>
+            {/* ── GRID PRINCIPAL: CSS media queries ── */}
+            <div className="campo-main-grid">
 
               {/* Donut del hato */}
               <div style={cardStyle}>
@@ -1716,7 +1810,7 @@ export default function DashboardPage() {
                 </div>
                 {loading ? (
                   <div style={{ padding:20, display:"flex", gap:16, alignItems:"center" }}>
-                    <Sk w={168} h={168} r="50%" />
+                    <Sk w={140} h={140} r="50%" />
                     <div style={{ flex:1, display:"flex", flexDirection:"column", gap:8 }}>
                       {[1,2,3,4].map(i => <Sk key={i} h={22} r={7} />)}
                     </div>
@@ -1740,10 +1834,10 @@ export default function DashboardPage() {
                 <div style={{ padding:12, display:"flex", flexDirection:"column", gap:10 }}>
                   {loading ? [1,2,3,4].map(i => <Sk key={i} h={52} r={10} />) :
                     [
-                      { icono:"⚖️", label:"Peso promedio",  valor: stats?.pesoPromedio ? `${Math.round(stats.pesoPromedio)} lb` : "—", color: COLOR.blue },
-                      { icono:"🤰", label:"Tasa de preñez", valor: stats?.tasaPrenez != null ? `${stats.tasaPrenez.toFixed(1)}%` : "—%", color: COLOR.purple },
-                      { icono:"🐮", label:"Natalidad",       valor: stats?.natalidad != null ? `${stats.natalidad.toFixed(1)}%` : "—%", color: COLOR.green },
-                      { icono:"📊", label:"Mortalidad",      valor: stats?.mortalidad != null ? `${stats.mortalidad.toFixed(2)}%` : "—%", color: COLOR.red },
+                      { icono:"⚖️", label:"Peso promedio",  valor: stats?.pesoPromedio ? `${Math.round(stats.pesoPromedio)} lb` : "—",       color: COLOR.blue   },
+                      { icono:"🤰", label:"Tasa de preñez", valor: stats?.tasaPrenez  != null ? `${stats.tasaPrenez.toFixed(1)}%`  : "—%",    color: COLOR.purple },
+                      { icono:"🐮", label:"Natalidad",      valor: stats?.natalidad   != null ? `${stats.natalidad.toFixed(1)}%`   : "—%",    color: COLOR.green  },
+                      { icono:"📊", label:"Mortalidad",     valor: stats?.mortalidad  != null ? `${stats.mortalidad.toFixed(2)}%`  : "—%",    color: COLOR.red    },
                     ].map((ind, i) => (
                       <div key={i} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 14px", borderRadius:12, background:"#F8FAFC", border:`1px solid ${COLOR.border}` }}>
                         <span style={{ fontSize:26 }}>{ind.icono}</span>
@@ -1757,20 +1851,20 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Alertas — 3ra col en desktop, full-width en móvil/tablet */}
-              <div style={{ ...cardStyle, gridColumn: isMobile || isTablet ? "1 / -1" : "auto" }}>
+              {/* Alertas — ocupa toda la fila en móvil/tablet via CSS */}
+              <div className="campo-alertas" style={cardStyle}>
                 <AlertasInteligentes loading={loading} onNavigate={router.push.bind(router)} />
               </div>
             </div>
 
-            {/* ── PRÓXIMAS ACTIVIDADES — full width ── */}
-            <div style={{ marginBottom: gap }}>
+            {/* ── PRÓXIMAS ACTIVIDADES ── */}
+            <div style={{ marginBottom: 16 }}>
               <ProximasActividadesCard onNavigate={router.push.bind(router)} />
             </div>
 
             {/* Botón flotante IA */}
             <button onClick={() => router.push("/ia")} title="Centro IA Ganadero"
-              style={{ position:"fixed", bottom: isMobile ? 80 : 28, right:24, width:52, height:52, borderRadius:"50%", border:"none", background:"linear-gradient(135deg,#16a34a,#15803d)", color:"#fff", fontSize:22, cursor:"pointer", zIndex:61, boxShadow:"0 4px 20px rgba(22,163,74,0.45)", display:"flex", alignItems:"center", justifyContent:"center", transition:"transform 0.15s" }}
+              style={{ position:"fixed", bottom:28, right:24, width:52, height:52, borderRadius:"50%", border:"none", background:"linear-gradient(135deg,#16a34a,#15803d)", color:"#fff", fontSize:22, cursor:"pointer", zIndex:61, boxShadow:"0 4px 20px rgba(22,163,74,0.45)", display:"flex", alignItems:"center", justifyContent:"center", transition:"transform 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.transform="scale(1.1)"}
               onMouseLeave={e => e.currentTarget.style.transform="scale(1)"}
             >🤖</button>
