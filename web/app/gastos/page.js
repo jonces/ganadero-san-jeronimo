@@ -430,6 +430,9 @@ export default function GastosPage() {
 
   useEffect(() => { load(); }, [periodo]);
 
+  const CARGOS_CAMPO = ["TRABAJADOR_CAMPO", "VAQUERO"];
+  const esCampo = CARGOS_CAMPO.includes(user?.cargo);
+
   async function handleSubmit(e) {
     e.preventDefault();
     setEnviando(true); setError("");
@@ -751,10 +754,15 @@ export default function GastosPage() {
 
   const esAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 
+  // Ocultar gastos de nómina/salario para trabajadores de campo
+  const gastosVisibles = esCampo
+    ? data.gastos.filter(g => g.categoria !== "SALARIO")
+    : data.gastos;
+
   const porCategoria = CATEGORIAS.map((c) => ({
     ...c,
-    total: data.gastos.filter((g) => g.categoria === c.value).reduce((s, g) => s + g.monto, 0),
-    count: data.gastos.filter((g) => g.categoria === c.value).length,
+    total: gastosVisibles.filter((g) => g.categoria === c.value).reduce((s, g) => s + g.monto, 0),
+    count: gastosVisibles.filter((g) => g.categoria === c.value).length,
   })).filter((c) => c.count > 0);
 
   return (
@@ -804,23 +812,25 @@ export default function GastosPage() {
             style={{ background: showForm ? "#718096" : "#805ad5" }}>
             {showForm ? "✕ Cancelar" : "+ Registrar Gasto"}
           </button>
-          <div className="flex gap-3">
-            <button onClick={() => router.push("/gastos/nomina")}
-              className="flex-1 text-white rounded-2xl py-3 font-black text-base shadow-lg flex items-center justify-center gap-2"
-              style={{ background: "#1a5c2a" }}>
-              💵 Nómina fija
-            </button>
-            <button onClick={() => router.push("/gastos/nomina/temporal")}
-              className="flex-1 text-white rounded-2xl py-3 font-black text-base shadow-lg flex items-center justify-center gap-2"
-              style={{ background: "#065f46" }}>
-              👷 Temporal
-            </button>
-            <button onClick={() => router.push("/gastos/nomina/historial")}
-              className="px-5 text-white rounded-2xl py-3 font-bold text-sm shadow-lg flex items-center justify-center gap-1"
-              style={{ background: "#14532d" }}>
-              📋
-            </button>
-          </div>
+          {!esCampo && (
+            <div className="flex gap-3">
+              <button onClick={() => router.push("/gastos/nomina")}
+                className="flex-1 text-white rounded-2xl py-3 font-black text-base shadow-lg flex items-center justify-center gap-2"
+                style={{ background: "#1a5c2a" }}>
+                💵 Nómina fija
+              </button>
+              <button onClick={() => router.push("/gastos/nomina/temporal")}
+                className="flex-1 text-white rounded-2xl py-3 font-black text-base shadow-lg flex items-center justify-center gap-2"
+                style={{ background: "#065f46" }}>
+                👷 Temporal
+              </button>
+              <button onClick={() => router.push("/gastos/nomina/historial")}
+                className="px-5 text-white rounded-2xl py-3 font-bold text-sm shadow-lg flex items-center justify-center gap-1"
+                style={{ background: "#14532d" }}>
+                📋
+              </button>
+            </div>
+          )}
         </div>
 
         {showForm && !editando && (
@@ -887,7 +897,7 @@ export default function GastosPage() {
 
         {/* Lista */}
         <div className="space-y-3">
-          {data.gastos.map((g) => {
+          {gastosVisibles.map((g) => {
             const cat = CATEGORIAS.find((c) => c.value === g.categoria) || CATEGORIAS[5];
             const per = PERIODICIDADES.find((p) => p.value === g.periodicidad);
             return (

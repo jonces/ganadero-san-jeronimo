@@ -23,8 +23,9 @@ const CARGOS_CAMPO = ["TRABAJADOR_CAMPO", "VAQUERO"];
 
 // Rutas bloqueadas para trabajadores de campo y vaqueros
 const RUTAS_SOLO_ADMIN = [
-  "/ventas", "/gastos", "/finanzas", "/compras", "/proveedores",
+  "/ventas", "/finanzas", "/compras", "/proveedores",
   "/cuentas-pagar", "/equipo", "/reportes", "/documentos", "/crecimiento", "/actividad",
+  "/gastos/nomina",
 ];
 
 const NAV_ITEMS_ADMIN = [
