@@ -20,6 +20,14 @@ async function requireAuth(req, res, next) {
       }
     }
 
+    // Actualizar lastSeen en background (sin bloquear la respuesta)
+    if (req.user.sub) {
+      prisma.usuario.update({
+        where: { id: req.user.sub },
+        data: { lastSeen: new Date() },
+      }).catch(() => {});
+    }
+
     next();
   } catch (err) {
     return res.status(401).json({ error: "Token inválido o expirado" });

@@ -29,10 +29,41 @@ router.get("/", async (req, res, next) => {
   try {
     const usuarios = await prisma.usuario.findMany({
       where: { fincaId: req.user.fincaId, role: { not: "SUPER_ADMIN" } },
-      select: { id: true, nombre: true, email: true, role: true, cargo: true, createdAt: true },
+      select: { id: true, nombre: true, email: true, role: true, cargo: true, lastSeen: true, createdAt: true },
       orderBy: { createdAt: "asc" },
     });
     res.json(usuarios);
+  } catch (err) { next(err); }
+});
+
+// Conectados ahora — solo Gerente General y Admin
+router.get("/conectados", async (req, res, next) => {
+  try {
+    const yo = await prisma.usuario.findUnique({
+      where: { id: req.user.sub },
+      select: { cargo: true, role: true },
+    });
+    const puedeVer = yo?.cargo === "GERENTE_GENERAL" || yo?.role === "ADMIN" || yo?.role === "SUPER_ADMIN";
+    if (!puedeVer) return res.status(403).json({ error: "Sin permiso" });
+
+    const hace10min = new Date(Date.now() - 10 * 60 * 1000);
+    const hace1hora = new Date(Date.now() - 60 * 60 * 1000);
+
+    const usuarios = await prisma.usuario.findMany({
+      where: { fincaId: req.user.fincaId, role: { not: "SUPER_ADMIN" } },
+      select: { id: true, nombre: true, cargo: true, role: true, lastSeen: true },
+      orderBy: { lastSeen: { sort: "desc", nulls: "last" } },
+    });
+
+    const conEstado = usuarios.map(u => ({
+      ...u,
+      estado: !u.lastSeen ? "desconectado"
+        : u.lastSeen >= hace10min ? "activo"
+        : u.lastSeen >= hace1hora ? "reciente"
+        : "desconectado",
+    }));
+
+    res.json(conEstado);
   } catch (err) { next(err); }
 });
 

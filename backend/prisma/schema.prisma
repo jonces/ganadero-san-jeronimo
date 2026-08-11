@@ -91,6 +91,7 @@ model Usuario {
   resetExpira  DateTime?
   fotoPerfil   String?
   cargo        String?  // GERENTE_GENERAL, ADMINISTRADOR, RESPONSABLE_NOMINA, TRABAJADOR_CAMPO, VAQUERO, OTRO
+  lastSeen     DateTime?
   createdAt    DateTime @default(now())
 
   eventos    Evento[]

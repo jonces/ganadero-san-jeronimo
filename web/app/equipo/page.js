@@ -68,15 +68,33 @@ function cargoGrad(cargo) {
   return map[cargo] || map.OTRO;
 }
 
+function estadoColor(estado) {
+  if (estado === "activo")   return { dot: "#22c55e", label: "Activo ahora", bg: "rgba(34,197,94,0.15)"  };
+  if (estado === "reciente") return { dot: "#eab308", label: "Reciente",     bg: "rgba(234,179,8,0.15)"  };
+  return                            { dot: "#6b7280", label: "Desconectado", bg: "rgba(107,114,128,0.1)" };
+}
+
+function tiempoDesde(fecha) {
+  if (!fecha) return "Nunca";
+  const mins = Math.floor((Date.now() - new Date(fecha)) / 60000);
+  if (mins < 1)  return "Ahora mismo";
+  if (mins < 60) return `Hace ${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24)  return `Hace ${hrs}h`;
+  return `Hace ${Math.floor(hrs / 24)}d`;
+}
+
 export default function EquipoPage() {
-  const [equipo, setEquipo]         = useState([]);
-  const [error, setError]           = useState("");
-  const [showForm, setShowForm]     = useState(false);
-  const [enviando, setEnviando]     = useState(false);
-  const [esAdmin, setEsAdmin]       = useState(false);
+  const [equipo, setEquipo]           = useState([]);
+  const [conectados, setConectados]   = useState([]);
+  const [error, setError]             = useState("");
+  const [showForm, setShowForm]       = useState(false);
+  const [enviando, setEnviando]       = useState(false);
+  const [esAdmin, setEsAdmin]         = useState(false);
+  const [esGerente, setEsGerente]     = useState(false);
   const [puedeEditar, setPuedeEditar] = useState(false);
-  const [editando, setEditando]     = useState(null); // usuario que se está editando
-  const [guardando, setGuardando]   = useState(false);
+  const [editando, setEditando]       = useState(null); // usuario que se está editando
+  const [guardando, setGuardando]     = useState(false);
   const [form, setForm] = useState({
     nombre: "", email: "", password: "", role: "TRABAJADOR", cargo: "",
   });
@@ -88,11 +106,25 @@ export default function EquipoPage() {
     } catch (err) { setError(err.message); }
   }
 
+  async function loadConectados() {
+    try {
+      const data = await api("/equipo/conectados");
+      setConectados(data);
+    } catch { setConectados([]); }
+  }
+
   useEffect(() => {
     const u = getUsuario();
     setEsAdmin(u?.role === "ADMIN" || u?.role === "SUPER_ADMIN");
-    setPuedeEditar(u?.role === "ADMIN" || u?.role === "SUPER_ADMIN" || u?.cargo === "GERENTE_GENERAL");
+    const gerente = u?.cargo === "GERENTE_GENERAL" || u?.role === "ADMIN" || u?.role === "SUPER_ADMIN";
+    setEsGerente(gerente);
+    setPuedeEditar(gerente);
     load();
+    if (gerente) {
+      loadConectados();
+      const interval = setInterval(loadConectados, 30000);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   // Al elegir cargo, asigna el role automáticamente
@@ -168,6 +200,43 @@ export default function EquipoPage() {
         <p className="mb-4 rounded-xl p-3 text-sm" style={{ background: "rgba(220,38,38,0.2)", border: "1px solid rgba(220,38,38,0.4)", color: "#fca5a5" }}>
           {error}
         </p>
+      )}
+
+      {/* Panel conectados — solo Gerente General y Admin */}
+      {esGerente && conectados.length > 0 && (
+        <div className="rounded-2xl mb-5 overflow-hidden shadow-xl" style={{ background: "rgba(5,25,12,0.6)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.12)" }}>
+          <div style={{ padding: "14px 18px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <p style={{ fontWeight: 800, color: "#fff", fontSize: 14 }}>🟢 Quién está conectado</p>
+              <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 11, marginTop: 2 }}>
+                {conectados.filter(u => u.estado === "activo").length} activos ahora · se actualiza cada 30s
+              </p>
+            </div>
+          </div>
+          <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+            {conectados.map(u => {
+              const e = estadoColor(u.estado);
+              return (
+                <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 12, background: e.bg }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, background: cargoGrad(u.cargo), flexShrink: 0 }}>
+                    {cargoIcon(u.cargo)}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 700, color: "#fff", fontSize: 13 }}>{u.nombre}</p>
+                    <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{cargoLabel(u.cargo)}</p>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, justifyContent: "flex-end" }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: e.dot }} />
+                      <span style={{ color: e.dot, fontSize: 11, fontWeight: 700 }}>{e.label}</span>
+                    </div>
+                    <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, marginTop: 2 }}>{tiempoDesde(u.lastSeen)}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* Stats */}
