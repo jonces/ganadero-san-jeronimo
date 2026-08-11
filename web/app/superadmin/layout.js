@@ -7,7 +7,7 @@ export default function SuperAdminLayout({ children }) {
 
   useEffect(() => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getToken();
       if (!token) { router.replace("/login"); return; }
       const payload = JSON.parse(atob(token.split(".")[1]));
       if (payload.role !== "SUPER_ADMIN") router.replace("/dashboard");

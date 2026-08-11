@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AppLayout from "@/components/AppLayout";
-import { api } from "@/lib/api";
+import { api, getToken } from "@/lib/api";
 
 const TIPOS_LABEL = { OBSERVACION:"Observacion", VACUNACION:"Vacunacion", TRATAMIENTO:"Tratamiento", PESAJE:"Pesaje", PARTO:"Parto", MOVIMIENTO:"Movimiento" };
 const TIPOS_COLOR = { VACUNACION:[49,130,206], TRATAMIENTO:[229,62,62], PESAJE:[214,158,46], PARTO:[128,90,213], MOVIMIENTO:[45,158,63], OBSERVACION:[113,128,150] };
@@ -154,7 +154,6 @@ async function generarInformeAnimal(animal, finca) {
 }
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
 
 const REPRO_CONFIG = {
   PREÑADA:   { label: "Preñada",   color: "#e53e3e", bg: "rgba(229,62,62,0.2)",   icon: "🤰" },

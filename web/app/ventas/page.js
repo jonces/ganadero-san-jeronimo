@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, getUsuario } from "@/lib/api";
+import { api, getToken, getUsuario } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
 const METODOS_PAGO = [
@@ -18,7 +18,6 @@ const ESTADOS_PAGO = [
 ];
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
 
 export default function VentasPage() {
   const router = useRouter();

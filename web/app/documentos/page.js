@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 
 import AppLayout from "@/components/AppLayout";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
 
 const TIPOS = [
   { value: "FIERRO_ANUAL", label: "🔥 Certificado de Fierro Anual", color: "#e53e3e" },

@@ -1,10 +1,9 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, getToken } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
 import AppLayout from "@/components/AppLayout";
 
 const glass = { background: "rgba(5,25,12,0.70)", backdropFilter: "blur(16px)", border: "1px solid rgba(255,255,255,0.12)" };

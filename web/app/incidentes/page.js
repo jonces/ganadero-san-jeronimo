@@ -3,9 +3,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import AppLayout from "@/components/AppLayout";
-import { api } from "@/lib/api";
+import { api, getToken } from "@/lib/api";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
 
 const TIPOS = [
   { value: "ENFERMEDAD", label: "🤒 Enfermedad", color: "#e53e3e" },

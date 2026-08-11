@@ -1,11 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, getToken } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-function getToken() { return typeof window !== "undefined" ? localStorage.getItem("token") : null; }
 
 const TIPOS = [
   { key: "VACUNACION",      label: "Vacunación",      icon: "💉", color: "#e53e3e" },

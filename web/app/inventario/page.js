@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, getToken } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -408,7 +408,7 @@ function ModalEditarAnimal({ animal, hembrasActivas, onClose, onSuccess }) {
         Array.from(archivos).forEach(f => fd.append("archivos", f));
         await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://ganaderosg-backend.up.railway.app/api"}/animales/${animal.id}/media`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${getToken()}` },
           body: fd,
         });
       }
@@ -997,7 +997,7 @@ export default function InventarioPage() {
         Array.from(archivos).forEach(f => fd.append("archivos", f));
         await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api"}/animales/${res.id}/media`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${getToken()}` },
           body: fd,
         });
       }

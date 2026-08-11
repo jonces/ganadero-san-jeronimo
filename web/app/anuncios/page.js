@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { api, getToken } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
 const EMOJIS = ["📢", "⚠️", "✅", "🎯", "📌", "🔔", "💡", "🚀", "❗", "🙌"];
@@ -144,7 +144,7 @@ export default function AnunciosPage() {
     try {
       const data = await api("/anuncios");
       setAnuncios(data);
-      const token = localStorage.getItem("token");
+      const token = getToken();
       if (token) {
         const payload = JSON.parse(atob(token.split(".")[1]));
         setRole(payload.role);

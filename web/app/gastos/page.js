@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, getToken } from "@/lib/api";
 import AppLayout from "@/components/AppLayout";
 
 const CATEGORIAS = [
@@ -484,7 +484,7 @@ export default function GastosPage() {
     try {
       const fd = new FormData();
       Array.from(files).forEach(f => fd.append("archivos", f));
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const token = typeof window !== "undefined" ? getToken() : null;
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/gastos/${editando.id}/media`, {
         method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd,
       });
