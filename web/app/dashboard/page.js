@@ -1294,9 +1294,13 @@ export default function DashboardPage() {
   const [clima, setClima] = useState(null);
   const [showIA, setShowIA] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
+    const check = () => {
+      setIsMobile(window.innerWidth < 640);
+      setIsTablet(window.innerWidth >= 640 && window.innerWidth < 1024);
+    };
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -1592,6 +1596,190 @@ export default function DashboardPage() {
       }
     >
       <style>{CSS}</style>
+
+      {/* ══════════════════════════════════════════════════════
+          DASHBOARD CAMPO — solo para TRABAJADOR_CAMPO / VAQUERO
+      ══════════════════════════════════════════════════════ */}
+      {esCampo && (() => {
+        const cols = isMobile ? 1 : isTablet ? 2 : 3;
+        const gap = isMobile ? 12 : 16;
+
+        // Cargo label
+        const cargoLabel = usuario?.cargo === "VAQUERO" ? "Vaquero" : "Trabajador de Campo";
+
+        // Accesos rápidos para campo
+        const accesos = [
+          { icono: "🐄", label: "Animales",  color: COLOR.green,  bg: "#F0FDF4", href: "/inventario" },
+          { icono: "📋", label: "Eventos",   color: COLOR.blue,   bg: "#EFF6FF", href: "/eventos"    },
+          { icono: "🚨", label: "Incidentes",color: COLOR.red,    bg: "#FEF2F2", href: "/incidentes" },
+          { icono: "💊", label: "Salud",     color: COLOR.orange, bg: "#FFF7ED", href: "/incidentes" },
+        ];
+
+        return (
+          <>
+            {/* ── HERO CAMPO ── */}
+            <div style={{
+              background: `linear-gradient(135deg, #14532d 0%, #166534 60%, #15803d 100%)`,
+              borderRadius: 18, marginBottom: gap,
+              padding: isMobile ? "20px 16px" : "20px 28px",
+              boxShadow: "0 4px 20px rgba(22,101,52,0.25)",
+              position: "relative", overflow: "hidden",
+            }}>
+              {/* Patrón decorativo de fondo */}
+              <div style={{ position:"absolute", inset:0, pointerEvents:"none", opacity:0.06 }}>
+                <svg viewBox="0 0 400 160" width="100%" height="100%" preserveAspectRatio="xMidYMid slice">
+                  <text x="10"  y="80"  fontSize="80" fill="white">🐄</text>
+                  <text x="200" y="50"  fontSize="60" fill="white">🌿</text>
+                  <text x="310" y="120" fontSize="70" fill="white">🐄</text>
+                </svg>
+              </div>
+
+              <div style={{ position:"relative", display:"flex", flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "flex-start" : "center", justifyContent:"space-between", gap:14 }}>
+                {/* Saludo */}
+                <div>
+                  <p style={{ margin:0, fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.65)", letterSpacing:1, textTransform:"uppercase" }}>
+                    {saludo}
+                  </p>
+                  <p style={{ margin:"4px 0 0", fontSize: isMobile ? 22 : 26, fontWeight:900, color:"#fff", lineHeight:1.1 }}>
+                    {usuario?.nombre || "Usuario"}
+                  </p>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:8, flexWrap:"wrap" }}>
+                    <span style={{ fontSize:12, fontWeight:700, color:"#86efac", background:"rgba(255,255,255,0.12)", borderRadius:20, padding:"3px 10px" }}>
+                      🏷️ {cargoLabel}
+                    </span>
+                    <span style={{ fontSize:12, fontWeight:700, color:"rgba(255,255,255,0.8)", background:"rgba(255,255,255,0.10)", borderRadius:20, padding:"3px 10px" }}>
+                      🏡 {loading ? "—" : (stats?.nombreFinca || "Mi Finca")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Clima + animales activos */}
+                <div style={{ display:"flex", gap:10, flexWrap:"wrap" }}>
+                  {clima && (
+                    <div style={{ background:"rgba(255,255,255,0.12)", borderRadius:14, padding:"12px 16px", textAlign:"center", minWidth:90 }}>
+                      <div style={{ fontSize:28, lineHeight:1 }}>{clima.icono}</div>
+                      <div style={{ fontSize:18, fontWeight:900, color:"#fff", marginTop:4 }}>{clima.temp}°C</div>
+                      <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", marginTop:2 }}>{clima.desc}</div>
+                    </div>
+                  )}
+                  <div style={{ background:"rgba(255,255,255,0.12)", borderRadius:14, padding:"12px 16px", textAlign:"center", minWidth:90 }}>
+                    <div style={{ fontSize:28, lineHeight:1 }}>🐄</div>
+                    <div style={{ fontSize:22, fontWeight:900, color:"#86efac", marginTop:4 }}>
+                      {loading ? "—" : (stats?.animalesActivos ?? "—")}
+                    </div>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", marginTop:2 }}>Activos</div>
+                  </div>
+                  <div style={{ background:"rgba(255,255,255,0.12)", borderRadius:14, padding:"12px 16px", textAlign:"center", minWidth:90 }}>
+                    <div style={{ fontSize:28, lineHeight:1 }}>🤰</div>
+                    <div style={{ fontSize:22, fontWeight:900, color:"#fde68a", marginTop:4 }}>
+                      {loading ? "—" : (stats?.resumenHato?.prenadas ?? "—")}
+                    </div>
+                    <div style={{ fontSize:10, color:"rgba(255,255,255,0.7)", marginTop:2 }}>Preñadas</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── ACCESOS RÁPIDOS ── */}
+            <div style={{ display:"grid", gridTemplateColumns:`repeat(4, 1fr)`, gap:isMobile ? 10 : 14, marginBottom:gap }}>
+              {accesos.map(a => (
+                <button key={a.href} onClick={() => router.push(a.href)} style={{
+                  display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                  gap: isMobile ? 6 : 8,
+                  padding: isMobile ? "14px 8px" : "18px 12px",
+                  borderRadius:14, border:`1.5px solid ${a.bg === "#F0FDF4" ? "#BBF7D0" : a.bg === "#EFF6FF" ? "#BFDBFE" : a.bg === "#FEF2F2" ? "#FECACA" : "#FED7AA"}`,
+                  background:a.bg, cursor:"pointer",
+                  boxShadow:"0 1px 4px rgba(0,0,0,0.06)", transition:"transform 0.12s, box-shadow 0.12s",
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow=`0 4px 16px ${a.color}22`; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)"; }}
+                >
+                  <span style={{ fontSize: isMobile ? 24 : 30 }}>{a.icono}</span>
+                  <span style={{ fontSize: isMobile ? 11 : 13, fontWeight:700, color:a.color }}>{a.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* ── FILA PRINCIPAL: Hato + Indicadores (+ Alertas en desktop) ── */}
+            <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr", gap, marginBottom:gap }}>
+
+              {/* Donut del hato */}
+              <div style={cardStyle}>
+                <div style={{ padding:"14px 16px 10px", borderBottom:`1px solid ${COLOR.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div>
+                    <p style={{ margin:0, fontWeight:800, fontSize:14, color:COLOR.text }}>Resumen del hato</p>
+                    <p style={{ margin:0, fontSize:11, color:COLOR.muted }}>Distribución por categoría</p>
+                  </div>
+                  <span style={{ fontSize:12, fontWeight:700, color:COLOR.green, background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:20, padding:"2px 10px" }}>
+                    {stats?.animalesActivos || 0} activos
+                  </span>
+                </div>
+                {loading ? (
+                  <div style={{ padding:20, display:"flex", gap:16, alignItems:"center" }}>
+                    <Sk w={168} h={168} r="50%" />
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", gap:8 }}>
+                      {[1,2,3,4].map(i => <Sk key={i} h={22} r={7} />)}
+                    </div>
+                  </div>
+                ) : (
+                  <DonutHato data={filasHato} total={totalHato || stats?.animalesActivos || 0} onNavigate={() => router.push("/inventario")} />
+                )}
+                <div style={{ padding:"10px 16px 14px", borderTop:`1px solid ${COLOR.border}` }}>
+                  <button onClick={() => router.push("/inventario")} style={{ width:"100%", padding:"9px", borderRadius:9, border:`1px solid ${COLOR.border}`, background:"none", color:COLOR.green, fontWeight:700, fontSize:13, cursor:"pointer" }}>
+                    Ver inventario completo →
+                  </button>
+                </div>
+              </div>
+
+              {/* Indicadores productivos */}
+              <div style={cardStyle}>
+                <div style={{ padding:"14px 16px 10px", borderBottom:`1px solid ${COLOR.border}` }}>
+                  <p style={{ margin:0, fontWeight:800, fontSize:14, color:COLOR.text }}>Indicadores del hato</p>
+                  <p style={{ margin:0, fontSize:11, color:COLOR.muted }}>Métricas productivas</p>
+                </div>
+                <div style={{ padding:12, display:"flex", flexDirection:"column", gap:10 }}>
+                  {loading ? [1,2,3,4].map(i => <Sk key={i} h={52} r={10} />) :
+                    [
+                      { icono:"⚖️", label:"Peso promedio",  valor: stats?.pesoPromedio ? `${Math.round(stats.pesoPromedio)} lb` : "—", color: COLOR.blue },
+                      { icono:"🤰", label:"Tasa de preñez", valor: stats?.tasaPrenez != null ? `${stats.tasaPrenez.toFixed(1)}%` : "—%", color: COLOR.purple },
+                      { icono:"🐮", label:"Natalidad",       valor: stats?.natalidad != null ? `${stats.natalidad.toFixed(1)}%` : "—%", color: COLOR.green },
+                      { icono:"📊", label:"Mortalidad",      valor: stats?.mortalidad != null ? `${stats.mortalidad.toFixed(2)}%` : "—%", color: COLOR.red },
+                    ].map((ind, i) => (
+                      <div key={i} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 14px", borderRadius:12, background:"#F8FAFC", border:`1px solid ${COLOR.border}` }}>
+                        <span style={{ fontSize:26 }}>{ind.icono}</span>
+                        <div style={{ flex:1 }}>
+                          <p style={{ margin:0, fontSize:11, color:COLOR.muted, fontWeight:600 }}>{ind.label}</p>
+                          <p style={{ margin:0, fontSize:22, fontWeight:900, color:ind.color, lineHeight:1.2 }}>{ind.valor}</p>
+                        </div>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+
+              {/* Alertas — 3ra col en desktop, full-width en móvil/tablet */}
+              <div style={{ ...cardStyle, gridColumn: isMobile || isTablet ? "1 / -1" : "auto" }}>
+                <AlertasInteligentes loading={loading} onNavigate={router.push.bind(router)} />
+              </div>
+            </div>
+
+            {/* ── PRÓXIMAS ACTIVIDADES — full width ── */}
+            <div style={{ marginBottom: gap }}>
+              <ProximasActividadesCard onNavigate={router.push.bind(router)} />
+            </div>
+
+            {/* Botón flotante IA */}
+            <button onClick={() => router.push("/ia")} title="Centro IA Ganadero"
+              style={{ position:"fixed", bottom: isMobile ? 80 : 28, right:24, width:52, height:52, borderRadius:"50%", border:"none", background:"linear-gradient(135deg,#16a34a,#15803d)", color:"#fff", fontSize:22, cursor:"pointer", zIndex:61, boxShadow:"0 4px 20px rgba(22,163,74,0.45)", display:"flex", alignItems:"center", justifyContent:"center", transition:"transform 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.transform="scale(1.1)"}
+              onMouseLeave={e => e.currentTarget.style.transform="scale(1)"}
+            >🤖</button>
+          </>
+        );
+      })()}
+
+      {/* ── Dashboard Admin/Gerente (no se muestra a campo) ── */}
+      {!esCampo && <>
 
       {/* ── HERO COMPACTO ── */}
       <div style={{
@@ -2040,6 +2228,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+      </> /* fin !esCampo */}
     </AppLayout>
   );
 }
