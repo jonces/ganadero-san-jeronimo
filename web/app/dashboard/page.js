@@ -1700,7 +1700,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {!loading && stats?.fase && (() => {
+      {!loading && !esCampo && stats?.fase && (() => {
         const fase = stats.fase;
         const roi  = stats.roiHato || {};
         const base = stats.baseReproductora || {};
