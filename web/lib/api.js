@@ -34,16 +34,15 @@ export async function api(path, { method = "GET", body, isForm = false } = {}) {
 }
 
 export function saveToken(token) {
-  // Guardar en sessionStorage (solo esta pestaña)
+  if (typeof window === "undefined") return;
   sessionStorage.setItem("token", token);
   // Limpiar tokens viejos de localStorage si existen
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("token");
-    Object.keys(localStorage).filter(k => k.startsWith("token_")).forEach(k => localStorage.removeItem(k));
-  }
+  localStorage.removeItem("token");
+  Object.keys(localStorage).filter(k => k.startsWith("token_")).forEach(k => localStorage.removeItem(k));
 }
 
 export function logout() {
+  if (typeof window === "undefined") return;
   sessionStorage.removeItem("token");
   sessionStorage.removeItem("finca_suspendida");
 }
