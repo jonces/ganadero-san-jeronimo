@@ -4,7 +4,7 @@ function decodePayload(token) {
   try { return JSON.parse(atob(token.split(".")[1])); } catch { return null; }
 }
 
-function getToken() {
+export function getToken() {
   if (typeof window === "undefined") return null;
   // Buscar en sessionStorage (nuevo sistema — por pestaña)
   const fromSession = sessionStorage.getItem("token");
