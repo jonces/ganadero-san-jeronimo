@@ -75,6 +75,40 @@ router.post("/", requireAdmin, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Cambiar cargo y/o role de un usuario — ADMIN o usuario con cargo GERENTE_GENERAL
+router.patch("/:id", async (req, res, next) => {
+  try {
+    const yo = await prisma.usuario.findUnique({
+      where: { id: req.user.sub },
+      select: { role: true, cargo: true },
+    });
+    const puedeEditar = yo?.role === "ADMIN" || yo?.role === "SUPER_ADMIN" || yo?.cargo === "GERENTE_GENERAL";
+    if (!puedeEditar) return res.status(403).json({ error: "Solo administradores o gerentes pueden cambiar roles" });
+
+    const { cargo, role } = req.body;
+    if (cargo && !CARGOS_VALIDOS.includes(cargo)) {
+      return res.status(400).json({ error: "Cargo no válido" });
+    }
+
+    const objetivo = await prisma.usuario.findFirst({
+      where: { id: req.params.id, fincaId: req.user.fincaId },
+    });
+    if (!objetivo) return res.status(404).json({ error: "Usuario no encontrado" });
+    if (objetivo.role === "SUPER_ADMIN") return res.status(400).json({ error: "No puedes editar a un Super Admin" });
+
+    const data = {};
+    if (cargo) data.cargo = cargo;
+    if (role === "ADMIN" || role === "TRABAJADOR") data.role = role;
+
+    const actualizado = await prisma.usuario.update({
+      where: { id: objetivo.id },
+      data,
+      select: { id: true, nombre: true, email: true, role: true, cargo: true },
+    });
+    res.json(actualizado);
+  } catch (err) { next(err); }
+});
+
 // Eliminar trabajador (solo ADMIN)
 router.delete("/:id", requireAdmin, async (req, res, next) => {
   try {

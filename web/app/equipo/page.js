@@ -69,11 +69,14 @@ function cargoGrad(cargo) {
 }
 
 export default function EquipoPage() {
-  const [equipo, setEquipo]       = useState([]);
-  const [error, setError]         = useState("");
-  const [showForm, setShowForm]   = useState(false);
-  const [enviando, setEnviando]   = useState(false);
-  const [esAdmin, setEsAdmin]     = useState(false);
+  const [equipo, setEquipo]         = useState([]);
+  const [error, setError]           = useState("");
+  const [showForm, setShowForm]     = useState(false);
+  const [enviando, setEnviando]     = useState(false);
+  const [esAdmin, setEsAdmin]       = useState(false);
+  const [puedeEditar, setPuedeEditar] = useState(false);
+  const [editando, setEditando]     = useState(null); // usuario que se está editando
+  const [guardando, setGuardando]   = useState(false);
   const [form, setForm] = useState({
     nombre: "", email: "", password: "", role: "TRABAJADOR", cargo: "",
   });
@@ -88,6 +91,7 @@ export default function EquipoPage() {
   useEffect(() => {
     const u = getUsuario();
     setEsAdmin(u?.role === "ADMIN" || u?.role === "SUPER_ADMIN");
+    setPuedeEditar(u?.role === "ADMIN" || u?.role === "SUPER_ADMIN" || u?.cargo === "GERENTE_GENERAL");
     load();
   }, []);
 
@@ -113,6 +117,22 @@ export default function EquipoPage() {
       load();
     } catch (err) { setError(err.message); }
     finally { setEnviando(false); }
+  }
+
+  async function guardarCambio(nuevoCargo) {
+    if (!editando) return;
+    setGuardando(true);
+    setError("");
+    try {
+      const def = CARGOS.find(c => c.value === nuevoCargo);
+      await api(`/equipo/${editando.id}`, {
+        method: "PATCH",
+        body: { cargo: nuevoCargo, role: def?.permisoAdmin ? "ADMIN" : "TRABAJADOR" },
+      });
+      setEditando(null);
+      load();
+    } catch (err) { setError(err.message); }
+    finally { setGuardando(false); }
   }
 
   async function eliminar(id) {
@@ -301,13 +321,22 @@ export default function EquipoPage() {
                         <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, marginTop: 2 }}>{u.email}</p>
                       </div>
                     </div>
-                    {esAdmin && u.role !== "ADMIN" && (
-                      <button onClick={() => eliminar(u.id)}
-                        className="text-sm font-bold px-3 py-2 rounded-xl flex-shrink-0"
-                        style={{ background: "rgba(220,38,38,0.3)", border: "1px solid rgba(220,38,38,0.5)", color: "#fca5a5" }}>
-                        🗑️
-                      </button>
-                    )}
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                      {puedeEditar && (
+                        <button onClick={() => setEditando(u)}
+                          className="text-sm font-bold px-3 py-2 rounded-xl"
+                          style={{ background: "rgba(139,92,246,0.3)", border: "1px solid rgba(139,92,246,0.5)", color: "#c4b5fd" }}>
+                          ✏️
+                        </button>
+                      )}
+                      {esAdmin && u.role !== "ADMIN" && (
+                        <button onClick={() => eliminar(u.id)}
+                          className="text-sm font-bold px-3 py-2 rounded-xl"
+                          style={{ background: "rgba(220,38,38,0.3)", border: "1px solid rgba(220,38,38,0.5)", color: "#fca5a5" }}>
+                          🗑️
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -333,18 +362,75 @@ export default function EquipoPage() {
                         <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11 }}>{u.email}</p>
                       </div>
                     </div>
-                    {esAdmin && u.role !== "ADMIN" && (
-                      <button onClick={() => eliminar(u.id)}
-                        className="text-sm font-bold px-3 py-2 rounded-xl"
-                        style={{ background: "rgba(220,38,38,0.3)", border: "1px solid rgba(220,38,38,0.5)", color: "#fca5a5" }}>
-                        🗑️
-                      </button>
-                    )}
+                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                      {puedeEditar && (
+                        <button onClick={() => setEditando(u)}
+                          className="text-sm font-bold px-3 py-2 rounded-xl"
+                          style={{ background: "rgba(139,92,246,0.3)", border: "1px solid rgba(139,92,246,0.5)", color: "#c4b5fd" }}>
+                          ✏️
+                        </button>
+                      )}
+                      {esAdmin && u.role !== "ADMIN" && (
+                        <button onClick={() => eliminar(u.id)}
+                          className="text-sm font-bold px-3 py-2 rounded-xl"
+                          style={{ background: "rgba(220,38,38,0.3)", border: "1px solid rgba(220,38,38,0.5)", color: "#fca5a5" }}>
+                          🗑️
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
+        </div>
+      )}
+      {/* Modal cambiar cargo */}
+      {editando && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
+          onClick={() => setEditando(null)}>
+          <div style={{ background: "#0d1f10", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 20, width: "100%", maxWidth: 480, overflow: "hidden" }}
+            onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: cargoGrad(editando.cargo), flexShrink: 0 }}>
+                {cargoIcon(editando.cargo)}
+              </div>
+              <div>
+                <p style={{ fontWeight: 800, color: "#fff", fontSize: 15 }}>{editando.nombre}</p>
+                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>Cargo actual: {cargoLabel(editando.cargo)}</p>
+              </div>
+              <button onClick={() => setEditando(null)} style={{ marginLeft: "auto", color: "rgba(255,255,255,0.4)", fontSize: 20, background: "none", border: "none", cursor: "pointer" }}>✕</button>
+            </div>
+            {/* Selección de cargo */}
+            <div style={{ padding: 20 }}>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginBottom: 14, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 700 }}>
+                Seleccionar nuevo cargo
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {CARGOS.map(c => {
+                  const sel = editando.cargo === c.value;
+                  return (
+                    <button key={c.value} disabled={guardando}
+                      onClick={() => guardarCambio(c.value)}
+                      style={{
+                        borderRadius: 12, padding: "12px", textAlign: "left", cursor: guardando ? "not-allowed" : "pointer",
+                        transition: "all .15s", opacity: guardando ? 0.6 : 1,
+                        background: sel ? cargoGrad(c.value) : "rgba(255,255,255,0.05)",
+                        border: sel ? "1.5px solid rgba(255,255,255,0.35)" : "1px solid rgba(255,255,255,0.1)",
+                        color: "#fff",
+                      }}>
+                      <div style={{ fontSize: 18, marginBottom: 4 }}>{c.icon}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700 }}>{c.label}</div>
+                      <div style={{ fontSize: 10, opacity: 0.6, marginTop: 2 }}>{c.desc}</div>
+                      {sel && <div style={{ fontSize: 9, marginTop: 4, background: "rgba(255,255,255,0.2)", padding: "2px 6px", borderRadius: 99, display: "inline-block", fontWeight: 700 }}>Actual</div>}
+                    </button>
+                  );
+                })}
+              </div>
+              {guardando && <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, textAlign: "center", marginTop: 12 }}>Guardando cambio...</p>}
+            </div>
+          </div>
         </div>
       )}
     </AppLayout>
