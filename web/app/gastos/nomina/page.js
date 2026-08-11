@@ -70,9 +70,21 @@ export default function NominaPage() {
       api("/fincas/mi-finca").catch(() => null),
       api("/usuarios/perfil").catch(() => null),
     ]).then(([u, f, me]) => {
-      setUsuarios(Array.isArray(u) ? u : []);
+      const lista = Array.isArray(u) ? u : [];
+      setUsuarios(lista);
       setFinca(f);
       setUsuarioActual(me);
+
+      // Auto-seleccionar responsable de nómina si la finca ya tiene uno registrado
+      const responsableNomina = lista.find(usr => usr.cargo === "RESPONSABLE_NOMINA");
+      if (responsableNomina) {
+        setForm(prev => ({
+          ...prev,
+          responsableId: responsableNomina.id,
+          responsableNombre: responsableNomina.nombre,
+          responsableRol: responsableNomina.cargo === "RESPONSABLE_NOMINA" ? "Responsable de Nómina" : roleLabel(responsableNomina.role),
+        }));
+      }
     });
 
     // Tasa de cambio en tiempo real (API gratuita, sin clave)
@@ -443,6 +455,23 @@ export default function NominaPage() {
                       className="text-xs font-bold px-3 py-1.5 rounded-lg border" style={{ borderColor: gc, color: gc }}>
                       Cambiar
                     </button>
+                  </div>
+                ) : usuarios.length > 0 && !usuarios.some(u => u.cargo === "RESPONSABLE_NOMINA") ? (
+                  <div className="w-full flex items-start gap-3 p-4 rounded-xl border-2" style={{ borderColor: "#f59e0b", background: "#fffbeb" }}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-xl" style={{ background: "#fef3c7" }}>
+                      ⚠️
+                    </div>
+                    <div className="text-left flex-1">
+                      <p className="font-bold text-sm" style={{ color: "#92400e" }}>Sin Responsable de Nómina asignado</p>
+                      <p className="text-xs mt-1" style={{ color: "#b45309" }}>
+                        Esta finca no tiene ningún usuario con el cargo <strong>Responsable de Nómina</strong>. Ve a <strong>Mi Equipo</strong> y asigna ese cargo a la persona encargada.
+                      </p>
+                      <button onClick={() => setMostrarSelectorResponsable(true)}
+                        className="mt-2 text-xs font-bold px-3 py-1.5 rounded-lg border"
+                        style={{ borderColor: "#d97706", color: "#92400e" }}>
+                        Seleccionar manualmente
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <button onClick={() => setMostrarSelectorResponsable(true)}
