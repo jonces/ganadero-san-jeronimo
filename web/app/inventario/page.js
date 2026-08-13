@@ -639,6 +639,199 @@ function GraficaPeso({ pesajes }) {
   );
 }
 
+// ─── Modal Informe ────────────────────────────────────────────────────────────
+function ModalInforme({ animal, onClose }) {
+  const [detalle, setDetalle] = useState(null);
+  const [incidentes, setIncidentes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [det, incs] = await Promise.all([
+          api(`/animales/${animal.id}`).catch(() => null),
+          api(`/incidentes`).catch(() => []),
+        ]);
+        setDetalle(det);
+        const todos = Array.isArray(incs) ? incs : [];
+        setIncidentes(todos.filter(i => i.animalId === animal.id));
+      } finally { setLoading(false); }
+    }
+    load();
+  }, [animal.id]);
+
+  const eventos = detalle?.eventos || [];
+  const madre = detalle?.madre || null;
+  const crias = detalle?.crias || [];
+
+  const cat = categoriaAnimal(animal);
+  const edad = calcularEdad(animal.fechaNacimiento);
+
+  const TIPO_EVENTO = {
+    PESAJE: "Pesaje", VACUNACION: "Vacunación", TRATAMIENTO: "Tratamiento",
+    PARTO: "Parto", DESTETE: "Destete", INSEMINACION: "Inseminación",
+    SINCRONIZACION: "Sincronización", REVISION: "Revisión",
+  };
+
+  const pesajes = eventos.filter(e => e.tipo === "PESAJE" && e.peso).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+  const ganancia = pesajes.length >= 2 ? (pesajes[pesajes.length - 1].peso - pesajes[0].peso).toFixed(1) : null;
+
+  const s = {
+    overlay: { position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 },
+    modal: { background: "#fff", borderRadius: 16, width: "100%", maxWidth: 600, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" },
+    header: { background: "linear-gradient(135deg,#145A32,#1E8449)", padding: "20px 20px 16px", borderRadius: "16px 16px 0 0", color: "#fff" },
+    section: { padding: "14px 20px", borderBottom: "1px solid #F1F5F9" },
+    label: { fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 },
+    val: { fontSize: 14, color: "#1E293B", fontWeight: 500 },
+    row: { display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "5px 0", borderBottom: "1px solid #F8FAFC" },
+    badge: { display: "inline-block", padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 700 },
+    evRow: { display: "flex", gap: 10, padding: "7px 0", borderBottom: "1px solid #F8FAFC", alignItems: "flex-start" },
+    evDot: { width: 8, height: 8, borderRadius: "50%", background: "#16a34a", marginTop: 5, flexShrink: 0 },
+  };
+
+  return (
+    <div style={s.overlay} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={s.modal}>
+        {/* Cabecera */}
+        <div style={s.header}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <p style={{ fontSize: 11, opacity: 0.7, marginBottom: 2 }}>INFORME COMPLETO</p>
+              <h2 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>{animal.nombre || animal.identificador}</h2>
+              {animal.nombre && <p style={{ fontSize: 12, opacity: 0.8, margin: "2px 0 0" }}>{animal.identificador}</p>}
+            </div>
+            <button onClick={onClose} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 8, color: "#fff", padding: "6px 10px", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>✕</button>
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+            <span style={{ ...s.badge, background: "rgba(255,255,255,0.2)", color: "#fff" }}>{cat}</span>
+            <span style={{ ...s.badge, background: "rgba(255,255,255,0.2)", color: "#fff" }}>{animal.sexo}</span>
+            <span style={{ ...s.badge, background: "rgba(255,255,255,0.2)", color: "#fff" }}>{animal.raza || "Sin raza"}</span>
+            <span style={{ ...s.badge, background: animal.estado === "ACTIVO" ? "#DCFCE7" : "#FEE2E2", color: animal.estado === "ACTIVO" ? "#15803D" : "#DC2626" }}>{animal.estado}</span>
+          </div>
+        </div>
+
+        {loading ? (
+          <div style={{ padding: 40, textAlign: "center", color: "#64748B" }}>Cargando informe...</div>
+        ) : (<>
+
+          {/* Identificación */}
+          <div style={s.section}>
+            <p style={s.label}>Identificación</p>
+            <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Arete</span><span style={s.val}>{animal.identificador}</span></div>
+            {animal.fierro && <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Fierro</span><span style={s.val}>{animal.fierro}</span></div>}
+            <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Categoría</span><span style={s.val}>{cat}</span></div>
+            <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Sexo</span><span style={s.val}>{animal.sexo}</span></div>
+            <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Raza</span><span style={s.val}>{animal.raza || "—"}</span></div>
+            <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Fecha de nacimiento</span><span style={s.val}>{animal.fechaNacimiento ? new Date(animal.fechaNacimiento).toLocaleDateString("es-NI") : "—"}</span></div>
+            <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Edad</span><span style={s.val}>{edad}</span></div>
+            <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Origen</span><span style={s.val}>{animal.origen === "FINCA" ? "Nacido en finca" : "Comprado"}</span></div>
+            {animal.potrero && <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Potrero</span><span style={s.val}>{animal.potrero}</span></div>}
+          </div>
+
+          {/* Estado reproductivo */}
+          <div style={s.section}>
+            <p style={s.label}>Estado Reproductivo</p>
+            <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Estado</span><span style={s.val}>{animal.estadoReproductivo || "—"}</span></div>
+            {madre && <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Madre</span><span style={{ fontSize: 14, color: "#1D4ED8", fontWeight: 600 }}>{madre.nombre || madre.identificador}</span></div>}
+            {crias.length > 0 && (
+              <div style={{ marginTop: 6 }}>
+                <p style={{ fontSize: 12, color: "#475569", marginBottom: 4 }}>Crías registradas ({crias.length})</p>
+                {crias.map(c => (
+                  <div key={c.id} style={{ fontSize: 13, color: "#1E293B", padding: "3px 0" }}>
+                    • {c.nombre || c.identificador} — {categoriaAnimal(c)}{c.fechaNacimiento ? ` — ${calcularEdad(c.fechaNacimiento)}` : ""}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Peso y crecimiento */}
+          <div style={s.section}>
+            <p style={s.label}>Peso y Crecimiento</p>
+            <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Peso actual</span><span style={s.val}>{animal.pesoActual ? `${animal.pesoActual} lb` : "—"}</span></div>
+            {ganancia !== null && <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Ganancia total</span><span style={{ fontSize: 14, color: Number(ganancia) >= 0 ? "#16a34a" : "#DC2626", fontWeight: 700 }}>{Number(ganancia) >= 0 ? "+" : ""}{ganancia} lb</span></div>}
+            {pesajes.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <p style={{ fontSize: 12, color: "#475569", marginBottom: 4 }}>Historial de pesajes ({pesajes.length})</p>
+                {pesajes.map((p, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#334155", padding: "3px 0", borderBottom: "1px solid #F8FAFC" }}>
+                    <span>{new Date(p.fecha).toLocaleDateString("es-NI")}</span>
+                    <span style={{ fontWeight: 600 }}>{p.peso} lb</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Económico */}
+          {(animal.costoCompra || animal.precioVenta) && (
+            <div style={s.section}>
+              <p style={s.label}>Información Económica</p>
+              {animal.costoCompra && <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Costo de compra</span><span style={s.val}>C$ {Number(animal.costoCompra).toLocaleString("es-NI")}</span></div>}
+              {animal.precioVenta && <div style={s.row}><span style={{ fontSize: 13, color: "#475569" }}>Precio de venta</span><span style={s.val}>C$ {Number(animal.precioVenta).toLocaleString("es-NI")}</span></div>}
+            </div>
+          )}
+
+          {/* Eventos */}
+          {eventos.length > 0 && (
+            <div style={s.section}>
+              <p style={s.label}>Historial de Eventos ({eventos.length})</p>
+              {[...eventos].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).map(ev => (
+                <div key={ev.id} style={s.evRow}>
+                  <div style={s.evDot} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#1E293B" }}>{TIPO_EVENTO[ev.tipo] || ev.tipo}</span>
+                      <span style={{ fontSize: 11, color: "#94A3B8" }}>{new Date(ev.fecha).toLocaleDateString("es-NI")}</span>
+                    </div>
+                    {ev.descripcion && <p style={{ fontSize: 12, color: "#475569", margin: "2px 0 0" }}>{ev.descripcion}</p>}
+                    {ev.peso && <p style={{ fontSize: 12, color: "#16a34a", margin: "2px 0 0", fontWeight: 600 }}>Peso: {ev.peso} lb</p>}
+                    {ev.producto && <p style={{ fontSize: 12, color: "#475569", margin: "2px 0 0" }}>Producto: {ev.producto}</p>}
+                    {ev.dosis && <p style={{ fontSize: 12, color: "#475569", margin: "2px 0 0" }}>Dosis: {ev.dosis}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Incidentes */}
+          {incidentes.length > 0 && (
+            <div style={s.section}>
+              <p style={s.label}>Incidentes Registrados ({incidentes.length})</p>
+              {[...incidentes].sort((a, b) => new Date(b.fecha || b.createdAt) - new Date(a.fecha || a.createdAt)).map(inc => (
+                <div key={inc.id} style={s.evRow}>
+                  <div style={{ ...s.evDot, background: "#EF4444" }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#1E293B" }}>{inc.tipo || inc.titulo || "Incidente"}</span>
+                      <span style={{ fontSize: 11, color: "#94A3B8" }}>{new Date(inc.fecha || inc.createdAt).toLocaleDateString("es-NI")}</span>
+                    </div>
+                    {inc.descripcion && <p style={{ fontSize: 12, color: "#475569", margin: "2px 0 0" }}>{inc.descripcion}</p>}
+                    {inc.resuelto !== undefined && <p style={{ fontSize: 11, color: inc.resuelto ? "#16a34a" : "#F59E0B", margin: "2px 0 0", fontWeight: 600 }}>{inc.resuelto ? "Resuelto" : "Pendiente"}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Observaciones */}
+          {animal.observacion && (
+            <div style={s.section}>
+              <p style={s.label}>Observaciones</p>
+              <p style={{ fontSize: 13, color: "#475569", lineHeight: 1.6 }}>{animal.observacion}</p>
+            </div>
+          )}
+
+          {/* Pie */}
+          <div style={{ padding: "12px 20px", textAlign: "center" }}>
+            <p style={{ fontSize: 11, color: "#94A3B8" }}>Informe generado el {new Date().toLocaleDateString("es-NI", { year: "numeric", month: "long", day: "numeric" })}</p>
+          </div>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
 function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
   const [modal, setModal] = useState(null);
   const [quitandoVenta, setQuitandoVenta] = useState(false);
@@ -810,6 +1003,12 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
           </div>
         )}
 
+        {/* Botón Informe */}
+        <button onClick={() => setModal("informe")}
+          style={{ background: "#EFF6FF", color: "#1D4ED8", borderRadius: 12, padding: "11px 0", fontWeight: 800, fontSize: 14, cursor: "pointer", width: "100%", border: "1px solid #93C5FD", marginBottom: 8 }}>
+          📋 Ver Informe Completo
+        </button>
+
         {/* Botón poner en venta */}
         {!enVenta && animal.estado === "ACTIVO" && animal.estadoComercial !== "VENTA_COMPLETADA" && animal.estadoComercial !== "SEMENTAL" && (
           <button onClick={() => setModal("venta")}
@@ -852,6 +1051,7 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
       {modal === "completar"&& <ModalCompletarVenta   animal={animal} onClose={() => setModal(null)} onSuccess={() => { onRefresh(); onClose(); }} />}
       {modal === "editar"   && <ModalEditarAnimal      animal={animal} hembrasActivas={hembrasActivas} onClose={() => setModal(null)} onSuccess={() => { onRefresh(); setModal(null); }} />}
       {modal === "galeria"  && <ModalGaleria           animal={animal} onClose={() => setModal(null)} />}
+      {modal === "informe"  && <ModalInforme           animal={animal} onClose={() => setModal(null)} />}
     </div>
   );
 
