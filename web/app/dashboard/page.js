@@ -1311,40 +1311,54 @@ const KpiIcon = {
 };
 
 // ── KPI Card rediseñada ──
+const KPI_GRADIENTS = {
+  "#16a34a": { grad: "linear-gradient(135deg,#16a34a 0%,#4ade80 100%)", shadow: "rgba(22,163,74,0.35)" },
+  "#2563EB": { grad: "linear-gradient(135deg,#1d4ed8 0%,#60a5fa 100%)", shadow: "rgba(37,99,235,0.35)" },
+  "#7C3AED": { grad: "linear-gradient(135deg,#6d28d9 0%,#a78bfa 100%)", shadow: "rgba(124,58,237,0.35)" },
+  "#DC2626": { grad: "linear-gradient(135deg,#b91c1c 0%,#f87171 100%)", shadow: "rgba(220,38,38,0.35)" },
+  "#EA580C": { grad: "linear-gradient(135deg,#c2410c 0%,#fb923c 100%)", shadow: "rgba(234,88,12,0.35)" },
+};
+
 function KpiCard({ iconKey, label, valor, sub, equiv, accentColor, iconBg, iconColor, trend, loading, onClick }) {
+  const { grad, shadow } = KPI_GRADIENTS[accentColor] || { grad: `linear-gradient(135deg,${accentColor} 0%,${accentColor}BB 100%)`, shadow: `${accentColor}44` };
+
   return (
     <div
       onClick={onClick}
       style={{
-        background: COLOR.white,
-        border: `1px solid ${COLOR.border}`,
-        borderTop: `3px solid ${accentColor}`,
-        borderRadius: 12,
+        background: grad,
+        borderRadius: 14,
         padding: "16px 18px",
         cursor: "pointer",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+        boxShadow: `0 6px 24px ${shadow}`,
         transition: "box-shadow 0.15s, transform 0.15s",
         display: "flex",
         flexDirection: "column",
         gap: 0,
         minWidth: 0,
+        position: "relative",
+        overflow: "hidden",
       }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.1)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.05)"; e.currentTarget.style.transform = "translateY(0)"; }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 12px 36px ${shadow}`; e.currentTarget.style.transform = "translateY(-3px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 6px 24px ${shadow}`; e.currentTarget.style.transform = "translateY(0)"; }}
     >
+      {/* Círculo decorativo de fondo */}
+      <div style={{ position: "absolute", right: -20, bottom: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.1)", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", right: 20, bottom: -40, width: 70, height: 70, borderRadius: "50%", background: "rgba(255,255,255,0.07)", pointerEvents: "none" }} />
+
       {/* Fila superior: ícono + label + tendencia */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, background: iconBg, color: iconColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,0.22)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             {KpiIcon[iconKey]}
           </div>
-          <span style={{ fontSize: 11, fontWeight: 600, color: COLOR.muted, lineHeight: 1.3 }}>{label}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.85)", lineHeight: 1.3 }}>{label}</span>
         </div>
         {trend && !loading && (
           <span style={{
-            fontSize: 10, fontWeight: 800, padding: "3px 7px", borderRadius: 20,
-            background: trend.dir === "up" ? "#F0FDF4" : "#FEF2F2",
-            color: trend.dir === "up" ? COLOR.green : COLOR.red,
+            fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 20,
+            background: "rgba(255,255,255,0.22)",
+            color: "#fff",
             display: "flex", alignItems: "center", gap: 2, flexShrink: 0,
           }}>
             {trend.dir === "up"
@@ -1365,13 +1379,13 @@ function KpiCard({ iconKey, label, valor, sub, equiv, accentColor, iconBg, iconC
         </div>
       ) : (
         <>
-          <div style={{ fontSize: 20, fontWeight: 900, color: COLOR.text, lineHeight: 1.15, letterSpacing: "-0.3px", marginBottom: 3 }}>
+          <div style={{ fontSize: 20, fontWeight: 900, color: "#fff", lineHeight: 1.15, letterSpacing: "-0.3px", marginBottom: 3 }}>
             {valor}
           </div>
           {equiv && (
-            <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 4 }}>{equiv}</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginBottom: 4 }}>{equiv}</div>
           )}
-          <div style={{ fontSize: 11, color: COLOR.muted }}>{sub}</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)" }}>{sub}</div>
         </>
       )}
     </div>
