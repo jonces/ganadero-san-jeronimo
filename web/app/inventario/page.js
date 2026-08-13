@@ -644,6 +644,7 @@ function ModalInforme({ animal, onClose }) {
   const [detalle, setDetalle] = useState(null);
   const [incidentes, setIncidentes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [generandoPdf, setGenerandoPdf] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -675,6 +676,204 @@ function ModalInforme({ animal, onClose }) {
 
   const pesajes = eventos.filter(e => e.tipo === "PESAJE" && e.peso).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
   const ganancia = pesajes.length >= 2 ? (pesajes[pesajes.length - 1].peso - pesajes[0].peso).toFixed(1) : null;
+
+  async function descargarPDF() {
+    setGenerandoPdf(true);
+    try {
+      const { jsPDF } = await import("jspdf");
+      const { default: autoTable } = await import("jspdf-autotable");
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const verde = [20, 90, 50];
+      const gris = [100, 116, 139];
+      const negro = [30, 41, 59];
+      const PAGE_W = 210;
+      const MARGIN = 16;
+      const CONTENT_W = PAGE_W - MARGIN * 2;
+      let y = 0;
+
+      // Cabecera verde
+      doc.setFillColor(...verde);
+      doc.rect(0, 0, PAGE_W, 38, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text("INFORME COMPLETO DE ANIMAL", MARGIN, 10);
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text(animal.nombre || animal.identificador, MARGIN, 22);
+      if (animal.nombre) {
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(animal.identificador, MARGIN, 29);
+      }
+      doc.setFontSize(9);
+      doc.text(`${cat} · ${animal.sexo} · ${animal.raza || "Sin raza"} · ${animal.estado}`, MARGIN, 35);
+      y = 46;
+
+      function seccion(titulo) {
+        doc.setFillColor(241, 245, 249);
+        doc.rect(MARGIN, y, CONTENT_W, 7, "F");
+        doc.setTextColor(...gris);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.text(titulo.toUpperCase(), MARGIN + 2, y + 5);
+        y += 10;
+      }
+
+      function fila(label, valor) {
+        doc.setTextColor(...gris);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.text(label, MARGIN + 2, y);
+        doc.setTextColor(...negro);
+        doc.setFont("helvetica", "bold");
+        doc.text(String(valor || "—"), MARGIN + 55, y);
+        doc.setDrawColor(241, 245, 249);
+        doc.line(MARGIN, y + 1.5, MARGIN + CONTENT_W, y + 1.5);
+        y += 7;
+      }
+
+      function checkPage(needed = 20) {
+        if (y + needed > 277) { doc.addPage(); y = 16; }
+      }
+
+      // Identificación
+      seccion("Identificación");
+      fila("Arete", animal.identificador);
+      if (animal.fierro) fila("Fierro", animal.fierro);
+      fila("Categoría", cat);
+      fila("Sexo", animal.sexo);
+      fila("Raza", animal.raza || "—");
+      fila("Fecha de nacimiento", animal.fechaNacimiento ? new Date(animal.fechaNacimiento).toLocaleDateString("es-NI") : "—");
+      fila("Edad", edad);
+      fila("Origen", animal.origen === "FINCA" ? "Nacido en finca" : "Comprado");
+      if (animal.potrero) fila("Potrero", animal.potrero);
+      y += 4;
+
+      // Estado reproductivo
+      checkPage(30);
+      seccion("Estado Reproductivo");
+      fila("Estado", animal.estadoReproductivo || "—");
+      if (madre) fila("Madre", madre.nombre ? `${madre.nombre} (${madre.identificador})` : madre.identificador);
+      if (crias.length > 0) {
+        fila("Crías registradas", crias.length);
+        crias.forEach(c => {
+          checkPage(8);
+          doc.setTextColor(...gris);
+          doc.setFontSize(8.5);
+          doc.setFont("helvetica", "normal");
+          doc.text(`• ${c.nombre || c.identificador}  ${categoriaAnimal(c)}${c.fechaNacimiento ? "  " + calcularEdad(c.fechaNacimiento) : ""}`, MARGIN + 4, y);
+          y += 6;
+        });
+      }
+      y += 4;
+
+      // Peso
+      checkPage(30);
+      seccion("Peso y Crecimiento");
+      fila("Peso actual", animal.pesoActual ? `${animal.pesoActual} lb` : "—");
+      if (ganancia !== null) fila("Ganancia total", `${Number(ganancia) >= 0 ? "+" : ""}${ganancia} lb`);
+      y += 4;
+
+      if (pesajes.length > 0) {
+        checkPage(14 + pesajes.length * 8);
+        autoTable(doc, {
+          startY: y,
+          margin: { left: MARGIN, right: MARGIN },
+          head: [["Fecha", "Peso (lb)"]],
+          body: pesajes.map(p => [new Date(p.fecha).toLocaleDateString("es-NI"), `${p.peso} lb`]),
+          styles: { fontSize: 9, cellPadding: 2.5 },
+          headStyles: { fillColor: verde, textColor: 255, fontStyle: "bold" },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+        });
+        y = doc.lastAutoTable.finalY + 6;
+      }
+
+      // Económico
+      if (animal.costoCompra || animal.precioVenta) {
+        checkPage(25);
+        seccion("Información Económica");
+        if (animal.costoCompra) fila("Costo de compra", `C$ ${Number(animal.costoCompra).toLocaleString("es-NI")}`);
+        if (animal.precioVenta) fila("Precio de venta", `C$ ${Number(animal.precioVenta).toLocaleString("es-NI")}`);
+        y += 4;
+      }
+
+      // Eventos
+      const evOrdenados = [...eventos].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+      if (evOrdenados.length > 0) {
+        checkPage(20);
+        seccion(`Historial de Eventos (${evOrdenados.length})`);
+        y += 2;
+        autoTable(doc, {
+          startY: y,
+          margin: { left: MARGIN, right: MARGIN },
+          head: [["Fecha", "Tipo", "Detalle"]],
+          body: evOrdenados.map(ev => {
+            const detParts = [ev.descripcion, ev.peso ? `Peso: ${ev.peso} lb` : null, ev.producto ? `Producto: ${ev.producto}` : null, ev.dosis ? `Dosis: ${ev.dosis}` : null].filter(Boolean);
+            return [new Date(ev.fecha).toLocaleDateString("es-NI"), TIPO_EVENTO[ev.tipo] || ev.tipo, detParts.join(" · ") || "—"];
+          }),
+          styles: { fontSize: 8.5, cellPadding: 2.5 },
+          headStyles: { fillColor: verde, textColor: 255, fontStyle: "bold" },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+          columnStyles: { 0: { cellWidth: 24 }, 1: { cellWidth: 28 }, 2: { cellWidth: "auto" } },
+        });
+        y = doc.lastAutoTable.finalY + 6;
+      }
+
+      // Incidentes
+      if (incidentes.length > 0) {
+        checkPage(20);
+        seccion(`Incidentes (${incidentes.length})`);
+        y += 2;
+        autoTable(doc, {
+          startY: y,
+          margin: { left: MARGIN, right: MARGIN },
+          head: [["Fecha", "Tipo", "Descripción", "Estado"]],
+          body: incidentes.map(inc => [
+            new Date(inc.fecha || inc.createdAt).toLocaleDateString("es-NI"),
+            inc.tipo || inc.titulo || "—",
+            inc.descripcion || "—",
+            inc.resuelto ? "Resuelto" : "Pendiente",
+          ]),
+          styles: { fontSize: 8.5, cellPadding: 2.5 },
+          headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: "bold" },
+          alternateRowStyles: { fillColor: [248, 250, 252] },
+          columnStyles: { 0: { cellWidth: 24 }, 1: { cellWidth: 28 }, 3: { cellWidth: 22 } },
+        });
+        y = doc.lastAutoTable.finalY + 6;
+      }
+
+      // Observaciones
+      if (animal.observacion) {
+        checkPage(25);
+        seccion("Observaciones");
+        doc.setTextColor(...negro);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        const lines = doc.splitTextToSize(animal.observacion, CONTENT_W - 4);
+        lines.forEach(line => { checkPage(7); doc.text(line, MARGIN + 2, y); y += 6; });
+        y += 4;
+      }
+
+      // Pie de página en cada hoja
+      const totalPags = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPags; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(...gris);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Ganadero San Jerónimo · Informe generado el ${new Date().toLocaleDateString("es-NI", { year: "numeric", month: "long", day: "numeric" })}`, MARGIN, 290);
+        doc.text(`Página ${i} de ${totalPags}`, PAGE_W - MARGIN, 290, { align: "right" });
+      }
+
+      const nombre = (animal.nombre || animal.identificador).replace(/\s+/g, "_");
+      doc.save(`Informe_${nombre}.pdf`);
+    } catch (err) {
+      alert("Error al generar el PDF: " + err.message);
+    } finally {
+      setGenerandoPdf(false);
+    }
+  }
 
   const s = {
     overlay: { position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 },
@@ -823,7 +1022,11 @@ function ModalInforme({ animal, onClose }) {
           )}
 
           {/* Pie */}
-          <div style={{ padding: "12px 20px", textAlign: "center" }}>
+          <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+            <button onClick={descargarPDF} disabled={generandoPdf}
+              style={{ background: "#145A32", color: "#fff", border: "none", borderRadius: 12, padding: "12px 28px", fontWeight: 800, fontSize: 14, cursor: generandoPdf ? "wait" : "pointer", opacity: generandoPdf ? 0.7 : 1, width: "100%" }}>
+              {generandoPdf ? "Generando PDF..." : "⬇️ Descargar PDF"}
+            </button>
             <p style={{ fontSize: 11, color: "#94A3B8" }}>Informe generado el {new Date().toLocaleDateString("es-NI", { year: "numeric", month: "long", day: "numeric" })}</p>
           </div>
         </>)}
