@@ -312,7 +312,16 @@ function fmtK(v) {
 }
 
 // ── Gráfica Financiera Principal ──
-function GraficaFinanciera({ datos = [] }) {
+function GraficaFinanciera({ datos = [], darkMode = false }) {
+  const DM = darkMode ? {
+    text: "#fff", muted: "rgba(255,255,255,0.55)", border: "rgba(255,255,255,0.1)",
+    gridLine: "rgba(255,255,255,0.06)", bg: "rgba(255,255,255,0.08)", btnBg: "rgba(255,255,255,0.12)",
+    btnActive: "rgba(255,255,255,0.22)", btnText: "rgba(255,255,255,0.6)", btnActiveText: "#fff",
+  } : {
+    text: COLOR.text, muted: COLOR.muted, border: COLOR.border,
+    gridLine: "#F1F5F9", bg: "#F1F5F9", btnBg: "#F1F5F9",
+    btnActive: COLOR.white, btnText: COLOR.muted, btnActiveText: COLOR.text,
+  };
   const [vista, setVista]   = useState("6M");
   const [serie, setSerie]   = useState("ambas"); // "ambas" | "neto"
   const [hover, setHover]   = useState(null);
@@ -378,7 +387,7 @@ function GraficaFinanciera({ datos = [] }) {
   return (
     <div>
       {/* ── Header: resumen + filtros ── */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px 14px", borderBottom:`1px solid ${COLOR.border}`, flexWrap:"wrap", gap:12 }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px 14px", borderBottom:`1px solid ${DM.border}`, flexWrap:"wrap", gap:12 }}>
 
         {/* Totales del período */}
         <div style={{ display:"flex", gap:28, flexWrap:"wrap" }}>
@@ -390,7 +399,7 @@ function GraficaFinanciera({ datos = [] }) {
             <div key={s.label} style={{ display:"flex", flexDirection:"column", gap:2 }}>
               <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                 <span style={{ width:8, height:8, borderRadius:"50%", background:s.dot, display:"inline-block" }} />
-                <span style={{ fontSize:11, color:COLOR.muted, fontWeight:600 }}>{s.label}</span>
+                <span style={{ fontSize:11, color:DM.muted, fontWeight:600 }}>{s.label}</span>
               </div>
               <span style={{ fontSize:17, fontWeight:900, color:s.color, letterSpacing:"-0.3px" }}>
                 C$ {Number(s.val).toLocaleString("es-NI", { maximumFractionDigits:0 })}
@@ -402,25 +411,25 @@ function GraficaFinanciera({ datos = [] }) {
         {/* Controles */}
         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
           {/* Filtro período */}
-          <div style={{ display:"flex", background:"#F1F5F9", borderRadius:8, padding:3, gap:2 }}>
+          <div style={{ display:"flex", background:DM.btnBg, borderRadius:8, padding:3, gap:2 }}>
             {["3M","6M"].map(v => (
               <button key={v} onClick={() => setVista(v)} style={{
                 padding:"4px 12px", borderRadius:6, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
-                background: vista === v ? COLOR.white : "transparent",
-                color: vista === v ? COLOR.text : COLOR.muted,
-                boxShadow: vista === v ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                background: vista === v ? DM.btnActive : "transparent",
+                color: vista === v ? DM.btnActiveText : DM.btnText,
+                boxShadow: vista === v ? "0 1px 3px rgba(0,0,0,0.15)" : "none",
                 transition:"all 0.15s",
               }}>{v}</button>
             ))}
           </div>
           {/* Filtro serie */}
-          <div style={{ display:"flex", background:"#F1F5F9", borderRadius:8, padding:3, gap:2 }}>
+          <div style={{ display:"flex", background:DM.btnBg, borderRadius:8, padding:3, gap:2 }}>
             {[["ambas","Ingresos vs Gastos"],["neto","Flujo neto"]].map(([v,l]) => (
               <button key={v} onClick={() => setSerie(v)} style={{
                 padding:"4px 12px", borderRadius:6, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
-                background: serie === v ? COLOR.white : "transparent",
-                color: serie === v ? COLOR.text : COLOR.muted,
-                boxShadow: serie === v ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                background: serie === v ? DM.btnActive : "transparent",
+                color: serie === v ? DM.btnActiveText : DM.btnText,
+                boxShadow: serie === v ? "0 1px 3px rgba(0,0,0,0.15)" : "none",
                 transition:"all 0.15s",
               }}>{l}</button>
             ))}
@@ -473,8 +482,8 @@ function GraficaFinanciera({ datos = [] }) {
             const y = py(v);
             return (
               <g key={fi}>
-                <line x1={PL} y1={y} x2={W-PR} y2={y} stroke={fi === 0 ? COLOR.border : "#F1F5F9"} strokeWidth={fi === 0 ? 1 : 1} />
-                <text x={PL-8} y={y+4} textAnchor="end" fill="#94A3B8" fontSize="10" fontWeight="500">
+                <line x1={PL} y1={y} x2={W-PR} y2={y} stroke={fi === 0 ? DM.border : DM.gridLine} strokeWidth="1" />
+                <text x={PL-8} y={y+4} textAnchor="end" fill={DM.muted} fontSize="10" fontWeight="500">
                   {fmtK(v)}
                 </text>
               </g>
@@ -530,7 +539,7 @@ function GraficaFinanciera({ datos = [] }) {
                 {/* Línea vertical en hover */}
                 {isHov && <line x1={px(i)} y1={PT} x2={px(i)} y2={PT+IH} stroke="#CBD5E1" strokeWidth="1" strokeDasharray="3 2" />}
                 {/* Etiqueta mes */}
-                <text x={px(i)} y={H-8} textAnchor="middle" fill="#94A3B8" fontSize="10" fontWeight="600" textTransform="capitalize">
+                <text x={px(i)} y={H-8} textAnchor="middle" fill={DM.muted} fontSize="10" fontWeight="600" textTransform="capitalize">
                   {d.mes}
                 </text>
               </g>
@@ -1989,94 +1998,121 @@ export default function DashboardPage() {
         const pathInv = tl.map((t, i) => `${i === 0 ? "M" : "L"}${xOf(i)},${yOf(t.inversion)}`).join(" ");
         const pathVta = tl.map((t, i) => `${i === 0 ? "M" : "L"}${xOf(i)},${yOf(t.ventas)}`).join(" ");
 
+        const FASE_GRAD = {
+          INVERSION:  "linear-gradient(135deg,#7f1d1d 0%,#dc2626 60%,#f87171 100%)",
+          TRANSICION: "linear-gradient(135deg,#78350f 0%,#d97706 60%,#fbbf24 100%)",
+          PRODUCTIVA: "linear-gradient(135deg,#14532d 0%,#16a34a 60%,#4ade80 100%)",
+        };
+        const faseGrad = FASE_GRAD[fase] || FASE_GRAD.INVERSION;
+        const pctRecuperado = roi.invertido > 0 ? Math.round(Math.min(100, roi.roiPorcentaje + 100)) : 0;
+
         return (
           <div style={{ marginBottom: 16 }}>
-            {/* ── Indicador de fase ── */}
-            <div style={{ background: cfg.bg, border: `1.5px solid ${cfg.border}`, borderRadius: 14, padding: "16px 20px", marginBottom: 12, display: "flex", alignItems: isMobile ? "flex-start" : "center", gap: 14, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 32, flexShrink: 0 }}>{cfg.emoji}</div>
+            {/* ── Banner de fase — gradiente llamativo ── */}
+            <div style={{
+              background: faseGrad,
+              borderRadius: 16,
+              padding: "20px 24px",
+              marginBottom: 12,
+              display: "flex",
+              alignItems: isMobile ? "flex-start" : "center",
+              gap: 16,
+              flexWrap: "wrap",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+              position: "relative",
+              overflow: "hidden",
+            }}>
+              {/* Círculos decorativos */}
+              <div style={{ position:"absolute", right:-30, top:-30, width:140, height:140, borderRadius:"50%", background:"rgba(255,255,255,0.08)", pointerEvents:"none" }} />
+              <div style={{ position:"absolute", right:60, bottom:-50, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.05)", pointerEvents:"none" }} />
+
+              <div style={{ width:52, height:52, borderRadius:14, background:"rgba(255,255,255,0.18)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0 }}>
+                {cfg.emoji === "🔴" ? "🌱" : cfg.emoji === "🟡" ? "⚡" : "🚀"}
+              </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 800, fontSize: 16, color: cfg.color }}>{cfg.label}</div>
-                <div style={{ fontSize: 13, color: COLOR.muted, marginTop: 3 }}>{stats.faseDescripcion}</div>
+                <div style={{ fontWeight: 900, fontSize: 17, color: "#fff", marginBottom: 3 }}>{cfg.label}</div>
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)" }}>{stats.faseDescripcion}</div>
               </div>
               <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ fontSize: 11, color: COLOR.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>Recuperado</div>
-                <div style={{ fontWeight: 800, fontSize: 20, color: cfg.color }}>
-                  {roi.invertido > 0 ? Math.round((stats.roiHato ? (stats.roiHato.invertido > 0 ? Math.min(100, (roi.roiPorcentaje + 100)) : 0) : 0)) : 0}%
-                </div>
-                <div style={{ fontSize: 11, color: COLOR.muted }}>del capital invertido</div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Recuperado</div>
+                <div style={{ fontWeight: 900, fontSize: 32, color: "#fff", lineHeight: 1.1 }}>{pctRecuperado}%</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>del capital invertido</div>
               </div>
             </div>
 
             {/* ── 3 cards: ROI · Base reproductora · Proyección lote ── */}
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
 
-              {/* ROI del Hato */}
-              <div style={{ ...cardStyle, padding: 0 }}>
-                <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}` }}>
-                  <div style={{ fontSize: 11, color: COLOR.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>📈 ROI del Hato</div>
+              {/* ROI del Hato — gradiente azul/índigo */}
+              <div style={{ background: "linear-gradient(145deg,#1e3a5f 0%,#1d4ed8 70%,#3b82f6 100%)", borderRadius: 16, padding: 0, boxShadow: "0 6px 24px rgba(29,78,216,0.3)", position:"relative", overflow:"hidden" }}>
+                <div style={{ position:"absolute", right:-20, top:-20, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.07)", pointerEvents:"none" }} />
+                <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>📈 ROI del Hato</div>
                 </div>
                 <div style={{ padding: "12px 16px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, color: COLOR.muted }}>Lo que invertiste</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: COLOR.text }}>{fmtN(roi.invertido || 0)}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>Lo que invertiste</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#fff" }}>{fmtN(roi.invertido || 0)}</span>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, color: COLOR.muted }}>Valor del hato hoy</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: COLOR.blue }}>{fmtN(roi.valorHato || 0)}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>Valor del hato hoy</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#93c5fd" }}>{fmtN(roi.valorHato || 0)}</span>
                   </div>
-                  <div style={{ height: 1, background: COLOR.border, margin: "8px 0" }} />
+                  <div style={{ height: 1, background: "rgba(255,255,255,0.12)", margin: "8px 0" }} />
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 12, color: COLOR.muted }}>Ganancia latente</span>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: (roi.gananciasLatente || 0) >= 0 ? COLOR.green : COLOR.red }}>{fmtN(roi.gananciasLatente || 0)}</span>
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>Ganancia latente</span>
+                    <span style={{ fontSize: 14, fontWeight: 900, color: (roi.gananciasLatente || 0) >= 0 ? "#4ade80" : "#f87171" }}>{fmtN(roi.gananciasLatente || 0)}</span>
                   </div>
-                  <div style={{ marginTop: 10, background: "#F0FDF4", borderRadius: 8, padding: "6px 10px", textAlign: "center" }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: COLOR.green }}>+{Math.round(roi.roiPorcentaje || 0)}% ROI</span>
-                    <span style={{ fontSize: 11, color: COLOR.muted, marginLeft: 6 }}>sobre la inversión</span>
+                  <div style={{ marginTop: 12, background: "rgba(255,255,255,0.15)", borderRadius: 10, padding: "8px 12px", textAlign: "center" }}>
+                    <span style={{ fontSize: 14, fontWeight: 900, color: "#fff" }}>+{Math.round(roi.roiPorcentaje || 0)}% ROI</span>
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginLeft: 6 }}>sobre la inversión</span>
                   </div>
-                  <div style={{ marginTop: 8, fontSize: 11, color: COLOR.muted, textAlign: "center" }}>Este valor se realiza cuando vendes</div>
+                  <div style={{ marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.55)", textAlign: "center" }}>Este valor se realiza cuando vendes</div>
                 </div>
               </div>
 
-              {/* Base reproductora */}
-              <div style={{ ...cardStyle, padding: 0 }}>
-                <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}` }}>
-                  <div style={{ fontSize: 11, color: COLOR.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>🐄 Base Reproductora</div>
+              {/* Base reproductora — gradiente verde oscuro */}
+              <div style={{ background: "linear-gradient(145deg,#064e3b 0%,#059669 70%,#34d399 100%)", borderRadius: 16, padding: 0, boxShadow: "0 6px 24px rgba(5,150,105,0.3)", position:"relative", overflow:"hidden" }}>
+                <div style={{ position:"absolute", right:-20, top:-20, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.07)", pointerEvents:"none" }} />
+                <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>🐄 Base Reproductora</div>
                 </div>
                 <div style={{ padding: "12px 16px" }}>
                   {[
-                    { label: "Vacas reproductoras", val: base.vacas || 0, color: COLOR.green },
-                    { label: "Sementales",           val: base.sementales || 0, color: COLOR.blue },
-                    { label: "Novillas de reemplazo",val: base.novillas || 0, color: COLOR.purple },
+                    { label: "Vacas reproductoras",  val: base.vacas || 0,     color: "#6ee7b7" },
+                    { label: "Sementales",            val: base.sementales || 0, color: "#93c5fd" },
+                    { label: "Novillas de reemplazo", val: base.novillas || 0,  color: "#c4b5fd" },
                   ].map(r => (
-                    <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <span style={{ fontSize: 12, color: COLOR.muted }}>{r.label}</span>
-                      <span style={{ fontSize: 16, fontWeight: 800, color: r.color }}>{r.val}</span>
+                    <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 11 }}>
+                      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.75)" }}>{r.label}</span>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: r.color }}>{r.val}</span>
                     </div>
                   ))}
-                  <div style={{ height: 1, background: COLOR.border, margin: "6px 0 10px" }} />
+                  <div style={{ height: 1, background: "rgba(255,255,255,0.12)", margin: "6px 0 10px" }} />
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: COLOR.orange }}>Candidatos a venta</span>
-                    <span style={{ fontSize: 16, fontWeight: 800, color: COLOR.orange }}>{base.candidatosVenta || 0}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#fcd34d" }}>Candidatos a venta</span>
+                    <span style={{ fontSize: 18, fontWeight: 900, color: "#fcd34d" }}>{base.candidatosVenta || 0}</span>
                   </div>
-                  <div style={{ fontSize: 11, color: COLOR.muted, marginTop: 4 }}>Por edad (&gt;18 meses) o peso (&gt;350 lb)</div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 4 }}>Por edad (&gt;18 meses) o peso (&gt;350 lb)</div>
                 </div>
               </div>
 
-              {/* Proyección primer lote */}
-              <div style={{ ...cardStyle, padding: 0 }}>
-                <div style={{ padding: "14px 16px 10px", borderBottom: `1px solid ${COLOR.border}` }}>
-                  <div style={{ fontSize: 11, color: COLOR.muted, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>💰 Proyección Primer Lote</div>
+              {/* Proyección primer lote — gradiente dorado/naranja */}
+              <div style={{ background: "linear-gradient(145deg,#7c2d12 0%,#ea580c 65%,#fb923c 100%)", borderRadius: 16, padding: 0, boxShadow: "0 6px 24px rgba(234,88,12,0.3)", position:"relative", overflow:"hidden" }}>
+                <div style={{ position:"absolute", right:-20, top:-20, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.07)", pointerEvents:"none" }} />
+                <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>💰 Proyección Primer Lote</div>
                 </div>
                 <div style={{ padding: "12px 16px" }}>
-                  <div style={{ textAlign: "center", padding: "8px 0 12px" }}>
-                    <div style={{ fontSize: 36, fontWeight: 900, color: COLOR.green }}>{base.candidatosVenta || 0}</div>
-                    <div style={{ fontSize: 12, color: COLOR.muted }}>animales listos para vender</div>
+                  <div style={{ textAlign: "center", padding: "10px 0 14px" }}>
+                    <div style={{ fontSize: 48, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{base.candidatosVenta || 0}</div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>animales listos para vender</div>
                   </div>
-                  <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 10, padding: "10px 14px", textAlign: "center", marginBottom: 8 }}>
-                    <div style={{ fontSize: 11, color: COLOR.muted, fontWeight: 600 }}>Si vendes ese lote hoy</div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: COLOR.green, marginTop: 4 }}>{fmtN(base.valorProyectado || 0)}</div>
+                  <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 12, padding: "12px 14px", textAlign: "center", marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>Si vendes ese lote hoy</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#fff", marginTop: 5 }}>{fmtN(base.valorProyectado || 0)}</div>
                   </div>
-                  <div style={{ fontSize: 11, color: COLOR.muted, textAlign: "center" }}>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", textAlign: "center" }}>
                     Precio estimado por animal sin publicar: C$18,000
                   </div>
                 </div>
@@ -2088,14 +2124,14 @@ export default function DashboardPage() {
       })()}
 
       {/* ── GRÁFICA FINANCIERA — ancho completo — oculta para campo ── */}
-      {!esCampo && <div style={{ ...cardStyle, marginBottom: 16 }}>
+      {!esCampo && <div style={{ background: "linear-gradient(145deg,#0f172a 0%,#1e293b 60%,#1e3a5f 100%)", borderRadius: 16, marginBottom: 16, boxShadow: "0 6px 32px rgba(0,0,0,0.25)", overflow: "hidden" }}>
         <div style={{ padding: "16px 20px 0", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
-            <p style={{ margin: 0, fontWeight: 800, fontSize: 15, color: COLOR.text }}>Gráfica financiera</p>
-            <p style={{ margin: 0, fontSize: 11, color: COLOR.muted, marginTop: 2 }}>Ingresos, gastos y flujo neto del período seleccionado</p>
+            <p style={{ margin: 0, fontWeight: 800, fontSize: 15, color: "#fff" }}>Gráfica financiera</p>
+            <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>Ingresos, gastos y flujo neto del período seleccionado</p>
           </div>
         </div>
-        {loading ? <div style={{ padding: "20px" }}><Sk h={300} r={10} /></div> : <GraficaFinanciera datos={graficaMeses} />}
+        {loading ? <div style={{ padding: "20px" }}><Sk h={300} r={10} /></div> : <GraficaFinanciera datos={graficaMeses} darkMode />}
       </div>}
 
       {/* ── 2 COLUMNAS: Resumen hato | Alertas ── */}
