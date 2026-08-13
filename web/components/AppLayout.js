@@ -28,27 +28,59 @@ const RUTAS_SOLO_ADMIN = [
   "/gastos/nomina",
 ];
 
-const NAV_ITEMS_ADMIN = [
-  { icon: "⊞",  label: "Dashboard",          href: "/dashboard" },
-  { icon: "🐄", label: "Animales",            href: "/inventario" },
-  { icon: "💰", label: "Ventas",              href: "/ventas", badge: "Nuevo" },
-  { icon: "💸", label: "Gastos",              href: "/gastos" },
-  { icon: "🤰", label: "Reproducción",        href: "/reproduccion" },
-  { icon: "📋", label: "Eventos",             href: "/eventos" },
-  { icon: "🚨", label: "Salud",               href: "/incidentes" },
-  { icon: "📄", label: "Documentos",          href: "/documentos" },
-  { icon: "📢", label: "Tablón",              href: "/anuncios", notif: true },
-  { icon: "🛒", label: "Compras",             href: "/compras" },
-  { icon: "🏭", label: "Proveedores",         href: "/proveedores" },
-  { icon: "💳", label: "Finanzas",            href: "/finanzas" },
-  { icon: "📈", label: "Plan de Crecimiento", href: "/crecimiento" },
-  { icon: "📑", label: "Cuentas por pagar",   href: "/cuentas-pagar" },
-  { icon: "📦", label: "Insumos",             href: "/insumos" },
-  { icon: "👥", label: "Personal y nómina",   href: "/equipo" },
-  { icon: "📊", label: "Reportes",            href: "/reportes" },
-  { icon: "🕐", label: "Actividad",           href: "/actividad", notifActividad: true },
-  { icon: "🤖", label: "Centro IA",           href: "/ia", badge: "Beta" },
+const NAV_GROUPS = [
+  {
+    label: null,
+    items: [
+      { icon: "⊞",  label: "Dashboard",   href: "/dashboard" },
+    ],
+  },
+  {
+    label: "GANADERÍA",
+    items: [
+      { icon: "🐄", label: "Animales",      href: "/inventario" },
+      { icon: "🤰", label: "Reproducción",  href: "/reproduccion" },
+      { icon: "📋", label: "Eventos",       href: "/eventos" },
+      { icon: "🚨", label: "Salud",         href: "/incidentes" },
+    ],
+  },
+  {
+    label: "COMERCIAL",
+    items: [
+      { icon: "💰", label: "Ventas",        href: "/ventas", badge: "Nuevo" },
+      { icon: "🛒", label: "Compras",       href: "/compras" },
+      { icon: "🏭", label: "Proveedores",   href: "/proveedores" },
+    ],
+  },
+  {
+    label: "FINANZAS",
+    items: [
+      { icon: "💸", label: "Gastos",        href: "/gastos" },
+      { icon: "💳", label: "Finanzas",      href: "/finanzas" },
+      { icon: "📑", label: "Cuentas x pagar", href: "/cuentas-pagar" },
+    ],
+  },
+  {
+    label: "GESTIÓN",
+    items: [
+      { icon: "📦", label: "Insumos",           href: "/insumos" },
+      { icon: "👥", label: "Personal",           href: "/equipo" },
+      { icon: "📄", label: "Documentos",         href: "/documentos" },
+      { icon: "📢", label: "Tablón",             href: "/anuncios", notif: true },
+      { icon: "🕐", label: "Actividad",          href: "/actividad", notifActividad: true },
+      { icon: "📊", label: "Reportes",           href: "/reportes" },
+    ],
+  },
+  {
+    label: "ANÁLISIS",
+    items: [
+      { icon: "📈", label: "Plan de Crecimiento", href: "/crecimiento" },
+      { icon: "🤖", label: "Centro IA",           href: "/ia", badge: "Beta" },
+    ],
+  },
 ];
+
+const NAV_ITEMS_ADMIN = NAV_GROUPS.flatMap(g => g.items);
 
 const NAV_MOBILE_PRIMARY = ["/dashboard", "/inventario", "/ventas", "/anuncios", "/incidentes"];
 
@@ -204,83 +236,109 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
   return (
     <div className="min-h-screen flex" style={{ background: C.bg }}>
 
-      {/* ── SIDEBAR DESKTOP (lg+) — 220px con labels ── */}
+      {/* ── SIDEBAR DESKTOP (lg+) ── */}
       <aside className="hidden lg:flex fixed left-0 top-0 h-full z-20 flex-col overflow-hidden"
-        style={{ width: 220, background: C.sidebar, boxShadow: "4px 0 20px rgba(20,90,50,0.25)" }}>
+        style={{ width: 228, background: "linear-gradient(180deg,#0d3d21 0%,#145A32 40%,#1a6b3c 100%)", boxShadow: "4px 0 24px rgba(0,0,0,0.22)" }}>
 
         {/* Logo */}
-        <div className="px-5 py-5 flex items-center gap-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-2xl shrink-0 shadow-lg"
-            style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}>🐂</div>
-          <div>
-            <p className="text-white font-black text-sm leading-none tracking-wide" style={{ fontFamily: "var(--font-poppins)" }}>HENRIQUEZ</p>
-            <p className="font-bold leading-none mt-0.5" style={{ fontSize: 9, letterSpacing: 1, color: "rgba(255,255,255,0.65)" }}>CATTLE MANAGEMENT</p>
+        <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🐂</div>
+            <div>
+              <p style={{ color: "#fff", fontWeight: 900, fontSize: 13, letterSpacing: 1, margin: 0, fontFamily: "var(--font-poppins)" }}>HENRIQUEZ</p>
+              <p style={{ color: "rgba(255,255,255,0.5)", fontWeight: 700, fontSize: 8.5, letterSpacing: 1.5, margin: 0, marginTop: 1 }}>CATTLE MANAGEMENT</p>
+            </div>
           </div>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-0.5">
-          {navItems.map((item) => {
-            const active = pathname === item.href || (item.href !== "/dashboard" && !item.href.includes("?") && pathname?.startsWith(item.href));
-            const notifBadge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
-            const badgeCount = item.notifActividad ? nuevasActividades : nuevos;
+        {/* Nav con grupos */}
+        <nav style={{ flex: 1, overflowY: "auto", padding: "10px 10px", scrollbarWidth: "none" }}>
+          {(isSuperAdmin ? [{ label: null, items: NAV_ITEMS_SUPER }] : NAV_GROUPS).map((group, gi) => {
+            const groupItems = esCampo
+              ? group.items.filter(i => !RUTAS_SOLO_ADMIN.some(r => i.href.startsWith(r)))
+              : esTrabajador
+                ? group.items.filter(i => i.href !== "/equipo" && i.href !== "/actividad" && i.href !== "/reportes")
+                : group.items;
+            if (groupItems.length === 0) return null;
             return (
-              <button key={item.href} onClick={() => go(item.href)}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left"
-                style={{
-                  background: active ? "rgba(255,255,255,0.18)" : "transparent",
-                  border: active ? "1px solid rgba(255,255,255,0.25)" : "1px solid transparent",
-                }}>
-                <span style={{ fontSize: 17, minWidth: 20 }}>{item.icon}</span>
-                <span className="flex-1 font-semibold" style={{
-                  fontSize: 13,
-                  color: active ? "#FFFFFF" : "rgba(255,255,255,0.72)",
-                  fontFamily: "var(--font-inter)",
-                }}>
-                  {item.label}
-                </span>
-                {item.badge && (
-                  <span className="text-white font-black rounded-full px-1.5 py-0.5"
-                    style={{ fontSize: 9, background: "#27AE60" }}>{item.badge}</span>
+              <div key={gi} style={{ marginBottom: 4 }}>
+                {group.label && (
+                  <p style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.3)", letterSpacing: 1.5, padding: "10px 10px 4px", margin: 0 }}>
+                    {group.label}
+                  </p>
                 )}
-                {notifBadge && (
-                  <span className="text-white font-black rounded-full flex items-center justify-center animate-bounce"
-                    style={{ background: C.red, fontSize: 9, minWidth: 16, height: 16, padding: "0 2px" }}>
-                    {badgeCount > 9 ? "9+" : badgeCount}
-                  </span>
-                )}
-              </button>
+                {groupItems.map((item) => {
+                  const active = pathname === item.href || (item.href !== "/dashboard" && !item.href.includes("?") && pathname?.startsWith(item.href));
+                  const notifBadge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
+                  const badgeCount = item.notifActividad ? nuevasActividades : nuevos;
+                  return (
+                    <button key={item.href} onClick={() => go(item.href)}
+                      style={{
+                        width: "100%", display: "flex", alignItems: "center", gap: 10,
+                        padding: "8px 10px", borderRadius: 10, border: "none", cursor: "pointer",
+                        background: active ? "rgba(255,255,255,0.14)" : "transparent",
+                        marginBottom: 1, position: "relative", textAlign: "left",
+                        transition: "background 0.15s",
+                      }}
+                      onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.07)"; }}
+                      onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                    >
+                      {/* Indicador activo izquierdo */}
+                      {active && (
+                        <div style={{ position: "absolute", left: 0, top: "20%", bottom: "20%", width: 3, borderRadius: "0 3px 3px 0", background: "#4ade80" }} />
+                      )}
+                      {/* Ícono */}
+                      <div style={{
+                        width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                        background: active ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)",
+                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15,
+                      }}>
+                        {item.icon}
+                      </div>
+                      <span style={{ flex: 1, fontSize: 12.5, fontWeight: active ? 700 : 500, color: active ? "#fff" : "rgba(255,255,255,0.68)", fontFamily: "var(--font-inter)" }}>
+                        {item.label}
+                      </span>
+                      {item.badge && (
+                        <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: item.badge === "Beta" ? "#7C3AED" : "#16a34a", borderRadius: 20, padding: "2px 6px" }}>
+                          {item.badge}
+                        </span>
+                      )}
+                      {notifBadge && (
+                        <span style={{ background: C.red, color: "#fff", fontSize: 9, fontWeight: 800, minWidth: 16, height: 16, borderRadius: 20, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 3px" }}>
+                          {badgeCount > 9 ? "9+" : badgeCount}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             );
           })}
         </nav>
 
         {/* Usuario */}
         {usuario && (
-          <div className="px-3 py-3" style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}>
+          <div style={{ padding: "12px 10px 14px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
             <button onClick={() => go("/perfil")}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all"
-              style={{ background: "rgba(255,255,255,0.1)" }}>
-              <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center font-black text-sm shrink-0"
-                style={{ background: "rgba(255,255,255,0.25)", color: "white" }}>
-                {fotoPerfil
-                  ? <img src={fotoPerfil} alt="" className="w-full h-full object-cover" />
-                  : <span style={{ fontFamily: "var(--font-poppins)" }}>{usuario.nombre?.charAt(0).toUpperCase()}</span>}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.1)", marginBottom: 8, textAlign: "left" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, fontSize: 14, border: "2px solid rgba(255,255,255,0.3)" }}>
+                {fotoPerfil ? <img src={fotoPerfil} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : usuario.nombre?.charAt(0).toUpperCase()}
               </div>
-              <div className="flex-1 text-left overflow-hidden">
-                <p className="text-white font-bold text-xs truncate leading-none" style={{ fontFamily: "var(--font-inter)" }}>{usuario.nombre}</p>
-                <p className="font-semibold mt-0.5" style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>
-                  {usuario.role === "ADMIN" ? "Administrador" : usuario.role === "SUPER_ADMIN" ? "Super Admin" : "Trabajador"}
-                </p>
+              <div style={{ flex: 1, overflow: "hidden" }}>
+                <p style={{ color: "#fff", fontWeight: 700, fontSize: 12, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{usuario.nombre}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", flexShrink: 0 }} />
+                  <p style={{ color: "rgba(255,255,255,0.55)", fontWeight: 600, fontSize: 10, margin: 0 }}>
+                    {usuario.role === "ADMIN" ? "Administrador" : usuario.role === "SUPER_ADMIN" ? "Super Admin" : "Trabajador"}
+                  </p>
+                </div>
               </div>
             </button>
-            <div className="flex items-center gap-1.5 px-3 mt-2">
-              <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#4ade80" }} />
-              <span className="font-medium" style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>Sincronizado</span>
-            </div>
             <button onClick={handleLogout}
-              className="w-full mt-2 py-2 rounded-xl font-bold text-xs transition-all hover:opacity-80"
-              style={{ background: "rgba(231,76,60,0.2)", color: "#FF8A8A", border: "1px solid rgba(231,76,60,0.3)" }}>
-              Cerrar sesión
+              style={{ width: "100%", padding: "9px 0", borderRadius: 10, fontWeight: 800, fontSize: 12, cursor: "pointer", background: "rgba(239,68,68,0.15)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.25)", transition: "opacity 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+              Cerrar sesión →
             </button>
           </div>
         )}
@@ -321,7 +379,7 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
       </aside>
 
       {/* ── MAIN CONTENT ── */}
-      <div className="flex-1 flex flex-col min-h-screen md:ml-[64px] lg:ml-[220px]" style={{ background: C.bg }}>
+      <div className="flex-1 flex flex-col min-h-screen md:ml-[64px] lg:ml-[228px]" style={{ background: C.bg }}>
 
         {/* Header */}
         <header className="flex items-center gap-3 px-4 lg:px-6 py-3 sticky top-0 z-10"
