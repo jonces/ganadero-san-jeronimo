@@ -691,24 +691,59 @@ function ModalInforme({ animal, onClose }) {
       const CONTENT_W = PAGE_W - MARGIN * 2;
       let y = 0;
 
-      // Cabecera verde
+      // Cargar foto del animal si existe
+      const mediaFotos = (detalle?.media || animal.media || []).filter(m => m.tipo !== "video" && m.tipo !== "VIDEO");
+      let fotoBase64 = null;
+      let fotoExt = "JPEG";
+      if (mediaFotos.length > 0) {
+        try {
+          const url = mediaFotos[0].url;
+          const resp = await fetch(url);
+          const blob = await resp.blob();
+          fotoBase64 = await new Promise((res, rej) => {
+            const reader = new FileReader();
+            reader.onload = () => res(reader.result);
+            reader.onerror = rej;
+            reader.readAsDataURL(blob);
+          });
+          fotoExt = blob.type.includes("png") ? "PNG" : "JPEG";
+        } catch { fotoBase64 = null; }
+      }
+
+      // Cabecera: foto a la derecha, texto a la izquierda
+      const FOTO_SIZE = 60; // mm cuadrado
+      const HEADER_H = fotoBase64 ? Math.max(60, FOTO_SIZE + 8) : 38;
       doc.setFillColor(...verde);
-      doc.rect(0, 0, PAGE_W, 38, "F");
+      doc.rect(0, 0, PAGE_W, HEADER_H, "F");
+
+      if (fotoBase64) {
+        // Foto con recorte cuadrado a la derecha
+        const fotoX = PAGE_W - MARGIN - FOTO_SIZE;
+        const fotoY = (HEADER_H - FOTO_SIZE) / 2;
+        doc.addImage(fotoBase64, fotoExt, fotoX, fotoY, FOTO_SIZE, FOTO_SIZE, undefined, "FAST");
+        // Borde sutil sobre la foto
+        doc.setDrawColor(255, 255, 255);
+        doc.setLineWidth(0.5);
+        doc.rect(fotoX, fotoY, FOTO_SIZE, FOTO_SIZE);
+      }
+
+      const textMaxW = fotoBase64 ? PAGE_W - MARGIN * 2 - FOTO_SIZE - 8 : CONTENT_W;
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
       doc.text("INFORME COMPLETO DE ANIMAL", MARGIN, 10);
-      doc.setFontSize(18);
+      doc.setFontSize(20);
       doc.setFont("helvetica", "bold");
-      doc.text(animal.nombre || animal.identificador, MARGIN, 22);
+      doc.text(animal.nombre || animal.identificador, MARGIN, 25);
       if (animal.nombre) {
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
-        doc.text(animal.identificador, MARGIN, 29);
+        doc.text(animal.identificador, MARGIN, 33);
       }
       doc.setFontSize(9);
-      doc.text(`${cat} · ${animal.sexo} · ${animal.raza || "Sin raza"} · ${animal.estado}`, MARGIN, 35);
-      y = 46;
+      const subtexto = `${cat} · ${animal.sexo} · ${animal.raza || "Sin raza"} · ${animal.estado}`;
+      doc.text(subtexto, MARGIN, animal.nombre ? 42 : 34);
+      y = HEADER_H + 8;
 
       function seccion(titulo) {
         doc.setFillColor(241, 245, 249);
