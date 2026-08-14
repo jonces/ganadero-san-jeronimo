@@ -10,7 +10,7 @@ const COLOR = {
   green:   "#4ade80",
   greenDk: "#16a34a",
   bg:      "transparent",
-  white:   "rgba(8,20,14,0.62)",
+  white:   "rgba(10,20,30,0.28)",
   text:    "#ffffff",
   muted:   "rgba(255,255,255,0.55)",
   border:  "rgba(255,255,255,.18)",
@@ -231,7 +231,7 @@ function DonutHato({ data, total, onNavigate }) {
               onMouseLeave={() => setHov(null)}
               style={{
                 display:"flex", alignItems:"center", gap:8,
-                background: hov === i ? "#F8FAFC" : "transparent",
+                background: hov === i ? "rgba(255,255,255,0.08)" : "transparent",
                 border:"none", cursor:"pointer", padding:"5px 6px", borderRadius:7,
                 transition:"background 0.12s", textAlign:"left", width:"100%",
               }}>
@@ -323,8 +323,8 @@ function GraficaFinanciera({ datos = [], darkMode = false }) {
     btnActive: "rgba(255,255,255,0.22)", btnText: "rgba(255,255,255,0.6)", btnActiveText: "#fff",
   } : {
     text: COLOR.text, muted: COLOR.muted, border: COLOR.border,
-    gridLine: "#F1F5F9", bg: "#F1F5F9", btnBg: "#F1F5F9",
-    btnActive: COLOR.white, btnText: COLOR.muted, btnActiveText: COLOR.text,
+    gridLine: "rgba(255,255,255,0.06)", bg: "rgba(255,255,255,0.06)", btnBg: "rgba(255,255,255,0.08)",
+    btnActive: "rgba(255,255,255,0.18)", btnText: COLOR.muted, btnActiveText: COLOR.text,
   };
   const [vista, setVista]   = useState("6M");
   const [serie, setSerie]   = useState("ambas"); // "ambas" | "neto"
@@ -662,9 +662,9 @@ const ALERTAS_EJEMPLO = [
 ];
 
 const PRIORIDAD_CONFIG = {
-  alta:  { label: "Alta",  dot: "#DC2626", bg: "#FEF2F2", border: "#FECACA", badgeBg: "#FEE2E2", badgeColor: "#B91C1C", barColor: "#DC2626" },
-  media: { label: "Media", dot: "#D97706", bg: "#FFFBEB", border: "#FDE68A", badgeBg: "#FEF3C7", badgeColor: "#92400E", barColor: "#D97706" },
-  baja:  { label: "Baja",  dot: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE", badgeBg: "#DBEAFE", badgeColor: "#1E40AF", barColor: "#2563EB" },
+  alta:  { label: "Alta",  dot: "#f87171", bg: "rgba(248,113,113,0.12)", border: "rgba(248,113,113,0.3)", badgeBg: "rgba(248,113,113,0.15)", badgeColor: "#f87171", barColor: "#f87171" },
+  media: { label: "Media", dot: "#fb923c", bg: "rgba(251,146,60,0.12)",  border: "rgba(251,146,60,0.3)",  badgeBg: "rgba(251,146,60,0.15)",  badgeColor: "#fb923c", barColor: "#fb923c" },
+  baja:  { label: "Baja",  dot: "#60a5fa", bg: "rgba(96,165,250,0.12)",  border: "rgba(96,165,250,0.3)",  badgeBg: "rgba(96,165,250,0.15)",  badgeColor: "#60a5fa", barColor: "#60a5fa" },
 };
 
 function AlertasInteligentes({ loading, onNavigate }) {
@@ -674,11 +674,7 @@ function AlertasInteligentes({ loading, onNavigate }) {
   const bajaCount  = ALERTAS_EJEMPLO.filter(a => a.prioridad === "baja").length;
 
   return (
-    <div style={{
-      background: COLOR.white, border: `1px solid ${COLOR.border}`,
-      borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-      display: "flex", flexDirection: "column",
-    }}>
+    <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
 
       {/* Header */}
       <div style={{ padding: "14px 16px 12px", borderBottom: `1px solid ${COLOR.border}` }}>
@@ -690,8 +686,8 @@ function AlertasInteligentes({ loading, onNavigate }) {
           {/* Badge IA — solo visual */}
           <span style={{
             fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 20,
-            background: "linear-gradient(135deg, #F0FDF4, #EFF6FF)",
-            border: "1px solid #BBF7D0", color: "#065F46",
+            background: "rgba(74,222,128,0.15)",
+            border: "1px solid rgba(74,222,128,0.3)", color: "#4ade80",
             display: "flex", alignItems: "center", gap: 4,
           }}>
             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
@@ -805,19 +801,19 @@ function AlertasInteligentes({ loading, onNavigate }) {
 
 // ── Inventario de Insumos ──
 const INSUMOS_DEMO = [
-  { id:"med",   label:"Medicamentos",   icono:"💊", cant:12, max:20, unidad:"unidades", color:"#2563EB", bg:"#EFF6FF" },
-  { id:"vit",   label:"Vitaminas",      icono:"🧪", cant:8,  max:15, unidad:"dosis",    color:"#16a34a", bg:"#F0FDF4" },
-  { id:"vac",   label:"Vacunas",        icono:"💉", cant:2,  max:10, unidad:"frascos",  color:"#DC2626", bg:"#FEF2F2" },
-  { id:"sal",   label:"Sales minerales",icono:"🧂", cant:45, max:50, unidad:"kg",       color:"#16a34a", bg:"#F0FDF4" },
-  { id:"con",   label:"Concentrados",   icono:"🌾", cant:5,  max:20, unidad:"sacos",    color:"#D97706", bg:"#FFFBEB" },
-  { id:"des",   label:"Desparasitantes",icono:"🔬", cant:1,  max:8,  unidad:"frascos",  color:"#DC2626", bg:"#FEF2F2" },
+  { id:"med",   label:"Medicamentos",   icono:"💊", cant:12, max:20, unidad:"unidades", color:"#60a5fa", bg:"rgba(96,165,250,0.15)" },
+  { id:"vit",   label:"Vitaminas",      icono:"🧪", cant:8,  max:15, unidad:"dosis",    color:"#4ade80", bg:"rgba(74,222,128,0.12)" },
+  { id:"vac",   label:"Vacunas",        icono:"💉", cant:2,  max:10, unidad:"frascos",  color:"#f87171", bg:"rgba(248,113,113,0.12)" },
+  { id:"sal",   label:"Sales minerales",icono:"🧂", cant:45, max:50, unidad:"kg",       color:"#4ade80", bg:"rgba(74,222,128,0.12)" },
+  { id:"con",   label:"Concentrados",   icono:"🌾", cant:5,  max:20, unidad:"sacos",    color:"#fb923c", bg:"rgba(251,146,60,0.12)" },
+  { id:"des",   label:"Desparasitantes",icono:"🔬", cant:1,  max:8,  unidad:"frascos",  color:"#f87171", bg:"rgba(248,113,113,0.12)" },
 ];
 
 function stockStatus(cant, max) {
   const pct = cant / max;
-  if (pct <= 0.2) return { label: "Crítico", color: "#DC2626", bg: "#FEF2F2", barColor: "#DC2626" };
-  if (pct <= 0.4) return { label: "Bajo",    color: "#D97706", bg: "#FFFBEB", barColor: "#F59E0B" };
-  return              { label: "OK",       color: "#16a34a", bg: "#F0FDF4", barColor: "#22c55e" };
+  if (pct <= 0.2) return { label: "Crítico", color: "#f87171", bg: "rgba(248,113,113,0.12)", barColor: "#f87171" };
+  if (pct <= 0.4) return { label: "Bajo",    color: "#fb923c", bg: "rgba(251,146,60,0.12)",  barColor: "#fb923c" };
+  return              { label: "OK",       color: "#4ade80", bg: "rgba(74,222,128,0.12)",  barColor: "#4ade80" };
 }
 
 function InventarioInsumosCard({ loading, onNavigate }) {
@@ -825,11 +821,7 @@ function InventarioInsumosCard({ loading, onNavigate }) {
   const bajos = INSUMOS_DEMO.filter(i => (i.cant / i.max) <= 0.4);
 
   return (
-    <div style={{
-      background: COLOR.white, border: `1px solid ${COLOR.border}`,
-      borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-      display: "flex", flexDirection: "column",
-    }}>
+    <div style={{ ...cardStyle, display: "flex", flexDirection: "column" }}>
 
       {/* Header */}
       <div style={{ padding: "14px 16px 12px", borderBottom: `1px solid ${COLOR.border}` }}>
@@ -840,7 +832,7 @@ function InventarioInsumosCard({ loading, onNavigate }) {
           </div>
           <div style={{ display: "flex", gap: 6 }}>
             {bajos.length > 0 && (
-              <span style={{ fontSize: 10, fontWeight: 800, padding: "3px 9px", borderRadius: 20, background: "#FEF2F2", color: "#B91C1C", border: "1px solid #FECACA", display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 10, fontWeight: 800, padding: "3px 9px", borderRadius: 20, background: "rgba(248,113,113,0.15)", color: "#f87171", border: "1px solid rgba(248,113,113,0.3)", display: "flex", alignItems: "center", gap: 4 }}>
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 {bajos.length} bajo stock
               </span>
@@ -866,7 +858,7 @@ function InventarioInsumosCard({ loading, onNavigate }) {
                   display: "flex", alignItems: "center", gap: 10,
                   padding: "9px 16px",
                   borderBottom: idx < INSUMOS_DEMO.length - 1 ? `1px solid ${COLOR.border}` : "none",
-                  background: isHov ? "#F8FAFC" : "transparent",
+                  background: isHov ? "rgba(255,255,255,0.06)" : "transparent",
                   cursor: "pointer", transition: "background 0.12s",
                 }}>
 
@@ -882,7 +874,7 @@ function InventarioInsumosCard({ loading, onNavigate }) {
                     <span style={{ fontSize: 11, fontWeight: 800, color: st.color }}>{item.cant} {item.unidad}</span>
                   </div>
                   {/* Barra de stock */}
-                  <div style={{ height: 5, background: "#F1F5F9", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ height: 5, background: "rgba(255,255,255,0.1)", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{
                       height: "100%", width: `${pct}%`,
                       background: st.barColor, borderRadius: 4,
@@ -906,14 +898,14 @@ function InventarioInsumosCard({ loading, onNavigate }) {
 
       {/* Alertas de stock bajo */}
       {bajos.length > 0 && (
-        <div style={{ margin: "0 12px 10px", borderRadius: 10, background: "#FFF7ED", border: "1px solid #FED7AA", padding: "10px 12px" }}>
-          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 800, color: "#C2410C", display: "flex", alignItems: "center", gap: 5 }}>
+        <div style={{ margin: "0 12px 10px", borderRadius: 10, background: "rgba(251,146,60,0.12)", border: "1px solid rgba(251,146,60,0.3)", padding: "10px 12px" }}>
+          <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 800, color: "#fb923c", display: "flex", alignItems: "center", gap: 5 }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             Stock bajo detectado
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
             {bajos.map(i => (
-              <span key={i.id} style={{ fontSize: 11, fontWeight: 600, color: "#9A3412", background: "#FEE2E2", padding: "2px 9px", borderRadius: 20 }}>
+              <span key={i.id} style={{ fontSize: 11, fontWeight: 600, color: "#fb923c", background: "rgba(251,146,60,0.15)", padding: "2px 9px", borderRadius: 20 }}>
                 {i.icono} {i.label}
               </span>
             ))}
@@ -1001,8 +993,8 @@ function ProximasActividadesCard({ onNavigate }) {
       )}
 
       {/* Lista de actividades */}
-      <div style={{ padding: "8px 14px", display: "grid", gridTemplateColumns: verCal ? "1fr 1fr" : "repeat(auto-fill,minmax(260px,1fr))", gap: 6 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <div style={{ padding: "8px 14px", display: "grid", gridTemplateColumns: verCal ? "1fr 1fr" : "1fr 1fr", gap: 6 }}>
+        <div style={{ display: "contents" }}>
           {ACTIVIDADES_DEMO.map(act => (
             <div key={act.id}
               onMouseEnter={() => setHovItem(act.id)}
@@ -1011,15 +1003,13 @@ function ProximasActividadesCard({ onNavigate }) {
               style={{
                 display: "flex", alignItems: "center", gap: 9,
                 padding: "7px 10px", borderRadius: 9,
-                border: `1px solid ${hovItem === act.id ? act.color + "99" : COLOR.border}`,
-                background: hovItem === act.id ? "rgba(255,255,255,0.06)" : "rgba(10,20,30,0.18)",
+                border: `1px solid ${hovItem === act.id ? act.color + "99" : "rgba(255,255,255,.12)"}`,
+                background: hovItem === act.id ? "rgba(255,255,255,0.06)" : "transparent",
                 cursor: "pointer", transition: "all 0.15s",
               }}>
-              {/* Icono tipo */}
-              <div style={{ width: 30, height: 30, borderRadius: 8, background: act.bg + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0, border: `1px solid ${act.color}44` }}>
+              <div style={{ width: 28, height: 28, borderRadius: 7, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, border: `1px solid ${act.color}55` }}>
                 {act.icono}
               </div>
-              {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
                   <p style={{ margin: 0, fontWeight: 700, fontSize: 12, color: COLOR.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{act.tipo}</p>
@@ -1033,7 +1023,6 @@ function ProximasActividadesCard({ onNavigate }) {
                   <span style={{ fontSize: 10, color: act.color, fontWeight: 600 }}>🐄 {act.animales} anim.</span>
                 </div>
               </div>
-              {/* Flecha */}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={COLOR.muted} strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           ))}
@@ -1041,7 +1030,7 @@ function ProximasActividadesCard({ onNavigate }) {
 
         {/* Mini calendario */}
         {verCal && (
-          <div style={{ background: "#F8FAFC", borderRadius: 14, padding: 16, border: `1px solid ${COLOR.border}` }}>
+          <div style={{ background: "rgba(10,20,30,0.28)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", borderRadius: 14, padding: 16, border: `1px solid ${COLOR.border}` }}>
             <p style={{ margin: "0 0 12px", fontWeight: 800, fontSize: 13, color: COLOR.text, textAlign: "center" }}>
               Agosto 2026
             </p>
@@ -1059,7 +1048,7 @@ function ProximasActividadesCard({ onNavigate }) {
                   <div key={i} style={{
                     aspectRatio: "1", borderRadius: 8, display: "flex", flexDirection: "column",
                     alignItems: "center", justifyContent: "center",
-                    background: esHoy ? COLOR.green : tieneAct ? "#DBEAFE" : "transparent",
+                    background: esHoy ? COLOR.green : tieneAct ? "rgba(96,165,250,0.2)" : "transparent",
                     color: esHoy ? "#fff" : tieneAct ? COLOR.blue : COLOR.text,
                     fontWeight: esHoy || tieneAct ? 800 : 400,
                     fontSize: 12, cursor: tieneAct ? "pointer" : "default",
@@ -1171,9 +1160,9 @@ function CentroIA({ visible, onClose }) {
             <>
               {/* Bienvenida / burbuja IA */}
               <div style={{ padding: "16px 14px 8px" }}>
-                <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: "4px 14px 14px 14px", padding: "12px 14px", maxWidth: "90%" }}>
-                  <p style={{ margin: 0, fontSize: 13, color: "#166534", fontWeight: 600 }}>¡Hola! Soy tu asistente ganadero.</p>
-                  <p style={{ margin: "6px 0 0", fontSize: 12, color: "#15803d", lineHeight: 1.5 }}>
+                <div style={{ background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: "4px 14px 14px 14px", padding: "12px 14px", maxWidth: "90%" }}>
+                  <p style={{ margin: 0, fontSize: 13, color: "#4ade80", fontWeight: 600 }}>¡Hola! Soy tu asistente ganadero.</p>
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: COLOR.muted, lineHeight: 1.5 }}>
                     Puedo ayudarte con vacunaciones, análisis financieros, rotación de potreros y más. ¿En qué te ayudo hoy?
                   </p>
                 </div>
@@ -1185,7 +1174,7 @@ function CentroIA({ visible, onClose }) {
                 </div>
                 {/* Burbuja respuesta IA en proceso */}
                 <div style={{ marginTop: 10 }}>
-                  <div style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: "4px 14px 14px 14px", padding: "12px 14px", maxWidth: "90%", display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: "4px 14px 14px 14px", padding: "12px 14px", maxWidth: "90%", display: "flex", alignItems: "center", gap: 8 }}>
                     <div style={{ display: "flex", gap: 4 }}>
                       {[0,1,2].map(i => (
                         <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: COLOR.green, animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
@@ -1204,12 +1193,12 @@ function CentroIA({ visible, onClose }) {
                     <button key={i} style={{
                       display: "flex", alignItems: "center", gap: 8,
                       padding: "8px 12px", borderRadius: 10,
-                      border: `1px solid ${COLOR.border}`, background: "#F8FAFC",
+                      border: `1px solid ${COLOR.border}`, background: "rgba(255,255,255,0.06)",
                       cursor: "pointer", textAlign: "left", transition: "all 0.15s",
                       fontSize: 12, color: COLOR.text, fontWeight: 500,
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "#F0FDF4"; e.currentTarget.style.borderColor = COLOR.green; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "#F8FAFC"; e.currentTarget.style.borderColor = COLOR.border; }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(74,222,128,0.1)"; e.currentTarget.style.borderColor = COLOR.green; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = COLOR.border; }}
                     onClick={() => setInputVal(c.texto)}>
                       <span style={{ fontSize: 16, flexShrink: 0 }}>{c.icono}</span>
                       {c.texto}
@@ -1231,9 +1220,9 @@ function CentroIA({ visible, onClose }) {
                     border: `1px solid ${COLOR.border}`, background: COLOR.white,
                     cursor: "pointer", textAlign: "left", transition: "all 0.15s",
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "#F8FAFC"; e.currentTarget.style.borderColor = "#94A3B8"; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = COLOR.white; e.currentTarget.style.borderColor = COLOR.border; }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 8, background: "#F0FDF4", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>💬</div>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, background: "rgba(74,222,128,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>💬</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
                         <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: COLOR.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.titulo}</p>
@@ -1260,12 +1249,12 @@ function CentroIA({ visible, onClose }) {
               <button key={a.label} title={a.label} style={{
                 display: "flex", alignItems: "center", gap: 5,
                 padding: "6px 10px", borderRadius: 8,
-                border: `1px solid ${COLOR.border}`, background: "#F8FAFC",
+                border: `1px solid ${COLOR.border}`, background: "rgba(255,255,255,0.06)",
                 cursor: "pointer", fontSize: 13, color: a.color,
                 fontWeight: 600, transition: "all 0.15s", flex: 1, justifyContent: "center",
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = "#F0FDF4"; e.currentTarget.style.borderColor = a.color; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "#F8FAFC"; e.currentTarget.style.borderColor = COLOR.border; }}>
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; e.currentTarget.style.borderColor = a.color; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = COLOR.border; }}>
                 <span>{a.icono}</span>
                 <span style={{ fontSize: 10 }}>{a.label}</span>
               </button>
@@ -1282,7 +1271,7 @@ function CentroIA({ visible, onClose }) {
                 flex: 1, resize: "none", padding: "10px 12px",
                 borderRadius: 12, border: `1.5px solid ${COLOR.border}`,
                 fontSize: 13, fontFamily: "inherit", color: COLOR.text,
-                background: "#F8FAFC", outline: "none", lineHeight: 1.5,
+                background: "rgba(255,255,255,0.06)", outline: "none", lineHeight: 1.5,
                 transition: "border-color 0.15s",
               }}
               onFocus={e => e.target.style.borderColor = COLOR.green}
@@ -1510,14 +1499,14 @@ export default function DashboardPage() {
   const esCampo = CARGOS_CAMPO.includes(usuario?.cargo);
 
   const kpiCardsAll = [
-    { iconKey: "animal",   label: "Animales activos",   valor: fmt(stats?.animalesActivos || 0, "numero"),                                sub: `${hato.enVenta || 0} en venta · ${hato.prenadas || 0} preñadas`, accentColor: COLOR.green,  iconBg: "#F0FDF4", iconColor: COLOR.green,  trend: null,         href: "/inventario",    soloCampo: true  },
-    { iconKey: "hato",     label: "Valor del hato",     valor: fmt(stats?.valorEstimadoHato || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.valorEstimadoHato, moneda, tc),  sub: "Precio de venta estimado",                              accentColor: COLOR.blue,   iconBg: "#EFF6FF", iconColor: COLOR.blue,   trend: null,         href: "/inventario",    soloCampo: false },
-    { iconKey: "capital",  label: "Capital invertido",  valor: fmt(stats?.capitalInvertido || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.capitalInvertido, moneda, tc),   sub: "Compras + gastos históricos",                           accentColor: COLOR.purple, iconBg: "#F5F3FF", iconColor: COLOR.purple, trend: null,         href: "/finanzas",      soloCampo: false },
-    { iconKey: "ventas",   label: `Ventas · ${["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][mesSeleccionado-1]} ${añoSeleccionado}`, valor: fmt(stats?.ventasMes?.total || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.ventasMes?.total, moneda, tc),   sub: `${stats?.ventasMes?.cantidad || 0} transacciones`,      accentColor: COLOR.green,  iconBg: "#F0FDF4", iconColor: COLOR.green,  trend: tendVentas,   href: "/ventas",        soloCampo: false },
-    { iconKey: "gastos",   label: `Gastos · ${["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][mesSeleccionado-1]} ${añoSeleccionado}`,  valor: fmt(stats?.gastosMes?.total || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.gastosMes?.total, moneda, tc),   sub: "Total de egresos registrados",                          accentColor: COLOR.red,    iconBg: "#FEF2F2", iconColor: COLOR.red,    trend: tendGastos,   href: "/gastos",        soloCampo: false },
-    { iconKey: "ganancia", label: "Ganancia neta",      valor: fmt(stats?.gananciaNeta || 0, "moneda", moneda, tc),      equiv: fmtSub(stats?.gananciaNeta, moneda, tc),        sub: `Margen: ${(stats?.margenGanancia || 0).toFixed(1)}%`,   accentColor: COLOR.purple, iconBg: "#F5F3FF", iconColor: COLOR.purple, trend: tendGanancia, href: "/finanzas",      soloCampo: false },
-    { iconKey: "cuentas",  label: "Cuentas por pagar",  valor: fmt(stats?.cuentasPagar || 0, "moneda", moneda, tc),      equiv: fmtSub(stats?.cuentasPagar, moneda, tc),        sub: "Pagos pendientes",                                      accentColor: COLOR.orange, iconBg: "#FFF7ED", iconColor: COLOR.orange, trend: null,         href: "/cuentas-pagar", soloCampo: false },
-    { iconKey: "caja",     label: "Caja disponible",    valor: fmt(stats?.cajaDisponible || 0, "moneda", moneda, tc),    equiv: fmtSub(stats?.cajaDisponible, moneda, tc),      sub: "Cobrado menos gastos",                                  accentColor: COLOR.green,  iconBg: "#F0FDF4", iconColor: COLOR.green,  trend: null,         href: "/finanzas",      soloCampo: false },
+    { iconKey: "animal",   label: "Animales activos",   valor: fmt(stats?.animalesActivos || 0, "numero"),                                sub: `${hato.enVenta || 0} en venta · ${hato.prenadas || 0} preñadas`, accentColor: COLOR.green,  iconBg: "rgba(74,222,128,0.15)",  iconColor: COLOR.green,  trend: null,         href: "/inventario",    soloCampo: true  },
+    { iconKey: "hato",     label: "Valor del hato",     valor: fmt(stats?.valorEstimadoHato || 0, "moneda", moneda, tc), equiv: fmtSub(stats?.valorEstimadoHato, moneda, tc),  sub: "Precio de venta estimado",                              accentColor: COLOR.blue,   iconBg: "rgba(96,165,250,0.15)",  iconColor: COLOR.blue,   trend: null,         href: "/inventario",    soloCampo: false },
+    { iconKey: "capital",  label: "Capital invertido",  valor: fmt(stats?.capitalInvertido || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.capitalInvertido, moneda, tc),   sub: "Compras + gastos históricos",                           accentColor: COLOR.purple, iconBg: "rgba(192,132,252,0.15)", iconColor: COLOR.purple, trend: null,         href: "/finanzas",      soloCampo: false },
+    { iconKey: "ventas",   label: `Ventas · ${["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][mesSeleccionado-1]} ${añoSeleccionado}`, valor: fmt(stats?.ventasMes?.total || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.ventasMes?.total, moneda, tc),   sub: `${stats?.ventasMes?.cantidad || 0} transacciones`,      accentColor: COLOR.green,  iconBg: "rgba(74,222,128,0.15)",  iconColor: COLOR.green,  trend: tendVentas,   href: "/ventas",        soloCampo: false },
+    { iconKey: "gastos",   label: `Gastos · ${["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"][mesSeleccionado-1]} ${añoSeleccionado}`,  valor: fmt(stats?.gastosMes?.total || 0, "moneda", moneda, tc),  equiv: fmtSub(stats?.gastosMes?.total, moneda, tc),   sub: "Total de egresos registrados",                          accentColor: COLOR.red,    iconBg: "rgba(248,113,113,0.15)", iconColor: COLOR.red,    trend: tendGastos,   href: "/gastos",        soloCampo: false },
+    { iconKey: "ganancia", label: "Ganancia neta",      valor: fmt(stats?.gananciaNeta || 0, "moneda", moneda, tc),      equiv: fmtSub(stats?.gananciaNeta, moneda, tc),        sub: `Margen: ${(stats?.margenGanancia || 0).toFixed(1)}%`,   accentColor: COLOR.purple, iconBg: "rgba(192,132,252,0.15)", iconColor: COLOR.purple, trend: tendGanancia, href: "/finanzas",      soloCampo: false },
+    { iconKey: "cuentas",  label: "Cuentas por pagar",  valor: fmt(stats?.cuentasPagar || 0, "moneda", moneda, tc),      equiv: fmtSub(stats?.cuentasPagar, moneda, tc),        sub: "Pagos pendientes",                                      accentColor: COLOR.orange, iconBg: "rgba(251,146,60,0.15)",  iconColor: COLOR.orange, trend: null,         href: "/cuentas-pagar", soloCampo: false },
+    { iconKey: "caja",     label: "Caja disponible",    valor: fmt(stats?.cajaDisponible || 0, "moneda", moneda, tc),    equiv: fmtSub(stats?.cajaDisponible, moneda, tc),      sub: "Cobrado menos gastos",                                  accentColor: COLOR.green,  iconBg: "rgba(74,222,128,0.15)",  iconColor: COLOR.green,  trend: null,         href: "/finanzas",      soloCampo: false },
   ];
   const kpiCards = esCampo ? kpiCardsAll.filter(c => c.soloCampo) : kpiCardsAll;
 
@@ -1572,10 +1561,10 @@ export default function DashboardPage() {
         {esCampo && (() => {
           const cargoLabel = usuario?.cargo === "VAQUERO" ? "Vaquero" : "Trabajador de Campo";
           const accesos = [
-            { icono: "🐄", label: "Animales",   color: COLOR.green,  bg: "#F0FDF4", border: "#BBF7D0", href: "/inventario" },
-            { icono: "📋", label: "Eventos",    color: COLOR.blue,   bg: "#EFF6FF", border: "#BFDBFE", href: "/eventos"    },
-            { icono: "🚨", label: "Incidentes", color: COLOR.red,    bg: "#FEF2F2", border: "#FECACA", href: "/incidentes" },
-            { icono: "💊", label: "Salud",      color: COLOR.orange, bg: "#FFF7ED", border: "#FED7AA", href: "/incidentes" },
+            { icono: "🐄", label: "Animales",   color: COLOR.green,  bg: "rgba(74,222,128,0.15)",  border: "rgba(74,222,128,0.3)",  href: "/inventario" },
+            { icono: "📋", label: "Eventos",    color: COLOR.blue,   bg: "rgba(96,165,250,0.15)",  border: "rgba(96,165,250,0.3)",  href: "/eventos"    },
+            { icono: "🚨", label: "Incidentes", color: COLOR.red,    bg: "rgba(248,113,113,0.15)", border: "rgba(248,113,113,0.3)", href: "/incidentes" },
+            { icono: "💊", label: "Salud",      color: COLOR.orange, bg: "rgba(251,146,60,0.15)",  border: "rgba(251,146,60,0.3)",  href: "/incidentes" },
           ];
           return (
             <>
@@ -1649,7 +1638,7 @@ export default function DashboardPage() {
                       <p style={{ margin:0, fontWeight:800, fontSize:14, color:COLOR.text }}>Resumen del hato</p>
                       <p style={{ margin:0, fontSize:11, color:COLOR.muted }}>Distribución por categoría</p>
                     </div>
-                    <span style={{ fontSize:12, fontWeight:700, color:COLOR.green, background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:20, padding:"2px 10px" }}>{stats?.animalesActivos || 0} activos</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:COLOR.green, background:"rgba(74,222,128,0.15)", border:"1px solid rgba(74,222,128,0.3)", borderRadius:20, padding:"2px 10px" }}>{stats?.animalesActivos || 0} activos</span>
                   </div>
                   {loading ? (
                     <div style={{ padding:20, display:"flex", gap:16, alignItems:"center" }}>
@@ -1677,7 +1666,7 @@ export default function DashboardPage() {
                         { icono:"🐮", label:"Natalidad",      valor: stats?.natalidad   != null ? `${stats.natalidad.toFixed(1)}%`   : "—%", color: COLOR.green  },
                         { icono:"📊", label:"Mortalidad",     valor: stats?.mortalidad  != null ? `${stats.mortalidad.toFixed(2)}%`  : "—%", color: COLOR.red    },
                       ].map((ind, i) => (
-                        <div key={i} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 14px", borderRadius:12, background:"#F8FAFC", border:`1px solid ${COLOR.border}` }}>
+                        <div key={i} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 14px", borderRadius:12, background:"rgba(255,255,255,0.06)", border:`1px solid ${COLOR.border}` }}>
                           <span style={{ fontSize:26 }}>{ind.icono}</span>
                           <div style={{ flex:1 }}>
                             <p style={{ margin:0, fontSize:11, color:COLOR.muted, fontWeight:600 }}>{ind.label}</p>
@@ -1797,7 +1786,7 @@ export default function DashboardPage() {
             <button
               onClick={() => setShowCalendario(v => !v)}
               style={{ ...TB.icon, gap:5, width:"auto", padding:"0 10px", fontSize:12, fontWeight:600, color:showCalendario ? COLOR.green : COLOR.muted }}
-              onMouseEnter={e => { e.currentTarget.style.background="#F0FDF4"; e.currentTarget.style.borderColor=COLOR.green; }}
+              onMouseEnter={e => { e.currentTarget.style.background="rgba(74,222,128,0.12)"; e.currentTarget.style.borderColor=COLOR.green; }}
               onMouseLeave={e => { e.currentTarget.style.background=COLOR.white; e.currentTarget.style.borderColor=COLOR.border; }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -1991,9 +1980,9 @@ export default function DashboardPage() {
         const tl   = stats.timelineInversion || [];
 
         const FASE_CFG = {
-          INVERSION:  { color: "#DC2626", bg: "#FEF2F2", border: "#FECACA", emoji: "🔴", label: "Fase de Inversión" },
-          TRANSICION: { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", emoji: "🟡", label: "Fase de Transición" },
-          PRODUCTIVA: { color: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0", emoji: "🟢", label: "Fase Productiva"    },
+          INVERSION:  { color: "#f87171", bg: "rgba(248,113,113,0.12)", border: "rgba(248,113,113,0.3)", emoji: "🔴", label: "Fase de Inversión" },
+          TRANSICION: { color: "#fb923c", bg: "rgba(251,146,60,0.12)",  border: "rgba(251,146,60,0.3)",  emoji: "🟡", label: "Fase de Transición" },
+          PRODUCTIVA: { color: "#4ade80", bg: "rgba(74,222,128,0.12)",  border: "rgba(74,222,128,0.3)",  emoji: "🟢", label: "Fase Productiva"    },
         };
         const cfg = FASE_CFG[fase] || FASE_CFG.INVERSION;
 
@@ -2154,7 +2143,7 @@ export default function DashboardPage() {
               <p style={{ margin: 0, fontSize: 11, color: COLOR.muted }}>Distribución por categoría</p>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <span style={{ fontSize:12, fontWeight:700, color:COLOR.green, background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:20, padding:"2px 10px" }}>
+              <span style={{ fontSize:12, fontWeight:700, color:COLOR.green, background:"rgba(74,222,128,0.15)", border:"1px solid rgba(74,222,128,0.3)", borderRadius:20, padding:"2px 10px" }}>
                 {stats?.animalesActivos || 0} activos
               </span>
             </div>
@@ -2208,7 +2197,7 @@ export default function DashboardPage() {
                       <span style={{ fontSize: 12, color: COLOR.text, fontWeight: 600 }}>{CAT_LABEL[c.categoria] || c.categoria}</span>
                       <span style={{ fontSize: 12, fontWeight: 700, color: COLOR.red }}>{fmt(c.total, "moneda", moneda)}</span>
                     </div>
-                    <div style={{ height: 4, background: "#F1F5F9", borderRadius: 2 }}>
+                    <div style={{ height: 4, background: "rgba(255,255,255,0.1)", borderRadius: 2 }}>
                       <div style={{ height: "100%", width: `${pct}%`, background: COLOR.red, borderRadius: 2 }} />
                     </div>
                     <span style={{ fontSize: 10, color: COLOR.muted }}>{pct}%</span>
@@ -2239,7 +2228,7 @@ export default function DashboardPage() {
                 <div key={i} style={{
                   display: "flex", alignItems: "center", gap: 12,
                   padding: "10px 12px", borderRadius: 10, marginBottom: 8,
-                  background: "#F8FAFC", border: `1px solid ${COLOR.border}`,
+                  background: "rgba(255,255,255,0.06)", border: `1px solid ${COLOR.border}`,
                 }}>
                   <span style={{ fontSize: 22 }}>{ind.icono}</span>
                   <div style={{ flex: 1 }}>
@@ -2299,11 +2288,11 @@ export default function DashboardPage() {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {[
-                { icono: "💰", label: "Registrar venta", href: "/ventas", color: COLOR.green, bg: "#F0FDF4" },
-                { icono: "💸", label: "Registrar gasto", href: "/gastos", color: COLOR.red, bg: "#FEF2F2" },
-                { icono: "🛒", label: "Registrar compra", href: "/compras", color: COLOR.blue, bg: "#EFF6FF" },
-                { icono: "📦", label: "Registrar insumo", href: "/insumos", color: COLOR.orange, bg: "#FFF7ED" },
-                { icono: "👥", label: "Pago nómina", href: "/equipo", color: COLOR.purple, bg: "#F5F3FF" },
+                { icono: "💰", label: "Registrar venta", href: "/ventas", color: COLOR.green, bg: "rgba(74,222,128,0.12)" },
+                { icono: "💸", label: "Registrar gasto", href: "/gastos", color: COLOR.red, bg: "rgba(248,113,113,0.12)" },
+                { icono: "🛒", label: "Registrar compra", href: "/compras", color: COLOR.blue, bg: "rgba(96,165,250,0.12)" },
+                { icono: "📦", label: "Registrar insumo", href: "/insumos", color: COLOR.orange, bg: "rgba(251,146,60,0.12)" },
+                { icono: "👥", label: "Pago nómina", href: "/equipo", color: COLOR.purple, bg: "rgba(192,132,252,0.12)" },
               ].map(op => (
                 <button key={op.href} onClick={() => { setShowRegistrar(false); router.push(op.href); }}
                   style={{ padding: "16px 12px", borderRadius: 12, border: `1px solid ${COLOR.border}`, background: op.bg, cursor: "pointer", textAlign: "left", transition: "transform 0.1s" }}
@@ -2337,7 +2326,7 @@ export default function DashboardPage() {
                 { icono: "💰", label: "Ventas mes", valor: stats?.ventasMes?.cantidad || 0, color: COLOR.green },
                 { icono: "🚨", label: "Alertas", valor: stats?.alertas?.length || 0, color: COLOR.red },
               ].map((s, i) => (
-                <div key={i} style={{ padding: "14px", borderRadius: 12, background: "#F8FAFC", border: `1px solid ${COLOR.border}`, textAlign: "center" }}>
+                <div key={i} style={{ padding: "14px", borderRadius: 12, background: "rgba(255,255,255,0.06)", border: `1px solid ${COLOR.border}`, textAlign: "center" }}>
                   <div style={{ fontSize: 28, marginBottom: 4 }}>{s.icono}</div>
                   <div style={{ fontSize: 24, fontWeight: 900, color: s.color }}>{s.valor}</div>
                   <div style={{ fontSize: 11, color: COLOR.muted }}>{s.label}</div>
