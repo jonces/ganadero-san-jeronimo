@@ -7,22 +7,26 @@ import { DashboardWidget } from "../../modules/copiloto-ganadero/components/Dash
 
 // ── Colores ──
 const COLOR = {
-  green:   "#16a34a",
-  greenDk: "#14532d",
-  bg:      "#F8FAFC",
-  white:   "#ffffff",
-  text:    "#172033",
-  muted:   "#64748B",
-  border:  "#E2E8F0",
-  blue:    "#2563EB",
-  red:     "#DC2626",
-  orange:  "#EA580C",
-  purple:  "#7C3AED",
+  green:   "#4ade80",
+  greenDk: "#16a34a",
+  bg:      "transparent",
+  white:   "rgba(8,20,14,0.62)",
+  text:    "#ffffff",
+  muted:   "rgba(255,255,255,0.55)",
+  border:  "rgba(255,255,255,0.11)",
+  blue:    "#60a5fa",
+  red:     "#f87171",
+  orange:  "#fb923c",
+  purple:  "#c084fc",
 };
 
 const cardStyle = {
-  background: COLOR.white, border: `1px solid ${COLOR.border}`,
-  borderRadius: 14, boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+  background: "rgba(8,20,14,0.60)",
+  backdropFilter: "blur(18px)",
+  WebkitBackdropFilter: "blur(18px)",
+  border: "1px solid rgba(255,255,255,0.10)",
+  borderRadius: 16,
+  boxShadow: "0 4px 32px rgba(0,0,0,0.4)",
 };
 
 // ── Keyframes CSS ──
@@ -264,7 +268,7 @@ function DonutHato({ data, total, onNavigate }) {
 
 // ── Skeleton loader ──
 function Sk({ w = "100%", h = 20, r = 6 }) {
-  return <div style={{ width: w, height: h, background: "#E2E8F0", borderRadius: r, animation: "pulse 1.5s ease-in-out infinite" }} />;
+  return <div style={{ width: w, height: h, background: "rgba(255,255,255,0.10)", borderRadius: r, animation: "pulse 1.5s ease-in-out infinite" }} />;
 }
 
 // ── Formateador con conversión real ──
@@ -1319,28 +1323,32 @@ const KpiIcon = {
   caja:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
 };
 
-// ── KPI Card rediseñada ──
-const KPI_GRADIENTS = {
-  "#16a34a": { grad: "linear-gradient(135deg,#16a34a 0%,#4ade80 100%)", shadow: "rgba(22,163,74,0.35)" },
-  "#2563EB": { grad: "linear-gradient(135deg,#1d4ed8 0%,#60a5fa 100%)", shadow: "rgba(37,99,235,0.35)" },
-  "#7C3AED": { grad: "linear-gradient(135deg,#6d28d9 0%,#a78bfa 100%)", shadow: "rgba(124,58,237,0.35)" },
-  "#DC2626": { grad: "linear-gradient(135deg,#b91c1c 0%,#f87171 100%)", shadow: "rgba(220,38,38,0.35)" },
-  "#EA580C": { grad: "linear-gradient(135deg,#c2410c 0%,#fb923c 100%)", shadow: "rgba(234,88,12,0.35)" },
+// ── KPI Card premium glassmorphism ──
+const KPI_NEON = {
+  "#4ade80": { border: "rgba(74,222,128,0.55)", glow: "rgba(74,222,128,0.22)", top: "#4ade80" },
+  "#60a5fa": { border: "rgba(96,165,250,0.55)", glow: "rgba(96,165,250,0.22)", top: "#60a5fa" },
+  "#c084fc": { border: "rgba(192,132,252,0.55)", glow: "rgba(192,132,252,0.22)", top: "#c084fc" },
+  "#f87171": { border: "rgba(248,113,113,0.55)", glow: "rgba(248,113,113,0.22)", top: "#f87171" },
+  "#fb923c": { border: "rgba(251,146,60,0.55)",  glow: "rgba(251,146,60,0.22)",  top: "#fb923c" },
 };
 
 function KpiCard({ iconKey, label, valor, sub, equiv, accentColor, iconBg, iconColor, trend, loading, onClick }) {
-  const { grad, shadow } = KPI_GRADIENTS[accentColor] || { grad: `linear-gradient(135deg,${accentColor} 0%,${accentColor}BB 100%)`, shadow: `${accentColor}44` };
+  const neon = KPI_NEON[accentColor] || { border: `${accentColor}88`, glow: `${accentColor}22`, top: accentColor };
 
   return (
     <div
       onClick={onClick}
       style={{
-        background: grad,
+        background: "rgba(8,20,14,0.58)",
+        backdropFilter: "blur(18px)",
+        WebkitBackdropFilter: "blur(18px)",
         borderRadius: 14,
         padding: "16px 18px",
         cursor: "pointer",
-        boxShadow: `0 6px 24px ${shadow}`,
-        transition: "box-shadow 0.15s, transform 0.15s",
+        border: `1px solid ${neon.border}`,
+        borderTop: `2px solid ${neon.top}`,
+        boxShadow: `0 4px 28px rgba(0,0,0,0.35), 0 0 24px ${neon.glow}`,
+        transition: "box-shadow 0.18s, transform 0.18s",
         display: "flex",
         flexDirection: "column",
         gap: 0,
@@ -1348,26 +1356,23 @@ function KpiCard({ iconKey, label, valor, sub, equiv, accentColor, iconBg, iconC
         position: "relative",
         overflow: "hidden",
       }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 12px 36px ${shadow}`; e.currentTarget.style.transform = "translateY(-3px)"; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 6px 24px ${shadow}`; e.currentTarget.style.transform = "translateY(0)"; }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 8px 40px rgba(0,0,0,0.45), 0 0 40px ${neon.glow}`; e.currentTarget.style.transform = "translateY(-3px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 4px 28px rgba(0,0,0,0.35), 0 0 24px ${neon.glow}`; e.currentTarget.style.transform = "translateY(0)"; }}
     >
-      {/* Círculo decorativo de fondo */}
-      <div style={{ position: "absolute", right: -20, bottom: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.1)", pointerEvents: "none" }} />
-      <div style={{ position: "absolute", right: 20, bottom: -40, width: 70, height: 70, borderRadius: "50%", background: "rgba(255,255,255,0.07)", pointerEvents: "none" }} />
-
       {/* Fila superior: ícono + label + tendencia */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 9, background: "rgba(255,255,255,0.22)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 9, background: `${neon.glow}`, border: `1px solid ${neon.border}`, color: neon.top, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             {KpiIcon[iconKey]}
           </div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.85)", lineHeight: 1.3 }}>{label}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.75)", lineHeight: 1.3 }}>{label}</span>
         </div>
         {trend && !loading && (
           <span style={{
             fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 20,
-            background: "rgba(255,255,255,0.22)",
-            color: "#fff",
+            background: trend.dir === "up" ? "rgba(74,222,128,0.18)" : "rgba(248,113,113,0.18)",
+            border: `1px solid ${trend.dir === "up" ? "rgba(74,222,128,0.4)" : "rgba(248,113,113,0.4)"}`,
+            color: trend.dir === "up" ? "#4ade80" : "#f87171",
             display: "flex", alignItems: "center", gap: 2, flexShrink: 0,
           }}>
             {trend.dir === "up"
@@ -1392,9 +1397,9 @@ function KpiCard({ iconKey, label, valor, sub, equiv, accentColor, iconBg, iconC
             {valor}
           </div>
           {equiv && (
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginBottom: 4 }}>{equiv}</div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 4 }}>{equiv}</div>
           )}
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)" }}>{sub}</div>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{sub}</div>
         </>
       )}
     </div>
@@ -1479,8 +1484,8 @@ export default function DashboardPage() {
   }
 
   const selectStyle = {
-    border: `1px solid ${COLOR.border}`, borderRadius: 8, padding: "8px 10px",
-    fontSize: 13, color: COLOR.text, background: COLOR.white, outline: "none", cursor: "pointer",
+    border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "8px 10px",
+    fontSize: 13, color: "#fff", background: "rgba(8,20,14,0.65)", outline: "none", cursor: "pointer",
   };
 
   // cardStyle definido a nivel de módulo (ver abajo)
@@ -1556,8 +1561,8 @@ export default function DashboardPage() {
   const { cells: calCells, mes: calMes, anio: calAnio, hoy: calHoy } = buildCalGrid();
 
   const TB = {
-    icon: { display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:9, border:`1px solid ${COLOR.border}`, background:COLOR.white, cursor:"pointer", fontSize:16, transition:"all 0.15s", flexShrink:0 },
-    sel: { border:`1px solid ${COLOR.border}`, borderRadius:9, padding:"0 10px", height:36, fontSize:13, color:COLOR.text, background:COLOR.white, outline:"none", cursor:"pointer", fontWeight:600 },
+    icon: { display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:9, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(8,20,14,0.65)", cursor:"pointer", fontSize:16, transition:"all 0.15s", flexShrink:0, backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" },
+    sel: { border:"1px solid rgba(255,255,255,0.15)", borderRadius:9, padding:"0 10px", height:36, fontSize:13, color:"#fff", background:"rgba(8,20,14,0.65)", outline:"none", cursor:"pointer", fontWeight:600, backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" },
   };
 
   // Para campo: sin búsqueda ni selectores en el header
@@ -1717,9 +1722,9 @@ export default function DashboardPage() {
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
             onKeyDown={handleBusqueda}
-            style={{ width:"100%", padding:"0 36px 0 34px", height:36, border:`1px solid ${COLOR.border}`, borderRadius:9, fontSize:13, color:COLOR.text, background:"#F8FAFC", outline:"none", boxSizing:"border-box", transition:"border 0.15s" }}
-            onFocus={e => e.target.style.border=`1.5px solid ${COLOR.green}`}
-            onBlur={e => e.target.style.border=`1px solid ${COLOR.border}`}
+            style={{ width:"100%", padding:"0 36px 0 34px", height:36, border:"1px solid rgba(255,255,255,0.15)", borderRadius:9, fontSize:13, color:"#fff", background:"rgba(8,20,14,0.65)", outline:"none", boxSizing:"border-box", transition:"border 0.15s", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" }}
+            onFocus={e => e.target.style.border="1.5px solid rgba(74,222,128,0.6)"}
+            onBlur={e => e.target.style.border="1px solid rgba(255,255,255,0.15)"}
           />
           <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontSize:10, color:"#CBD5E1", fontWeight:600, letterSpacing:0.5, pointerEvents:"none" }}>⏎ Enter</span>
         </div>
@@ -1728,11 +1733,11 @@ export default function DashboardPage() {
         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
 
           {/* ── Selector de finca ── */}
-          <div style={{ display: isMobile ? "none" : "flex", alignItems:"center", gap:7, height:36, padding:"0 12px", borderRadius:9, border:`1px solid ${COLOR.border}`, background:COLOR.white, cursor:"default", flexShrink:0, maxWidth:180, overflow:"hidden" }}>
+          <div style={{ display: isMobile ? "none" : "flex", alignItems:"center", gap:7, height:36, padding:"0 12px", borderRadius:9, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(8,20,14,0.65)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", cursor:"default", flexShrink:0, maxWidth:180, overflow:"hidden" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COLOR.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
-            <span style={{ fontSize:12, fontWeight:700, color:COLOR.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+            <span style={{ fontSize:12, fontWeight:700, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
               {stats?.nombreFinca || "Mi Finca"}
             </span>
             <span style={{ width:7, height:7, borderRadius:"50%", background:"#22c55e", flexShrink:0 }} title="Activa" />
@@ -1836,9 +1841,9 @@ export default function DashboardPage() {
           {/* ── Perfil (visible en desktop, ya está en sidebar pero no en topbar) ── */}
           <button
             onClick={() => router.push("/perfil")}
-            style={{ display: isMobile ? "none" : "flex", alignItems:"center", gap:8, height:36, padding:"0 10px 0 6px", borderRadius:9, border:`1px solid ${COLOR.border}`, background:COLOR.white, cursor:"pointer", flexShrink:0, transition:"all 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.background="#F8FAFC"; e.currentTarget.style.borderColor="#CBD5E1"; }}
-            onMouseLeave={e => { e.currentTarget.style.background=COLOR.white; e.currentTarget.style.borderColor=COLOR.border; }}
+            style={{ display: isMobile ? "none" : "flex", alignItems:"center", gap:8, height:36, padding:"0 10px 0 6px", borderRadius:9, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(8,20,14,0.65)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", cursor:"pointer", flexShrink:0, transition:"all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background="rgba(74,222,128,0.12)"; e.currentTarget.style.borderColor="rgba(74,222,128,0.4)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background="rgba(8,20,14,0.65)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.15)"; }}
           >
             <div style={{ width:24, height:24, borderRadius:"50%", background:COLOR.green, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
               {fotoPerfil
@@ -1846,7 +1851,7 @@ export default function DashboardPage() {
                 : <span style={{ fontSize:11, fontWeight:900, color:"#fff" }}>{usuario?.nombre?.charAt(0).toUpperCase() || "U"}</span>
               }
             </div>
-            <span style={{ fontSize:12, fontWeight:700, color:COLOR.text, maxWidth:90, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{usuario?.nombre || "Perfil"}</span>
+            <span style={{ fontSize:12, fontWeight:700, color:"#fff", maxWidth:90, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{usuario?.nombre || "Perfil"}</span>
           </button>
 
           {/* ── Botón Registrar ── */}
@@ -1868,29 +1873,34 @@ export default function DashboardPage() {
       <style>{CSS}</style>
 
 
-      {/* ── HERO COMPACTO ── */}
+      {/* ── HERO PREMIUM ── */}
       <div style={{
-        background: COLOR.white,
-        border: `1px solid ${COLOR.border}`,
-        borderLeft: `4px solid ${COLOR.green}`,
-        borderRadius: 14,
+        background: "rgba(8,20,14,0.55)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        border: "1px solid rgba(74,222,128,0.20)",
+        borderLeft: "3px solid rgba(74,222,128,0.60)",
+        borderRadius: 16,
         marginBottom: 20,
-        boxShadow: "0 1px 6px rgba(0,0,0,0.06)",
+        boxShadow: "0 4px 32px rgba(0,0,0,0.4), 0 0 40px rgba(74,222,128,0.06)",
         overflow: "hidden",
+        position: "relative",
       }}>
-        {/* Fila superior: saludo + finca | clima | chips de estado */}
-        <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", gap: 0, flexWrap: "wrap", flexDirection: isMobile ? "column" : "row" }}>
+        {/* Glow accent */}
+        <div style={{ position:"absolute", top:-40, left:-40, width:180, height:180, borderRadius:"50%", background:"rgba(74,222,128,0.07)", pointerEvents:"none" }} />
+
+        <div style={{ display: "flex", alignItems: isMobile ? "stretch" : "center", gap: 0, flexWrap: "wrap", flexDirection: isMobile ? "column" : "row", position:"relative" }}>
 
           {/* Saludo y nombre de finca */}
-          <div style={{ padding: "12px 16px", borderRight: isMobile ? "none" : `1px solid ${COLOR.border}`, borderBottom: isMobile ? `1px solid ${COLOR.border}` : "none", minWidth: isMobile ? 0 : 220 }}>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>
+          <div style={{ padding: "14px 20px", borderRight: isMobile ? "none" : `1px solid rgba(255,255,255,0.08)`, borderBottom: isMobile ? `1px solid rgba(255,255,255,0.08)` : "none", minWidth: isMobile ? 0 : 230 }}>
+            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: "rgba(74,222,128,0.8)", letterSpacing: 1.5, textTransform: "uppercase" }}>
               {saludo}
             </p>
-            <p style={{ margin: "2px 0 0", fontSize: 16, fontWeight: 900, color: COLOR.text, lineHeight: 1.2 }}>
+            <p style={{ margin: "3px 0 0", fontSize: 18, fontWeight: 900, color: "#fff", lineHeight: 1.2 }}>
               {usuario?.nombre || "Usuario"}
             </p>
-            <p style={{ margin: "3px 0 0", fontSize: 12, color: COLOR.muted, display: "flex", alignItems: "center", gap: 5 }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={COLOR.green} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <p style={{ margin: "4px 0 0", fontSize: 11, color: "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", gap: 5 }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
               </svg>
               {loading ? "—" : (stats?.nombreFinca || "Mi Finca")}
@@ -1898,22 +1908,22 @@ export default function DashboardPage() {
           </div>
 
           {/* Clima */}
-          <div style={{ padding: "12px 16px", borderRight: isMobile ? "none" : `1px solid ${COLOR.border}`, borderBottom: isMobile ? `1px solid ${COLOR.border}` : "none", minWidth: isMobile ? 0 : 160 }}>
+          <div style={{ padding: "14px 20px", borderRight: isMobile ? "none" : `1px solid rgba(255,255,255,0.08)`, borderBottom: isMobile ? `1px solid rgba(255,255,255,0.08)` : "none", minWidth: isMobile ? 0 : 160 }}>
             {clima ? (
               <>
-                <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Clima ahora</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: 1, textTransform: "uppercase" }}>Clima ahora</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5 }}>
                   <span style={{ fontSize: 26, lineHeight: 1 }}>{clima.icono}</span>
                   <div>
-                    <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: COLOR.text, lineHeight: 1 }}>{clima.temp}°C</p>
-                    <p style={{ margin: "2px 0 0", fontSize: 11, color: COLOR.muted }}>{clima.desc}</p>
+                    <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{clima.temp}°C</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{clima.desc}</p>
                   </div>
                 </div>
               </>
             ) : (
               <>
-                <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Clima ahora</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: 1, textTransform: "uppercase" }}>Clima ahora</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 5 }}>
                   <Sk w={28} h={28} r="50%" />
                   <div><Sk w={60} h={14} /><Sk w={80} h={10} /></div>
                 </div>
@@ -1922,15 +1932,15 @@ export default function DashboardPage() {
           </div>
 
           {/* Estado del hato */}
-          <div style={{ padding: "12px 16px", borderRight: isMobile ? "none" : `1px solid ${COLOR.border}`, borderBottom: isMobile ? `1px solid ${COLOR.border}` : "none", minWidth: isMobile ? 0 : 160 }}>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Estado del hato</p>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+          <div style={{ padding: "14px 20px", borderRight: isMobile ? "none" : `1px solid rgba(255,255,255,0.08)`, borderBottom: isMobile ? `1px solid rgba(255,255,255,0.08)` : "none", minWidth: isMobile ? 0 : 180 }}>
+            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: 1, textTransform: "uppercase" }}>Estado del hato</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 7, flexWrap: "wrap" }}>
               {loading ? <Sk w={100} h={22} r={20} /> : (
                 <>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 700, color: COLOR.green }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(74,222,128,0.15)", border: "1px solid rgba(74,222,128,0.35)", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 700, color: "#4ade80" }}>
                     🐄 {stats?.animalesActivos ?? "—"} activos
                   </span>
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#F5F3FF", border: "1px solid #DDD6FE", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 700, color: COLOR.purple }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(192,132,252,0.15)", border: "1px solid rgba(192,132,252,0.35)", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 700, color: "#c084fc" }}>
                     🤰 {stats?.resumenHato?.prenadas ?? "—"} preñadas
                   </span>
                 </>
@@ -1939,14 +1949,14 @@ export default function DashboardPage() {
           </div>
 
           {/* Alertas del día */}
-          <div style={{ padding: "12px 16px", borderRight: isMobile ? "none" : `1px solid ${COLOR.border}`, borderBottom: isMobile ? `1px solid ${COLOR.border}` : "none", minWidth: isMobile ? 0 : 150 }}>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Alertas del día</p>
-            <div style={{ marginTop: 6 }}>
+          <div style={{ padding: "14px 20px", borderRight: isMobile ? "none" : `1px solid rgba(255,255,255,0.08)`, borderBottom: isMobile ? `1px solid rgba(255,255,255,0.08)` : "none", minWidth: isMobile ? 0 : 150 }}>
+            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: 1, textTransform: "uppercase" }}>Alertas del día</p>
+            <div style={{ marginTop: 7 }}>
               {loading ? <Sk w={90} h={22} r={20} /> : (() => {
                 const n = stats?.alertas?.length ?? 0;
                 return (
                   <button onClick={() => router.push("/incidentes")}
-                    style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: n > 0 ? "#FEF2F2" : "#F0FDF4", color: n > 0 ? COLOR.red : COLOR.green }}>
+                    style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: n > 0 ? "rgba(248,113,113,0.18)" : "rgba(74,222,128,0.15)", color: n > 0 ? "#f87171" : "#4ade80", border: `1px solid ${n > 0 ? "rgba(248,113,113,0.35)" : "rgba(74,222,128,0.35)"}` }}>
                     {n > 0 ? "⚠️" : "✅"} {n > 0 ? `${n} alerta${n > 1 ? "s" : ""}` : "Sin alertas"}
                   </button>
                 );
@@ -1955,11 +1965,11 @@ export default function DashboardPage() {
           </div>
 
           {/* Tratamientos pendientes */}
-          <div style={{ padding: "12px 16px", flex: isMobile ? "none" : 1, minWidth: isMobile ? 0 : 150 }}>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 600, color: COLOR.muted, letterSpacing: 0.3, textTransform: "uppercase" }}>Tratamientos</p>
-            <div style={{ marginTop: 6 }}>
+          <div style={{ padding: "14px 20px", flex: isMobile ? "none" : 1, minWidth: isMobile ? 0 : 150 }}>
+            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.45)", letterSpacing: 1, textTransform: "uppercase" }}>Tratamientos</p>
+            <div style={{ marginTop: 7 }}>
               <button onClick={() => router.push("/incidentes")}
-                style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: "#EFF6FF", color: COLOR.blue }}>
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 12px", borderRadius: 20, border: "1px solid rgba(96,165,250,0.35)", cursor: "pointer", fontSize: 12, fontWeight: 700, background: "rgba(96,165,250,0.15)", color: "#60a5fa" }}>
                 💊 Ver tratamientos →
               </button>
             </div>

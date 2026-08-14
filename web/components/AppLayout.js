@@ -5,17 +5,17 @@ import { logout, api, getUsuario } from "@/lib/api";
 
 // ── Paleta oficial del sistema ──
 const C = {
-  primary:   "#145A32",
-  secondary: "#1E8449",
-  success:   "#27AE60",
-  sidebar:   "#145A32",
-  sidebarHov:"#1E8449",
-  bg:        "#F8F9FA",
-  white:     "#FFFFFF",
-  text:      "#2C3E50",
-  textLight: "#7F8C8D",
-  border:    "#E2E8F0",
-  red:       "#E74C3C",
+  primary:   "#4ade80",
+  secondary: "#22c55e",
+  success:   "#16a34a",
+  sidebar:   "rgba(4,14,8,0.80)",
+  sidebarHov:"rgba(255,255,255,0.07)",
+  bg:        "transparent",
+  white:     "rgba(8,20,14,0.62)",
+  text:      "#ffffff",
+  textLight: "rgba(255,255,255,0.50)",
+  border:    "rgba(255,255,255,0.10)",
+  red:       "#f87171",
 };
 
 // Cargos con acceso limitado (solo campo/operativo)
@@ -194,11 +194,11 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
   const rutaBloqueada = esCampo && RUTAS_SOLO_ADMIN.some(r => pathname?.startsWith(r));
   if (rutaBloqueada) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6" style={{ background: C.bg }}>
-        <div className="rounded-2xl p-8 max-w-md w-full text-center shadow-xl" style={{ background: C.white, border: `1px solid ${C.border}` }}>
+      <div className="min-h-screen flex items-center justify-center p-6" style={{ backgroundImage: "linear-gradient(rgba(0,0,0,0.28),rgba(0,0,0,0.28)), url(https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=2560&q=80)", backgroundSize:"cover", backgroundPosition:"center", backgroundColor:"#0a1a0d" }}>
+        <div className="rounded-2xl p-8 max-w-md w-full text-center shadow-xl" style={{ background: "rgba(8,20,14,0.80)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", border: "1px solid rgba(255,255,255,0.12)" }}>
           <div className="text-6xl mb-4">🔒</div>
-          <h2 className="font-black text-2xl mb-2" style={{ color: C.text }}>Acceso restringido</h2>
-          <p className="text-sm mb-6 leading-relaxed" style={{ color: C.textLight }}>
+          <h2 className="font-black text-2xl mb-2" style={{ color: "#fff" }}>Acceso restringido</h2>
+          <p className="text-sm mb-6 leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>
             No tienes permiso para ver esta sección. Contacta a tu administrador o gerente si necesitas acceso.
           </p>
           <button onClick={() => router.push("/dashboard")}
@@ -234,11 +234,17 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: C.bg }}>
+    <div className="min-h-screen flex" style={{
+      backgroundImage: "linear-gradient(rgba(0,0,0,0.28),rgba(0,0,0,0.28)), url(https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=2560&q=80)",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      backgroundAttachment: "fixed",
+      backgroundColor: "#0a1a0d",
+    }}>
 
       {/* ── SIDEBAR DESKTOP (lg+) ── */}
       <aside className="hidden lg:flex fixed left-0 top-0 h-full z-20 flex-col overflow-hidden"
-        style={{ width: 228, background: "linear-gradient(180deg,#0d3d21 0%,#145A32 40%,#1a6b3c 100%)", boxShadow: "4px 0 24px rgba(0,0,0,0.22)" }}>
+        style={{ width: 228, background: "rgba(4,14,8,0.82)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderRight: "1px solid rgba(255,255,255,0.07)", boxShadow: "4px 0 40px rgba(0,0,0,0.5)" }}>
 
         {/* Logo */}
         <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
@@ -346,7 +352,7 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
 
       {/* ── SIDEBAR TABLET (md) — iconos ── */}
       <aside className="hidden md:flex lg:hidden fixed left-0 top-0 h-full z-20 flex-col items-center py-4 gap-0.5"
-        style={{ width: 64, background: C.sidebar, boxShadow: "4px 0 20px rgba(20,90,50,0.25)" }}>
+        style={{ width: 64, background: "rgba(4,14,8,0.82)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderRight: "1px solid rgba(255,255,255,0.07)", boxShadow: "4px 0 40px rgba(0,0,0,0.5)" }}>
         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-3 shadow-lg"
           style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}>🐂</div>
         {navItems.map((item) => {
@@ -379,21 +385,21 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
       </aside>
 
       {/* ── MAIN CONTENT ── */}
-      <div className="flex-1 flex flex-col min-h-screen md:ml-[64px] lg:ml-[228px]" style={{ background: C.bg }}>
+      <div className="flex-1 flex flex-col min-h-screen md:ml-[64px] lg:ml-[228px]" style={{ background: "transparent" }}>
 
         {/* Header */}
         <header className="flex items-center gap-3 px-4 lg:px-6 py-3 sticky top-0 z-10"
-          style={{ background: C.white, borderBottom: `1px solid ${C.border}`, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+          style={{ background: "rgba(4,14,8,0.75)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 2px 20px rgba(0,0,0,0.3)" }}>
           <div className="flex items-center gap-2 shrink-0">
             {!isSuperAdmin && (
               <button onClick={() => router.back()}
                 className="text-gray-400 hover:text-gray-700 text-xl mr-1 transition-colors md:hidden">←</button>
             )}
             <div>
-              <p className="font-bold uppercase tracking-widest" style={{ fontSize: 10, color: C.secondary }}>
+              <p className="font-bold uppercase tracking-widest" style={{ fontSize: 10, color: "#4ade80" }}>
                 {subtitle || "Ganadería San Jerónimo"}
               </p>
-              <h1 className="font-black leading-none text-lg" style={{ color: C.text, fontFamily: "var(--font-poppins)" }}>
+              <h1 className="font-black leading-none text-lg" style={{ color: "#fff", fontFamily: "var(--font-poppins)" }}>
                 {title || "Panel"}
               </h1>
             </div>
@@ -404,8 +410,8 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
           <div className="flex items-center gap-2 ml-auto">
             {!isSuperAdmin && !esTrabajador && (
               <button onClick={() => router.push("/notificaciones")}
-                className="relative flex items-center justify-center w-9 h-9 rounded-xl transition-all hover:bg-gray-50"
-                style={{ border: `1px solid ${C.border}` }}>
+                className="relative flex items-center justify-center w-9 h-9 rounded-xl transition-all"
+                style={{ border: "1px solid rgba(255,255,255,0.15)", background: "rgba(8,20,14,0.55)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
                 <span style={{ fontSize: 16 }}>🔔</span>
                 {nuevasActividades > 0 && !enNotificaciones && (
                   <span className="absolute -top-1 -right-1 text-white font-black rounded-full flex items-center justify-center animate-bounce"
@@ -417,20 +423,20 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
             )}
             {usuario && (
               <button onClick={() => router.push("/perfil")}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition-all lg:hidden"
-                style={{ border: `1px solid ${C.border}` }}>
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all lg:hidden"
+                style={{ border: "1px solid rgba(255,255,255,0.15)", background: "rgba(8,20,14,0.55)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
                 <div className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center font-black text-sm shrink-0 text-white"
-                  style={{ background: C.primary }}>
+                  style={{ background: C.success }}>
                   {fotoPerfil ? <img src={fotoPerfil} alt="" className="w-full h-full object-cover" /> : usuario.nombre?.charAt(0).toUpperCase()}
                 </div>
-                <span className="font-bold hidden sm:block" style={{ fontSize: 12, color: C.text }}>{usuario.nombre}</span>
+                <span className="font-bold hidden sm:block" style={{ fontSize: 12, color: "#fff" }}>{usuario.nombre}</span>
               </button>
             )}
             {rightExtra}
             <button onClick={() => setMenuOpen(s => !s)}
-              className="md:hidden flex flex-col items-center justify-center w-9 h-9 rounded-xl transition-all hover:bg-gray-50"
-              style={{ border: `1px solid ${C.border}` }}>
-              <span style={{ color: C.text, fontSize: 18 }}>{menuOpen ? "✕" : "☰"}</span>
+              className="md:hidden flex flex-col items-center justify-center w-9 h-9 rounded-xl transition-all"
+              style={{ border: "1px solid rgba(255,255,255,0.15)", background: "rgba(8,20,14,0.55)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}>
+              <span style={{ color: "#fff", fontSize: 18 }}>{menuOpen ? "✕" : "☰"}</span>
             </button>
           </div>
         </header>
@@ -440,9 +446,9 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
           <div className="md:hidden fixed inset-0 z-30 flex flex-col justify-end" style={{ background: "rgba(0,0,0,0.5)" }}
             onClick={() => setMenuOpen(false)}>
             <div className="rounded-t-3xl p-5 pb-28 grid grid-cols-4 gap-3 shadow-2xl"
-              style={{ background: C.white }}
+              style={{ background: "rgba(4,14,8,0.92)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: "1px solid rgba(255,255,255,0.10)" }}
               onClick={e => e.stopPropagation()}>
-              <p className="col-span-4 font-bold uppercase tracking-widest mb-1" style={{ fontSize: 10, color: C.textLight }}>Todos los módulos</p>
+              <p className="col-span-4 font-bold uppercase tracking-widest mb-1" style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>Todos los módulos</p>
               {navItems.map(item => {
                 const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href));
                 const badge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
@@ -451,11 +457,11 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
                   <button key={item.href} onClick={() => go(item.href)}
                     className="relative flex flex-col items-center gap-1 py-3 rounded-2xl transition-all"
                     style={{
-                      background: active ? "#EBF5EB" : "#F8F9FA",
-                      border: active ? `1px solid ${C.success}40` : `1px solid ${C.border}`,
+                      background: active ? "rgba(74,222,128,0.15)" : "rgba(255,255,255,0.06)",
+                      border: active ? "1px solid rgba(74,222,128,0.35)" : "1px solid rgba(255,255,255,0.10)",
                     }}>
                     <span style={{ fontSize: 24 }}>{item.icon}</span>
-                    <span style={{ fontSize: 10, color: active ? C.primary : C.textLight, fontWeight: active ? 700 : 400 }}>
+                    <span style={{ fontSize: 10, color: active ? "#4ade80" : "rgba(255,255,255,0.55)", fontWeight: active ? 700 : 400 }}>
                       {item.label}
                     </span>
                     {badge && (
@@ -484,7 +490,7 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
 
       {/* ── BARRA INFERIOR MÓVIL ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 flex items-center justify-around px-2 py-2"
-        style={{ background: C.white, borderTop: `1px solid ${C.border}`, boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}>
+        style={{ background: "rgba(4,14,8,0.88)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 -4px 30px rgba(0,0,0,0.5)" }}>
         {mobileItems.map(item => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href));
           const badge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
@@ -492,9 +498,9 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
           return (
             <button key={item.href} onClick={() => go(item.href)}
               className="relative flex flex-col items-center gap-0.5 flex-1 py-1.5 rounded-xl transition-all"
-              style={{ background: active ? "#EBF5EB" : "transparent" }}>
+              style={{ background: active ? "rgba(74,222,128,0.12)" : "transparent" }}>
               <span style={{ fontSize: 22 }}>{item.icon}</span>
-              <span style={{ fontSize: 10, color: active ? C.primary : C.textLight, fontWeight: active ? 700 : 400 }}>
+              <span style={{ fontSize: 10, color: active ? "#4ade80" : "rgba(255,255,255,0.50)", fontWeight: active ? 700 : 400 }}>
                 {item.label}
               </span>
               {badge && (
@@ -508,9 +514,9 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
         })}
         <button onClick={() => setMenuOpen(s => !s)}
           className="relative flex flex-col items-center gap-0.5 flex-1 py-1.5 rounded-xl transition-all"
-          style={{ background: menuOpen ? "#EBF5EB" : "transparent" }}>
+          style={{ background: menuOpen ? "rgba(74,222,128,0.12)" : "transparent" }}>
           <span style={{ fontSize: 22 }}>☰</span>
-          <span style={{ fontSize: 10, color: C.textLight }}>Más</span>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.50)" }}>Más</span>
         </button>
       </nav>
     </div>
