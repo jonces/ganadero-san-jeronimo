@@ -21,12 +21,12 @@ const COLOR = {
 };
 
 const cardStyle = {
-  background: "rgba(10,20,30,0.28)",
-  backdropFilter: "blur(18px)",
-  WebkitBackdropFilter: "blur(18px)",
-  border: "1px solid rgba(255,255,255,.18)",
-  borderRadius: 16,
-  boxShadow: "0 10px 40px rgba(0,0,0,.35)",
+  background: "rgba(20,30,40,0.18)",
+  backdropFilter: "blur(22px)",
+  WebkitBackdropFilter: "blur(22px)",
+  border: "1px solid rgba(255,255,255,.10)",
+  borderRadius: 18,
+  boxShadow: "0 25px 80px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.07)",
 };
 
 // ── Keyframes CSS ──
@@ -36,12 +36,49 @@ const CSS = `
   50% { opacity:0.4; }
 }
 @keyframes fadeIn {
-  from { opacity:0; transform:translateY(8px); }
+  from { opacity:0; transform:translateY(10px); }
   to   { opacity:1; transform:translateY(0); }
+}
+@keyframes floatUp {
+  from { opacity:0; transform:translateY(20px) scale(0.97); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
 }
 @keyframes donutGrow {
   from { transform: scale(0.7); opacity:0; }
   to   { transform: scale(1);   opacity:1; }
+}
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 0 20px rgba(74,222,128,0.2); }
+  50%     { box-shadow: 0 0 40px rgba(74,222,128,0.5), 0 0 60px rgba(74,222,128,0.2); }
+}
+@keyframes ringExpand {
+  0%   { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+@keyframes particleFloat {
+  0%   { transform: translateY(0px) translateX(0px); opacity: 0.6; }
+  33%  { transform: translateY(-12px) translateX(6px); opacity: 1; }
+  66%  { transform: translateY(-6px) translateX(-4px); opacity: 0.8; }
+  100% { transform: translateY(0px) translateX(0px); opacity: 0.6; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes holoBorder {
+  0%,100% { border-color: rgba(74,222,128,0.3); box-shadow: 0 0 20px rgba(74,222,128,0.1); }
+  33%      { border-color: rgba(96,165,250,0.3); box-shadow: 0 0 20px rgba(96,165,250,0.1); }
+  66%      { border-color: rgba(192,132,252,0.3); box-shadow: 0 0 20px rgba(192,132,252,0.1); }
+}
+
+/* ── Premium Glass Ambient ── */
+.premium-card {
+  animation: floatUp 0.5s cubic-bezier(0.34,1.2,0.64,1) both;
+  transition: transform 0.25s cubic-bezier(.4,0,.2,1), box-shadow 0.25s;
+}
+.premium-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 35px 100px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.1);
 }
 
 /* ── Dashboard Campo — grid responsivo con CSS puro ── */
@@ -1313,40 +1350,43 @@ const KpiIcon = {
 
 // ── KPI Card premium glassmorphism ──
 const KPI_NEON = {
-  "#4ade80": { border: "rgba(74,222,128,0.55)", glow: "rgba(74,222,128,0.22)", top: "#4ade80" },
-  "#60a5fa": { border: "rgba(96,165,250,0.55)", glow: "rgba(96,165,250,0.22)", top: "#60a5fa" },
-  "#c084fc": { border: "rgba(192,132,252,0.55)", glow: "rgba(192,132,252,0.22)", top: "#c084fc" },
-  "#f87171": { border: "rgba(248,113,113,0.55)", glow: "rgba(248,113,113,0.22)", top: "#f87171" },
-  "#fb923c": { border: "rgba(251,146,60,0.55)",  glow: "rgba(251,146,60,0.22)",  top: "#fb923c" },
+  "#4ade80": { border: "rgba(74,222,128,0.40)",  glow: "rgba(74,222,128,0.18)", top: "#4ade80",  soft: "rgba(74,222,128,0.06)"  },
+  "#60a5fa": { border: "rgba(96,165,250,0.40)",  glow: "rgba(96,165,250,0.18)", top: "#60a5fa",  soft: "rgba(96,165,250,0.06)"  },
+  "#c084fc": { border: "rgba(192,132,252,0.40)", glow: "rgba(192,132,252,0.18)",top: "#c084fc",  soft: "rgba(192,132,252,0.06)" },
+  "#f87171": { border: "rgba(248,113,113,0.40)", glow: "rgba(248,113,113,0.18)",top: "#f87171",  soft: "rgba(248,113,113,0.06)" },
+  "#fb923c": { border: "rgba(251,146,60,0.40)",  glow: "rgba(251,146,60,0.18)", top: "#fb923c",  soft: "rgba(251,146,60,0.06)"  },
 };
 
 function KpiCard({ iconKey, label, valor, sub, equiv, accentColor, iconBg, iconColor, trend, loading, onClick }) {
-  const neon = KPI_NEON[accentColor] || { border: `${accentColor}88`, glow: `${accentColor}22`, top: accentColor };
+  const neon = KPI_NEON[accentColor] || { border: `${accentColor}66`, glow: `${accentColor}18`, top: accentColor, soft: `${accentColor}06` };
 
   return (
     <div
       onClick={onClick}
       style={{
-        background: "rgba(10,20,30,0.28)",
-        backdropFilter: "blur(18px)",
-        WebkitBackdropFilter: "blur(18px)",
-        borderRadius: 14,
+        background: "rgba(20,30,40,0.18)",
+        backdropFilter: "blur(22px)",
+        WebkitBackdropFilter: "blur(22px)",
+        borderRadius: 18,
         padding: "16px 18px",
         cursor: "pointer",
         border: `1px solid ${neon.border}`,
         borderTop: `2px solid ${neon.top}`,
-        boxShadow: `0 10px 40px rgba(0,0,0,.35), 0 0 24px ${neon.glow}`,
-        transition: "box-shadow 0.18s, transform 0.18s",
+        boxShadow: `0 25px 80px rgba(0,0,0,.40), 0 0 30px ${neon.glow}, inset 0 1px 0 rgba(255,255,255,.06)`,
+        transition: "box-shadow 0.25s cubic-bezier(.4,0,.2,1), transform 0.25s cubic-bezier(.4,0,.2,1)",
         display: "flex",
         flexDirection: "column",
         gap: 0,
         minWidth: 0,
         position: "relative",
         overflow: "hidden",
+        animation: "floatUp 0.45s cubic-bezier(0.34,1.2,0.64,1) both",
       }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 10px 40px rgba(0,0,0,.35), 0 0 40px ${neon.glow}`; e.currentTarget.style.transform = "translateY(-3px)"; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 10px 40px rgba(0,0,0,.35), 0 0 24px ${neon.glow}`; e.currentTarget.style.transform = "translateY(0)"; }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 35px 100px rgba(0,0,0,.50), 0 0 50px ${neon.glow}, inset 0 1px 0 rgba(255,255,255,.1)`; e.currentTarget.style.transform = "translateY(-4px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 25px 80px rgba(0,0,0,.40), 0 0 30px ${neon.glow}, inset 0 1px 0 rgba(255,255,255,.06)`; e.currentTarget.style.transform = "translateY(0)"; }}
     >
+      {/* Ambient glow corner */}
+      <div style={{ position: "absolute", top: -40, right: -40, width: 100, height: 100, borderRadius: "50%", background: neon.soft, pointerEvents: "none", filter: "blur(20px)" }} />
       {/* Fila superior: ícono + label + tendencia */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -1472,8 +1512,8 @@ export default function DashboardPage() {
   }
 
   const selectStyle = {
-    border: "1px solid rgba(255,255,255,.18)", borderRadius: 8, padding: "8px 10px",
-    fontSize: 13, color: "#fff", background: "rgba(10,20,30,0.28)", outline: "none", cursor: "pointer",
+    border: "1px solid rgba(255,255,255,.10)", borderRadius: 9, padding: "8px 10px",
+    fontSize: 13, color: "#fff", background: "rgba(20,30,40,0.35)", backdropFilter: "blur(12px)", outline: "none", cursor: "pointer",
   };
 
   // cardStyle definido a nivel de módulo (ver abajo)
@@ -1549,8 +1589,8 @@ export default function DashboardPage() {
   const { cells: calCells, mes: calMes, anio: calAnio, hoy: calHoy } = buildCalGrid();
 
   const TB = {
-    icon: { display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:9, border:"1px solid rgba(255,255,255,.18)", background:"rgba(10,20,30,0.28)", cursor:"pointer", fontSize:16, transition:"all 0.15s", flexShrink:0, backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" },
-    sel: { border:"1px solid rgba(255,255,255,.18)", borderRadius:9, padding:"0 10px", height:36, fontSize:13, color:"#fff", background:"rgba(10,20,30,0.28)", outline:"none", cursor:"pointer", fontWeight:600, backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" },
+    icon: { display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:9, border:"1px solid rgba(255,255,255,.09)", background:"rgba(20,30,40,0.35)", cursor:"pointer", fontSize:16, transition:"all 0.2s", flexShrink:0, backdropFilter:"blur(14px)", WebkitBackdropFilter:"blur(14px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.06)" },
+    sel: { border:"1px solid rgba(255,255,255,.09)", borderRadius:9, padding:"0 10px", height:36, fontSize:13, color:"#fff", background:"rgba(20,30,40,0.35)", outline:"none", cursor:"pointer", fontWeight:600, backdropFilter:"blur(14px)", WebkitBackdropFilter:"blur(14px)" },
   };
 
   // Para campo: sin búsqueda ni selectores en el header
@@ -1710,9 +1750,9 @@ export default function DashboardPage() {
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
             onKeyDown={handleBusqueda}
-            style={{ width:"100%", padding:"0 36px 0 34px", height:36, border:"1px solid rgba(255,255,255,.18)", borderRadius:9, fontSize:13, color:"#fff", background:"rgba(10,20,30,0.28)", outline:"none", boxSizing:"border-box", transition:"border 0.15s", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" }}
-            onFocus={e => e.target.style.border="1.5px solid rgba(74,222,128,0.6)"}
-            onBlur={e => e.target.style.border="1px solid rgba(255,255,255,0.15)"}
+            style={{ width:"100%", padding:"0 36px 0 34px", height:36, border:"1px solid rgba(255,255,255,.09)", borderRadius:9, fontSize:13, color:"#fff", background:"rgba(20,30,40,0.35)", outline:"none", boxSizing:"border-box", transition:"all 0.25s", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)", boxShadow:"inset 0 1px 0 rgba(255,255,255,.05)" }}
+            onFocus={e => { e.target.style.border="1.5px solid rgba(74,222,128,0.55)"; e.target.style.boxShadow="0 0 20px rgba(74,222,128,0.15), inset 0 1px 0 rgba(255,255,255,.05)"; }}
+            onBlur={e => { e.target.style.border="1px solid rgba(255,255,255,0.09)"; e.target.style.boxShadow="inset 0 1px 0 rgba(255,255,255,.05)"; }}
           />
           <span style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", fontSize:10, color:"#CBD5E1", fontWeight:600, letterSpacing:0.5, pointerEvents:"none" }}>⏎ Enter</span>
         </div>
@@ -1798,7 +1838,7 @@ export default function DashboardPage() {
             {showCalendario && (
               <>
                 <div style={{ position:"fixed", inset:0, zIndex:49 }} onClick={() => setShowCalendario(false)} />
-                <div style={{ position:"absolute", top:"calc(100% + 8px)", right:0, zIndex:50, background:COLOR.white, border:`1px solid ${COLOR.border}`, borderRadius:14, padding:16, boxShadow:"0 12px 40px rgba(0,0,0,0.12)", minWidth:240, animation:"fadeIn 0.15s ease" }}>
+                <div style={{ position:"absolute", top:"calc(100% + 8px)", right:0, zIndex:50, background:"rgba(12,18,28,0.92)", backdropFilter:"blur(28px)", WebkitBackdropFilter:"blur(28px)", border:"1px solid rgba(255,255,255,.08)", borderRadius:16, padding:16, boxShadow:"0 25px 80px rgba(0,0,0,0.6)", minWidth:240, animation:"fadeIn 0.15s ease" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
                     <span style={{ fontWeight:800, fontSize:14, color:COLOR.text }}>{calMes} {calAnio}</span>
                     <span style={{ fontSize:11, color:COLOR.muted }}>Hoy: {calHoy} {calMes}</span>
@@ -1829,9 +1869,9 @@ export default function DashboardPage() {
           {/* ── Perfil (visible en desktop, ya está en sidebar pero no en topbar) ── */}
           <button
             onClick={() => router.push("/perfil")}
-            style={{ display: isMobile ? "none" : "flex", alignItems:"center", gap:8, height:36, padding:"0 10px 0 6px", borderRadius:9, border:"1px solid rgba(255,255,255,.18)", background:"rgba(10,20,30,0.28)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", cursor:"pointer", flexShrink:0, transition:"all 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.background="rgba(74,222,128,0.12)"; e.currentTarget.style.borderColor="rgba(74,222,128,0.4)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background="rgba(10,20,30,0.28)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.15)"; }}
+            style={{ display: isMobile ? "none" : "flex", alignItems:"center", gap:8, height:36, padding:"0 10px 0 6px", borderRadius:9, border:"1px solid rgba(255,255,255,.08)", background:"rgba(20,30,40,0.35)", backdropFilter:"blur(14px)", WebkitBackdropFilter:"blur(14px)", cursor:"pointer", flexShrink:0, transition:"all 0.25s", boxShadow:"inset 0 1px 0 rgba(255,255,255,.06)" }}
+            onMouseEnter={e => { e.currentTarget.style.background="rgba(74,222,128,0.1)"; e.currentTarget.style.borderColor="rgba(74,222,128,0.3)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background="rgba(20,30,40,0.35)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.08)"; }}
           >
             <div style={{ width:24, height:24, borderRadius:"50%", background:COLOR.green, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
               {fotoPerfil
@@ -1845,9 +1885,9 @@ export default function DashboardPage() {
           {/* ── Botón Registrar ── */}
           <button
             onClick={() => setShowRegistrar(true)}
-            style={{ display:"flex", alignItems:"center", gap:6, height:36, padding:"0 14px", background:COLOR.green, color:"#fff", border:"none", borderRadius:9, fontWeight:700, fontSize:13, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, boxShadow:"0 2px 8px rgba(22,163,74,0.3)", transition:"all 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.background="#15803d"; e.currentTarget.style.boxShadow="0 4px 14px rgba(22,163,74,0.4)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background=COLOR.green; e.currentTarget.style.boxShadow="0 2px 8px rgba(22,163,74,0.3)"; }}
+            style={{ display:"flex", alignItems:"center", gap:6, height:36, padding:"0 16px", background:"linear-gradient(135deg,#4ade80,#16a34a)", color:"#fff", border:"none", borderRadius:9, fontWeight:700, fontSize:13, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, boxShadow:"0 4px 18px rgba(74,222,128,0.35), inset 0 1px 0 rgba(255,255,255,.25)", transition:"all 0.25s" }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow="0 6px 24px rgba(74,222,128,0.5), inset 0 1px 0 rgba(255,255,255,.25)"; e.currentTarget.style.transform="translateY(-1px)"; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow="0 4px 18px rgba(74,222,128,0.35), inset 0 1px 0 rgba(255,255,255,.25)"; e.currentTarget.style.transform="translateY(0)"; }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -1863,15 +1903,16 @@ export default function DashboardPage() {
 
       {/* ── HERO PREMIUM ── */}
       <div style={{
-        background: "rgba(10,20,30,0.28)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        border: "1px solid rgba(74,222,128,0.20)",
-        borderLeft: "3px solid rgba(74,222,128,0.60)",
-        borderRadius: 16,
+        background: "rgba(15,22,32,0.22)",
+        backdropFilter: "blur(28px)",
+        WebkitBackdropFilter: "blur(28px)",
+        border: "1px solid rgba(74,222,128,0.18)",
+        borderLeft: "3px solid rgba(74,222,128,0.65)",
+        borderRadius: 20,
         marginBottom: 20,
-        boxShadow: "0 4px 32px rgba(0,0,0,0.4), 0 0 40px rgba(74,222,128,0.06)",
+        boxShadow: "0 25px 80px rgba(0,0,0,0.45), 0 0 50px rgba(74,222,128,0.06), inset 0 1px 0 rgba(255,255,255,.06)",
         overflow: "hidden",
+        animation: "floatUp 0.4s cubic-bezier(0.34,1.2,0.64,1) both",
         position: "relative",
       }}>
         {/* Glow accent */}
@@ -2006,43 +2047,83 @@ export default function DashboardPage() {
 
         return (
           <div style={{ marginBottom: 16 }}>
-            {/* ── Banner de fase — gradiente llamativo ── */}
+            {/* ── Banner holográfico de fase ── */}
             <div style={{
-              background: faseGrad,
-              borderRadius: 16,
-              padding: "20px 24px",
+              background: "rgba(12,18,28,0.55)",
+              backdropFilter: "blur(28px)",
+              WebkitBackdropFilter: "blur(28px)",
+              borderRadius: 20,
+              padding: "24px 28px",
               marginBottom: 12,
               display: "flex",
               alignItems: isMobile ? "flex-start" : "center",
-              gap: 16,
+              gap: 20,
               flexWrap: "wrap",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+              boxShadow: `0 30px 80px rgba(0,0,0,.50), 0 0 40px ${cfg.border.replace("0.3","0.12")}, inset 0 1px 0 rgba(255,255,255,.08)`,
+              border: `1px solid ${cfg.border}`,
               position: "relative",
               overflow: "hidden",
+              animation: "holoBorder 6s ease-in-out infinite",
             }}>
-              {/* Círculos decorativos */}
-              <div style={{ position:"absolute", right:-30, top:-30, width:140, height:140, borderRadius:"50%", background:"rgba(255,255,255,0.08)", pointerEvents:"none" }} />
-              <div style={{ position:"absolute", right:60, bottom:-50, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.05)", pointerEvents:"none" }} />
+              {/* Anillos de energía */}
+              {[1,2,3].map(i => (
+                <div key={i} style={{
+                  position: "absolute", left: 36, top: "50%",
+                  width: 80 + i * 50, height: 80 + i * 50,
+                  borderRadius: "50%",
+                  border: `1px solid ${cfg.color}`,
+                  opacity: 0,
+                  transform: "translate(-50%,-50%)",
+                  pointerEvents: "none",
+                  animation: `ringExpand ${2 + i * 0.8}s ease-out ${i * 0.6}s infinite`,
+                }} />
+              ))}
+              {/* Partículas */}
+              {[1,2,3,4,5].map(i => (
+                <div key={i} style={{
+                  position: "absolute",
+                  left: `${10 + i * 15}%`, top: `${20 + (i % 3) * 25}%`,
+                  width: i % 2 === 0 ? 3 : 2, height: i % 2 === 0 ? 3 : 2,
+                  borderRadius: "50%", background: cfg.color,
+                  pointerEvents: "none",
+                  animation: `particleFloat ${2.5 + i * 0.4}s ease-in-out ${i * 0.3}s infinite`,
+                  boxShadow: `0 0 6px ${cfg.color}`,
+                }} />
+              ))}
+              {/* Ambient light */}
+              <div style={{ position:"absolute", left:-60, top:-60, width:220, height:220, borderRadius:"50%", background: cfg.bg, filter:"blur(50px)", pointerEvents:"none", opacity:0.7 }} />
 
-              <div style={{ width:52, height:52, borderRadius:14, background:"rgba(255,255,255,0.18)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0 }}>
+              {/* Icono holográfico */}
+              <div style={{
+                width: 60, height: 60, borderRadius: 18, flexShrink: 0,
+                background: cfg.bg,
+                border: `1.5px solid ${cfg.border}`,
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32,
+                boxShadow: `0 0 30px ${cfg.border}, inset 0 1px 0 rgba(255,255,255,.15)`,
+                position: "relative", zIndex: 1,
+                animation: `glowPulse 3s ease-in-out infinite`,
+              }}>
                 {cfg.emoji === "🔴" ? "🌱" : cfg.emoji === "🟡" ? "⚡" : "🚀"}
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 900, fontSize: 17, color: "#fff", marginBottom: 3 }}>{cfg.label}</div>
-                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)" }}>{stats.faseDescripcion}</div>
+
+              <div style={{ flex: 1, position: "relative", zIndex: 1 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: cfg.color, letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>Sistema Holográfico · Análisis en tiempo real</div>
+                <div style={{ fontWeight: 900, fontSize: isMobile ? 16 : 20, color: "#fff", marginBottom: 4, letterSpacing: "-0.02em" }}>{cfg.label}</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>{stats.faseDescripcion}</div>
               </div>
-              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.7)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>Recuperado</div>
-                <div style={{ fontWeight: 900, fontSize: 32, color: "#fff", lineHeight: 1.1 }}>{pctRecuperado}%</div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>del capital invertido</div>
+
+              <div style={{ textAlign: "right", flexShrink: 0, position: "relative", zIndex: 1 }}>
+                <div style={{ fontSize: 9, color: cfg.color, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 4 }}>Capital recuperado</div>
+                <div style={{ fontWeight: 900, fontSize: isMobile ? 36 : 44, color: "#fff", lineHeight: 1, letterSpacing: "-0.04em", textShadow: `0 0 30px ${cfg.color}` }}>{pctRecuperado}<span style={{ fontSize: "45%", fontWeight: 700 }}>%</span></div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginTop: 4 }}>del capital invertido</div>
               </div>
             </div>
 
             {/* ── 3 cards: ROI · Base reproductora · Proyección lote ── */}
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
 
-              {/* ROI del Hato — gradiente azul/índigo */}
-              <div style={{ background: "linear-gradient(145deg,#1e3a5f 0%,#1d4ed8 70%,#3b82f6 100%)", borderRadius: 16, padding: 0, boxShadow: "0 6px 24px rgba(29,78,216,0.3)", position:"relative", overflow:"hidden" }}>
+              {/* ROI del Hato — glass azul */}
+              <div style={{ background: "rgba(20,30,50,0.25)", backdropFilter:"blur(22px)", WebkitBackdropFilter:"blur(22px)", borderRadius: 18, padding: 0, boxShadow: "0 25px 80px rgba(0,0,0,.40), 0 0 30px rgba(96,165,250,0.12), inset 0 1px 0 rgba(255,255,255,.06)", border:"1px solid rgba(96,165,250,0.28)", borderTop:"2px solid #60a5fa", position:"relative", overflow:"hidden" }}>
                 <div style={{ position:"absolute", right:-20, top:-20, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.07)", pointerEvents:"none" }} />
                 <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>📈 ROI del Hato</div>
@@ -2069,8 +2150,8 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Base reproductora — gradiente verde oscuro */}
-              <div style={{ background: "linear-gradient(145deg,#064e3b 0%,#059669 70%,#34d399 100%)", borderRadius: 16, padding: 0, boxShadow: "0 6px 24px rgba(5,150,105,0.3)", position:"relative", overflow:"hidden" }}>
+              {/* Base reproductora — glass verde */}
+              <div style={{ background: "rgba(10,30,20,0.25)", backdropFilter:"blur(22px)", WebkitBackdropFilter:"blur(22px)", borderRadius: 18, padding: 0, boxShadow: "0 25px 80px rgba(0,0,0,.40), 0 0 30px rgba(74,222,128,0.12), inset 0 1px 0 rgba(255,255,255,.06)", border:"1px solid rgba(74,222,128,0.28)", borderTop:"2px solid #4ade80", position:"relative", overflow:"hidden" }}>
                 <div style={{ position:"absolute", right:-20, top:-20, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.07)", pointerEvents:"none" }} />
                 <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>🐄 Base Reproductora</div>
@@ -2095,8 +2176,8 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Proyección primer lote — gradiente dorado/naranja */}
-              <div style={{ background: "linear-gradient(145deg,#7c2d12 0%,#ea580c 65%,#fb923c 100%)", borderRadius: 16, padding: 0, boxShadow: "0 6px 24px rgba(234,88,12,0.3)", position:"relative", overflow:"hidden" }}>
+              {/* Proyección primer lote — glass naranja */}
+              <div style={{ background: "rgba(30,18,10,0.25)", backdropFilter:"blur(22px)", WebkitBackdropFilter:"blur(22px)", borderRadius: 18, padding: 0, boxShadow: "0 25px 80px rgba(0,0,0,.40), 0 0 30px rgba(251,146,60,0.12), inset 0 1px 0 rgba(255,255,255,.06)", border:"1px solid rgba(251,146,60,0.28)", borderTop:"2px solid #fb923c", position:"relative", overflow:"hidden" }}>
                 <div style={{ position:"absolute", right:-20, top:-20, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.07)", pointerEvents:"none" }} />
                 <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>💰 Proyección Primer Lote</div>
@@ -2280,10 +2361,10 @@ export default function DashboardPage() {
       {showRegistrar && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={() => setShowRegistrar(false)}>
-          <div style={{ background: COLOR.white, borderRadius: 20, padding: 28, maxWidth: 480, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", animation: "fadeIn 0.2s ease" }}
+          <div style={{ background: "rgba(12,18,28,0.92)", backdropFilter:"blur(32px)", WebkitBackdropFilter:"blur(32px)", borderRadius: 22, padding: 28, maxWidth: 480, width: "90%", boxShadow: "0 40px 100px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,.07)", border:"1px solid rgba(255,255,255,.08)", animation: "fadeIn 0.2s ease" }}
             onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: COLOR.text }}>Registrar movimiento</h3>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: COLOR.text, letterSpacing:"-0.02em" }}>Registrar movimiento</h3>
               <button onClick={() => setShowRegistrar(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: COLOR.muted }}>✕</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -2311,10 +2392,10 @@ export default function DashboardPage() {
       {showVistaRapida && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}
           onClick={() => setShowVistaRapida(false)}>
-          <div style={{ background: COLOR.white, borderRadius: 20, padding: 28, maxWidth: 500, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)", animation: "fadeIn 0.2s ease" }}
+          <div style={{ background: "rgba(12,18,28,0.92)", backdropFilter:"blur(32px)", WebkitBackdropFilter:"blur(32px)", borderRadius: 22, padding: 28, maxWidth: 500, width: "90%", boxShadow: "0 40px 100px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,.07)", border:"1px solid rgba(255,255,255,.08)", animation: "fadeIn 0.2s ease" }}
             onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 900, color: COLOR.text }}>Vista rápida del hato</h3>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: COLOR.text, letterSpacing:"-0.02em" }}>Vista rápida del hato</h3>
               <button onClick={() => setShowVistaRapida(false)} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: COLOR.muted }}>✕</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>

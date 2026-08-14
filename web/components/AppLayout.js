@@ -8,13 +8,13 @@ const C = {
   primary:   "#4ade80",
   secondary: "#22c55e",
   success:   "#16a34a",
-  sidebar:   "rgba(4,14,8,0.80)",
-  sidebarHov:"rgba(255,255,255,0.07)",
+  sidebar:   "rgba(8,12,18,0.78)",
+  sidebarHov:"rgba(255,255,255,0.06)",
   bg:        "transparent",
-  white:     "rgba(8,20,14,0.62)",
+  white:     "rgba(8,12,18,0.65)",
   text:      "#ffffff",
-  textLight: "rgba(255,255,255,0.50)",
-  border:    "rgba(255,255,255,0.10)",
+  textLight: "rgba(255,255,255,0.45)",
+  border:    "rgba(255,255,255,0.08)",
   red:       "#f87171",
 };
 
@@ -244,21 +244,34 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
 
       {/* ── SIDEBAR DESKTOP (lg+) ── */}
       <aside className="hidden lg:flex fixed left-0 top-0 h-full z-20 flex-col overflow-hidden"
-        style={{ width: 228, background: "rgba(10,20,30,0.28)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderRight: "1px solid rgba(255,255,255,.18)", boxShadow: "0 10px 40px rgba(0,0,0,.35)" }}>
+        style={{
+          width: 228,
+          background: "rgba(8,12,18,0.82)",
+          backdropFilter: "blur(28px)",
+          WebkitBackdropFilter: "blur(28px)",
+          borderRight: "1px solid rgba(255,255,255,0.07)",
+          boxShadow: "4px 0 40px rgba(0,0,0,0.5), inset -1px 0 0 rgba(255,255,255,0.04)",
+        }}>
 
         {/* Logo */}
-        <div style={{ padding: "20px 16px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+        <div style={{ padding: "22px 16px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🐂</div>
+            <div style={{
+              width: 44, height: 44, borderRadius: 14, flexShrink: 0,
+              background: "linear-gradient(135deg, rgba(74,222,128,0.25) 0%, rgba(34,197,94,0.15) 100%)",
+              border: "1px solid rgba(74,222,128,0.35)",
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
+              boxShadow: "0 0 20px rgba(74,222,128,0.18), inset 0 1px 0 rgba(255,255,255,0.15)",
+            }}>🐂</div>
             <div>
-              <p style={{ color: "#fff", fontWeight: 900, fontSize: 13, letterSpacing: 1, margin: 0, fontFamily: "var(--font-poppins)" }}>HENRIQUEZ</p>
-              <p style={{ color: "rgba(255,255,255,0.5)", fontWeight: 700, fontSize: 8.5, letterSpacing: 1.5, margin: 0, marginTop: 1 }}>CATTLE MANAGEMENT</p>
+              <p style={{ color: "#fff", fontWeight: 900, fontSize: 13, letterSpacing: 1.5, margin: 0, fontFamily: "var(--font-poppins)" }}>HENRIQUEZ</p>
+              <p style={{ color: "rgba(74,222,128,0.6)", fontWeight: 700, fontSize: 8, letterSpacing: 2, margin: 0, marginTop: 2, textTransform: "uppercase" }}>Cattle Management</p>
             </div>
           </div>
         </div>
 
         {/* Nav con grupos */}
-        <nav style={{ flex: 1, overflowY: "auto", padding: "10px 10px", scrollbarWidth: "none" }}>
+        <nav style={{ flex: 1, overflowY: "auto", padding: "12px 10px", scrollbarWidth: "none" }}>
           {(isSuperAdmin ? [{ label: null, items: NAV_ITEMS_SUPER }] : NAV_GROUPS).map((group, gi) => {
             const groupItems = esCampo
               ? group.items.filter(i => !RUTAS_SOLO_ADMIN.some(r => i.href.startsWith(r)))
@@ -267,9 +280,9 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
                 : group.items;
             if (groupItems.length === 0) return null;
             return (
-              <div key={gi} style={{ marginBottom: 4 }}>
+              <div key={gi} style={{ marginBottom: 6 }}>
                 {group.label && (
-                  <p style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.3)", letterSpacing: 1.5, padding: "10px 10px 4px", margin: 0 }}>
+                  <p style={{ fontSize: 8.5, fontWeight: 700, color: "rgba(255,255,255,0.22)", letterSpacing: 2, padding: "12px 10px 5px", margin: 0, textTransform: "uppercase" }}>
                     {group.label}
                   </p>
                 )}
@@ -281,32 +294,40 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
                     <button key={item.href} onClick={() => go(item.href)}
                       style={{
                         width: "100%", display: "flex", alignItems: "center", gap: 10,
-                        padding: "8px 10px", borderRadius: 10, border: "none", cursor: "pointer",
-                        background: active ? "rgba(255,255,255,0.14)" : "transparent",
-                        marginBottom: 1, position: "relative", textAlign: "left",
-                        transition: "background 0.15s",
+                        padding: "8px 10px", borderRadius: 11, border: active ? "1px solid rgba(74,222,128,0.22)" : "1px solid transparent", cursor: "pointer",
+                        background: active ? "rgba(74,222,128,0.1)" : "transparent",
+                        marginBottom: 2, position: "relative", textAlign: "left",
+                        transition: "all 0.2s cubic-bezier(.4,0,.2,1)",
+                        boxShadow: active ? "0 0 20px rgba(74,222,128,0.08)" : "none",
                       }}
-                      onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.07)"; }}
-                      onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
+                      onMouseEnter={e => { if (!active) { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"; } }}
+                      onMouseLeave={e => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "transparent"; } }}
                     >
                       {/* Indicador activo izquierdo */}
                       {active && (
-                        <div style={{ position: "absolute", left: 0, top: "20%", bottom: "20%", width: 3, borderRadius: "0 3px 3px 0", background: "#4ade80" }} />
+                        <div style={{
+                          position: "absolute", left: -1, top: "18%", bottom: "18%", width: 3,
+                          borderRadius: "0 3px 3px 0",
+                          background: "linear-gradient(180deg, #4ade80, #22c55e)",
+                          boxShadow: "0 0 8px rgba(74,222,128,0.7)",
+                        }} />
                       )}
                       {/* Ícono */}
                       <div style={{
-                        width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-                        background: active ? "rgba(74,222,128,0.18)" : "rgba(255,255,255,0.08)",
+                        width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+                        background: active ? "rgba(74,222,128,0.2)" : "rgba(255,255,255,0.06)",
                         display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15,
-                        filter: active ? "drop-shadow(0 0 5px rgba(74,222,128,0.7))" : "none",
+                        filter: active ? "drop-shadow(0 0 6px rgba(74,222,128,0.8))" : "none",
+                        transition: "all 0.2s",
+                        border: active ? "1px solid rgba(74,222,128,0.3)" : "1px solid rgba(255,255,255,0.04)",
                       }}>
                         {item.icon}
                       </div>
-                      <span style={{ flex: 1, fontSize: 12.5, fontWeight: active ? 700 : 500, color: active ? "#fff" : "rgba(255,255,255,0.68)", fontFamily: "var(--font-inter)" }}>
+                      <span style={{ flex: 1, fontSize: 12.5, fontWeight: active ? 700 : 400, color: active ? "#fff" : "rgba(255,255,255,0.5)", fontFamily: "var(--font-inter)", letterSpacing: "0.01em" }}>
                         {item.label}
                       </span>
                       {item.badge && (
-                        <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: item.badge === "Beta" ? "#7C3AED" : "#16a34a", borderRadius: 20, padding: "2px 6px" }}>
+                        <span style={{ fontSize: 8.5, fontWeight: 700, color: "#fff", background: item.badge === "Beta" ? "rgba(124,58,237,0.8)" : "rgba(22,163,74,0.8)", borderRadius: 20, padding: "2px 6px", border: item.badge === "Beta" ? "1px solid rgba(167,139,250,0.3)" : "1px solid rgba(74,222,128,0.3)" }}>
                           {item.badge}
                         </span>
                       )}
@@ -325,27 +346,34 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
 
         {/* Usuario */}
         {usuario && (
-          <div style={{ padding: "12px 10px 14px", borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+          <div style={{ padding: "12px 10px 16px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
             <button onClick={() => go("/perfil")}
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 12, border: "none", cursor: "pointer", background: "rgba(255,255,255,0.1)", marginBottom: 8, textAlign: "left" }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 900, fontSize: 14, border: "2px solid rgba(255,255,255,0.3)" }}>
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+                borderRadius: 12, border: "1px solid rgba(255,255,255,0.07)", cursor: "pointer",
+                background: "rgba(255,255,255,0.05)", marginBottom: 8, textAlign: "left",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "rgba(74,222,128,0.2)", display: "flex", alignItems: "center", justifyContent: "center", color: "#4ade80", fontWeight: 900, fontSize: 14, border: "1.5px solid rgba(74,222,128,0.4)", boxShadow: "0 0 12px rgba(74,222,128,0.2)" }}>
                 {fotoPerfil ? <img src={fotoPerfil} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : usuario.nombre?.charAt(0).toUpperCase()}
               </div>
               <div style={{ flex: 1, overflow: "hidden" }}>
-                <p style={{ color: "#fff", fontWeight: 700, fontSize: 12, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{usuario.nombre}</p>
+                <p style={{ color: "#fff", fontWeight: 600, fontSize: 12, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{usuario.nombre}</p>
                 <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", flexShrink: 0 }} />
-                  <p style={{ color: "rgba(255,255,255,0.55)", fontWeight: 600, fontSize: 10, margin: 0 }}>
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#4ade80", flexShrink: 0, boxShadow: "0 0 4px #4ade80" }} />
+                  <p style={{ color: "rgba(255,255,255,0.35)", fontWeight: 500, fontSize: 10, margin: 0 }}>
                     {usuario.role === "ADMIN" ? "Administrador" : usuario.role === "SUPER_ADMIN" ? "Super Admin" : "Trabajador"}
                   </p>
                 </div>
               </div>
             </button>
             <button onClick={handleLogout}
-              style={{ width: "100%", padding: "9px 0", borderRadius: 10, fontWeight: 800, fontSize: 12, cursor: "pointer", background: "rgba(239,68,68,0.15)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.25)", transition: "opacity 0.15s" }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.75"}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-              Cerrar sesión →
+              style={{ width: "100%", padding: "8px 0", borderRadius: 10, fontWeight: 600, fontSize: 11.5, cursor: "pointer", background: "rgba(239,68,68,0.08)", color: "#f87171", border: "1px solid rgba(239,68,68,0.18)", transition: "all 0.2s", letterSpacing: "0.01em" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.15)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(239,68,68,0.08)"; }}>
+              Cerrar sesión
             </button>
           </div>
         )}
@@ -353,7 +381,7 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
 
       {/* ── SIDEBAR TABLET (md) — iconos ── */}
       <aside className="hidden md:flex lg:hidden fixed left-0 top-0 h-full z-20 flex-col items-center py-4 gap-0.5"
-        style={{ width: 64, background: "rgba(10,20,30,0.28)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderRight: "1px solid rgba(255,255,255,.18)", boxShadow: "0 10px 40px rgba(0,0,0,.35)" }}>
+        style={{ width: 64, background: "rgba(8,12,18,0.82)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderRight: "1px solid rgba(255,255,255,0.06)", boxShadow: "4px 0 40px rgba(0,0,0,0.5)" }}>
         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl mb-3 shadow-lg"
           style={{ background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}>🐂</div>
         {navItems.map((item) => {
@@ -390,7 +418,7 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
 
         {/* Header */}
         <header className="flex items-center gap-3 px-4 lg:px-6 py-3 sticky top-0 z-10"
-          style={{ background: "rgba(10,20,30,0.28)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: "1px solid rgba(255,255,255,.18)", boxShadow: "0 10px 40px rgba(0,0,0,.35)" }}>
+          style={{ background: "rgba(8,12,18,0.55)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderBottom: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 8px 32px rgba(0,0,0,0.25)" }}>
           <div className="flex items-center gap-2 shrink-0">
             {!isSuperAdmin && (
               <button onClick={() => router.back()}
@@ -447,7 +475,7 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
           <div className="md:hidden fixed inset-0 z-30 flex flex-col justify-end" style={{ background: "rgba(0,0,0,0.5)" }}
             onClick={() => setMenuOpen(false)}>
             <div className="rounded-t-3xl p-5 pb-28 grid grid-cols-4 gap-3 shadow-2xl"
-              style={{ background: "rgba(10,20,30,0.28)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderTop: "1px solid rgba(255,255,255,.18)" }}
+              style={{ background: "rgba(8,12,18,0.92)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderTop: "1px solid rgba(255,255,255,0.07)" }}
               onClick={e => e.stopPropagation()}>
               <p className="col-span-4 font-bold uppercase tracking-widest mb-1" style={{ fontSize: 10, color: "rgba(255,255,255,0.45)" }}>Todos los módulos</p>
               {navItems.map(item => {
@@ -491,7 +519,7 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
 
       {/* ── BARRA INFERIOR MÓVIL ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 flex items-center justify-around px-2 py-2"
-        style={{ background: "rgba(10,20,30,0.28)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(255,255,255,.18)", boxShadow: "0 10px 40px rgba(0,0,0,.35)" }}>
+        style={{ background: "rgba(8,12,18,0.88)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderTop: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 -8px 32px rgba(0,0,0,0.4)" }}>
         {mobileItems.map(item => {
           const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href));
           const badge = (item.notif && nuevos > 0 && !active) || (item.notifActividad && nuevasActividades > 0 && !active);
