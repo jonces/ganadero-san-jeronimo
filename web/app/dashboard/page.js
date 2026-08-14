@@ -13,7 +13,7 @@ const COLOR = {
   white:   "rgba(8,20,14,0.62)",
   text:    "#ffffff",
   muted:   "rgba(255,255,255,0.55)",
-  border:  "rgba(255,255,255,0.11)",
+  border:  "rgba(255,255,255,.18)",
   blue:    "#60a5fa",
   red:     "#f87171",
   orange:  "#fb923c",
@@ -21,12 +21,12 @@ const COLOR = {
 };
 
 const cardStyle = {
-  background: "rgba(8,20,14,0.60)",
+  background: "rgba(10,20,30,0.28)",
   backdropFilter: "blur(18px)",
   WebkitBackdropFilter: "blur(18px)",
-  border: "1px solid rgba(255,255,255,0.10)",
+  border: "1px solid rgba(255,255,255,.18)",
   borderRadius: 16,
-  boxShadow: "0 4px 32px rgba(0,0,0,0.4)",
+  boxShadow: "0 10px 40px rgba(0,0,0,.35)",
 };
 
 // ── Keyframes CSS ──
@@ -1339,7 +1339,7 @@ function KpiCard({ iconKey, label, valor, sub, equiv, accentColor, iconBg, iconC
     <div
       onClick={onClick}
       style={{
-        background: "rgba(8,20,14,0.58)",
+        background: "rgba(10,20,30,0.28)",
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
         borderRadius: 14,
@@ -1347,7 +1347,7 @@ function KpiCard({ iconKey, label, valor, sub, equiv, accentColor, iconBg, iconC
         cursor: "pointer",
         border: `1px solid ${neon.border}`,
         borderTop: `2px solid ${neon.top}`,
-        boxShadow: `0 4px 28px rgba(0,0,0,0.35), 0 0 24px ${neon.glow}`,
+        boxShadow: `0 10px 40px rgba(0,0,0,.35), 0 0 24px ${neon.glow}`,
         transition: "box-shadow 0.18s, transform 0.18s",
         display: "flex",
         flexDirection: "column",
@@ -1356,13 +1356,13 @@ function KpiCard({ iconKey, label, valor, sub, equiv, accentColor, iconBg, iconC
         position: "relative",
         overflow: "hidden",
       }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 8px 40px rgba(0,0,0,0.45), 0 0 40px ${neon.glow}`; e.currentTarget.style.transform = "translateY(-3px)"; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 4px 28px rgba(0,0,0,0.35), 0 0 24px ${neon.glow}`; e.currentTarget.style.transform = "translateY(0)"; }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 10px 40px rgba(0,0,0,.35), 0 0 40px ${neon.glow}`; e.currentTarget.style.transform = "translateY(-3px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 10px 40px rgba(0,0,0,.35), 0 0 24px ${neon.glow}`; e.currentTarget.style.transform = "translateY(0)"; }}
     >
       {/* Fila superior: ícono + label + tendencia */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 9, background: `${neon.glow}`, border: `1px solid ${neon.border}`, color: neon.top, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 9, background: `${neon.glow}`, border: `1px solid ${neon.border}`, color: neon.top, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, filter: `drop-shadow(0 0 6px ${neon.top})` }}>
             {KpiIcon[iconKey]}
           </div>
           <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.75)", lineHeight: 1.3 }}>{label}</span>
@@ -1484,8 +1484,8 @@ export default function DashboardPage() {
   }
 
   const selectStyle = {
-    border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "8px 10px",
-    fontSize: 13, color: "#fff", background: "rgba(8,20,14,0.65)", outline: "none", cursor: "pointer",
+    border: "1px solid rgba(255,255,255,.18)", borderRadius: 8, padding: "8px 10px",
+    fontSize: 13, color: "#fff", background: "rgba(10,20,30,0.28)", outline: "none", cursor: "pointer",
   };
 
   // cardStyle definido a nivel de módulo (ver abajo)
@@ -1561,8 +1561,8 @@ export default function DashboardPage() {
   const { cells: calCells, mes: calMes, anio: calAnio, hoy: calHoy } = buildCalGrid();
 
   const TB = {
-    icon: { display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:9, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(8,20,14,0.65)", cursor:"pointer", fontSize:16, transition:"all 0.15s", flexShrink:0, backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" },
-    sel: { border:"1px solid rgba(255,255,255,0.15)", borderRadius:9, padding:"0 10px", height:36, fontSize:13, color:"#fff", background:"rgba(8,20,14,0.65)", outline:"none", cursor:"pointer", fontWeight:600, backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" },
+    icon: { display:"flex", alignItems:"center", justifyContent:"center", width:36, height:36, borderRadius:9, border:"1px solid rgba(255,255,255,.18)", background:"rgba(10,20,30,0.28)", cursor:"pointer", fontSize:16, transition:"all 0.15s", flexShrink:0, backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" },
+    sel: { border:"1px solid rgba(255,255,255,.18)", borderRadius:9, padding:"0 10px", height:36, fontSize:13, color:"#fff", background:"rgba(10,20,30,0.28)", outline:"none", cursor:"pointer", fontWeight:600, backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" },
   };
 
   // Para campo: sin búsqueda ni selectores en el header
@@ -1722,7 +1722,7 @@ export default function DashboardPage() {
             value={busqueda}
             onChange={e => setBusqueda(e.target.value)}
             onKeyDown={handleBusqueda}
-            style={{ width:"100%", padding:"0 36px 0 34px", height:36, border:"1px solid rgba(255,255,255,0.15)", borderRadius:9, fontSize:13, color:"#fff", background:"rgba(8,20,14,0.65)", outline:"none", boxSizing:"border-box", transition:"border 0.15s", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" }}
+            style={{ width:"100%", padding:"0 36px 0 34px", height:36, border:"1px solid rgba(255,255,255,.18)", borderRadius:9, fontSize:13, color:"#fff", background:"rgba(10,20,30,0.28)", outline:"none", boxSizing:"border-box", transition:"border 0.15s", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)" }}
             onFocus={e => e.target.style.border="1.5px solid rgba(74,222,128,0.6)"}
             onBlur={e => e.target.style.border="1px solid rgba(255,255,255,0.15)"}
           />
@@ -1733,7 +1733,7 @@ export default function DashboardPage() {
         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
 
           {/* ── Selector de finca ── */}
-          <div style={{ display: isMobile ? "none" : "flex", alignItems:"center", gap:7, height:36, padding:"0 12px", borderRadius:9, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(8,20,14,0.65)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", cursor:"default", flexShrink:0, maxWidth:180, overflow:"hidden" }}>
+          <div style={{ display: isMobile ? "none" : "flex", alignItems:"center", gap:7, height:36, padding:"0 12px", borderRadius:9, border:"1px solid rgba(255,255,255,.18)", background:"rgba(10,20,30,0.28)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", cursor:"default", flexShrink:0, maxWidth:180, overflow:"hidden" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COLOR.green} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
@@ -1841,9 +1841,9 @@ export default function DashboardPage() {
           {/* ── Perfil (visible en desktop, ya está en sidebar pero no en topbar) ── */}
           <button
             onClick={() => router.push("/perfil")}
-            style={{ display: isMobile ? "none" : "flex", alignItems:"center", gap:8, height:36, padding:"0 10px 0 6px", borderRadius:9, border:"1px solid rgba(255,255,255,0.15)", background:"rgba(8,20,14,0.65)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", cursor:"pointer", flexShrink:0, transition:"all 0.15s" }}
+            style={{ display: isMobile ? "none" : "flex", alignItems:"center", gap:8, height:36, padding:"0 10px 0 6px", borderRadius:9, border:"1px solid rgba(255,255,255,.18)", background:"rgba(10,20,30,0.28)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", cursor:"pointer", flexShrink:0, transition:"all 0.15s" }}
             onMouseEnter={e => { e.currentTarget.style.background="rgba(74,222,128,0.12)"; e.currentTarget.style.borderColor="rgba(74,222,128,0.4)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background="rgba(8,20,14,0.65)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.15)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background="rgba(10,20,30,0.28)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.15)"; }}
           >
             <div style={{ width:24, height:24, borderRadius:"50%", background:COLOR.green, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
               {fotoPerfil
@@ -1875,7 +1875,7 @@ export default function DashboardPage() {
 
       {/* ── HERO PREMIUM ── */}
       <div style={{
-        background: "rgba(8,20,14,0.55)",
+        background: "rgba(10,20,30,0.28)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         border: "1px solid rgba(74,222,128,0.20)",
