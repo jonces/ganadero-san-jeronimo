@@ -967,75 +967,74 @@ function ProximasActividadesCard({ onNavigate }) {
   return (
     <div style={{ ...cardStyle, gridColumn: "1 / -1" }}>
       {/* Header */}
-      <div style={{ padding: "16px 20px 12px", borderBottom: `1px solid ${COLOR.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ padding: "10px 14px 8px", borderBottom: `1px solid ${COLOR.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <p style={{ margin: 0, fontWeight: 800, fontSize: 15, color: COLOR.text }}>Próximas Actividades</p>
-          <p style={{ margin: "2px 0 0", fontSize: 11, color: COLOR.muted }}>Agenda ganadera · {ACTIVIDADES_DEMO.length} actividades programadas</p>
+          <p style={{ margin: 0, fontWeight: 800, fontSize: 13, color: COLOR.text }}>Próximas Actividades</p>
+          <p style={{ margin: "1px 0 0", fontSize: 10, color: COLOR.muted }}>Agenda ganadera · {ACTIVIDADES_DEMO.length} actividades programadas</p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 6 }}>
           <button onClick={() => setVerCal(v => !v)} style={{
-            display: "flex", alignItems: "center", gap: 5, padding: "6px 12px",
-            borderRadius: 8, border: `1px solid ${COLOR.border}`,
+            display: "flex", alignItems: "center", gap: 4, padding: "4px 9px",
+            borderRadius: 7, border: `1px solid ${COLOR.border}`,
             background: verCal ? COLOR.green : "none", color: verCal ? "#fff" : COLOR.text,
-            fontWeight: 700, fontSize: 12, cursor: "pointer", transition: "all 0.2s",
+            fontWeight: 700, fontSize: 11, cursor: "pointer", transition: "all 0.2s",
           }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             Calendario
           </button>
           <button onClick={() => onNavigate("/eventos")} style={{
-            padding: "6px 12px", borderRadius: 8, border: `1px solid ${COLOR.border}`,
-            background: "none", color: COLOR.blue, fontWeight: 700, fontSize: 12, cursor: "pointer",
+            padding: "4px 9px", borderRadius: 7, border: `1px solid ${COLOR.border}`,
+            background: "none", color: COLOR.blue, fontWeight: 700, fontSize: 11, cursor: "pointer",
           }}>Ver todo →</button>
         </div>
       </div>
 
       {/* Alertas urgentes */}
       {urgentes.length > 0 && (
-        <div style={{ margin: "12px 20px 0", padding: "10px 14px", borderRadius: 10, background: "#FFF7ED", border: "1px solid #FED7AA", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 16 }}>⚡</span>
-          <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#92400E" }}>
+        <div style={{ margin: "8px 14px 0", padding: "6px 10px", borderRadius: 8, background: "rgba(251,146,60,0.12)", border: "1px solid rgba(251,146,60,0.3)", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 13 }}>⚡</span>
+          <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#fb923c" }}>
             {urgentes.length} actividad{urgentes.length > 1 ? "es urgentes" : " urgente"} para hoy o mañana:&nbsp;
-            <span style={{ fontWeight: 400 }}>{urgentes.map(u => u.tipo).join(" · ")}</span>
+            <span style={{ fontWeight: 400, color: COLOR.muted }}>{urgentes.map(u => u.tipo).join(" · ")}</span>
           </p>
         </div>
       )}
 
       {/* Lista de actividades */}
-      <div style={{ padding: "12px 20px", display: "grid", gridTemplateColumns: verCal ? "1fr 1fr" : "repeat(auto-fill,minmax(280px,1fr))", gap: 10 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ padding: "8px 14px", display: "grid", gridTemplateColumns: verCal ? "1fr 1fr" : "repeat(auto-fill,minmax(260px,1fr))", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {ACTIVIDADES_DEMO.map(act => (
             <div key={act.id}
               onMouseEnter={() => setHovItem(act.id)}
               onMouseLeave={() => setHovItem(null)}
               onClick={() => onNavigate(act.href)}
               style={{
-                display: "flex", alignItems: "center", gap: 12,
-                padding: "12px 14px", borderRadius: 12,
-                border: `1.5px solid ${hovItem === act.id ? act.color : COLOR.border}`,
-                background: hovItem === act.id ? act.bg : COLOR.white,
-                cursor: "pointer", transition: "all 0.18s",
-                boxShadow: hovItem === act.id ? `0 2px 12px ${act.color}22` : "none",
+                display: "flex", alignItems: "center", gap: 9,
+                padding: "7px 10px", borderRadius: 9,
+                border: `1px solid ${hovItem === act.id ? act.color + "99" : COLOR.border}`,
+                background: hovItem === act.id ? "rgba(255,255,255,0.06)" : "rgba(10,20,30,0.18)",
+                cursor: "pointer", transition: "all 0.15s",
               }}>
               {/* Icono tipo */}
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: act.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0, border: `1px solid ${act.color}33` }}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: act.bg + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0, border: `1px solid ${act.color}44` }}>
                 {act.icono}
               </div>
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                  <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: COLOR.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{act.tipo}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 1 }}>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: 12, color: COLOR.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{act.tipo}</p>
                   {act.urgente && (
-                    <span style={{ fontSize: 10, fontWeight: 800, color: "#fff", background: "#DC2626", padding: "1px 6px", borderRadius: 20, flexShrink: 0 }}>URGENTE</span>
+                    <span style={{ fontSize: 9, fontWeight: 800, color: "#fff", background: "#DC2626", padding: "1px 5px", borderRadius: 20, flexShrink: 0 }}>URGENTE</span>
                   )}
                 </div>
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <span style={{ fontSize: 11, color: COLOR.muted }}>📅 {act.fecha}</span>
-                  <span style={{ fontSize: 11, color: COLOR.muted }}>🕐 {act.hora}</span>
-                  <span style={{ fontSize: 11, color: act.color, fontWeight: 600 }}>🐄 {act.animales} animales</span>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <span style={{ fontSize: 10, color: COLOR.muted }}>📅 {act.fecha}</span>
+                  <span style={{ fontSize: 10, color: COLOR.muted }}>🕐 {act.hora}</span>
+                  <span style={{ fontSize: 10, color: act.color, fontWeight: 600 }}>🐄 {act.animales} anim.</span>
                 </div>
               </div>
               {/* Flecha */}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={COLOR.muted} strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={COLOR.muted} strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           ))}
         </div>

@@ -58,53 +58,47 @@ export function DashboardWidget() {
 
   return (
     <div style={{
-      background: "#FFF",
-      border:     "1px solid #E5E7EB",
-      borderRadius: 16,
-      overflow:   "hidden",
-      boxShadow:  "0 2px 8px rgba(0,0,0,0.06)",
+      background: "rgba(10,20,30,0.28)",
+      backdropFilter: "blur(18px)",
+      WebkitBackdropFilter: "blur(18px)",
+      border: "1px solid rgba(255,255,255,.18)",
+      borderRadius: 14,
+      overflow: "hidden",
+      boxShadow: "0 10px 40px rgba(0,0,0,.35)",
     }}>
       {/* Header */}
       <div style={{
-        padding:        "14px 18px 12px",
-        background:     semCfg?.bg ?? "#F9FAFB",
-        borderBottom:   `1px solid ${semCfg?.border ?? "#E5E7EB"}`,
-        display:        "flex",
-        alignItems:     "center",
-        justifyContent: "space-between",
+        padding: "9px 14px 8px",
+        borderBottom: "1px solid rgba(255,255,255,.10)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: "#111" }}>
+          <h3 style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#fff" }}>
             🧠 Copiloto Ganadero
           </h3>
           {loading ? (
-            <p style={{ margin: "2px 0 0", fontSize: 11, color: "#9CA3AF" }}>Analizando…</p>
+            <p style={{ margin: "1px 0 0", fontSize: 10, color: "rgba(255,255,255,0.45)" }}>Analizando…</p>
           ) : semCfg ? (
-            <p style={{ margin: "2px 0 0", fontSize: 11, fontWeight: 600, color: semCfg.color }}>
+            <p style={{ margin: "1px 0 0", fontSize: 10, fontWeight: 600, color: semCfg.color }}>
               {semCfg.icono} {semCfg.label} · Puntaje {summary?.puntaje ?? "—"}/100
             </p>
           ) : null}
         </div>
-
         {criticas > 0 && (
-          <div style={{
-            background: "#DC2626", color: "#FFF",
-            borderRadius: 20, padding: "4px 10px",
-            fontSize: 11, fontWeight: 800,
-          }}>
+          <div style={{ background: "#DC2626", color: "#FFF", borderRadius: 20, padding: "3px 8px", fontSize: 10, fontWeight: 800 }}>
             🚨 {criticas} CRÍTICA{criticas > 1 ? "S" : ""}
           </div>
         )}
       </div>
 
       {/* Alertas top 3 */}
-      <div style={{ padding: "12px 14px" }}>
+      <div style={{ padding: "8px 12px" }}>
         {loading ? (
-          <p style={{ margin: 0, fontSize: 12, color: "#9CA3AF", textAlign: "center", padding: "12px 0" }}>
+          <p style={{ margin: 0, fontSize: 11, color: "rgba(255,255,255,0.4)", textAlign: "center", padding: "8px 0" }}>
             Cargando análisis…
           </p>
         ) : topAlertas.length === 0 ? (
-          <p style={{ margin: 0, fontSize: 13, color: "#059669", textAlign: "center", padding: "12px 0", fontWeight: 600 }}>
+          <p style={{ margin: 0, fontSize: 12, color: "#4ade80", textAlign: "center", padding: "8px 0", fontWeight: 600 }}>
             ✅ No hay alertas activas
           </p>
         ) : (
@@ -125,22 +119,19 @@ export function DashboardWidget() {
       {/* Pie */}
       {!loading && (
         <div style={{
-          padding:        "10px 14px",
-          borderTop:      "1px solid #F3F4F6",
-          display:        "flex",
-          justifyContent: "space-between",
-          alignItems:     "center",
-          background:     "#FAFAFA",
+          padding: "7px 12px",
+          borderTop: "1px solid rgba(255,255,255,.10)",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
         }}>
-          <span style={{ fontSize: 11, color: "#9CA3AF" }}>
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.40)" }}>
             {alerts.length} alertas · {summary?.texto ?? ""}
           </span>
           <button
             onClick={() => router.push("/ia/copiloto")}
             style={{
-              padding: "6px 16px", borderRadius: 20, border: "none",
+              padding: "4px 12px", borderRadius: 20, border: "none",
               background: "#6366F1", color: "#FFF",
-              fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+              fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
             }}
           >
             Ver centro →
