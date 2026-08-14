@@ -21,12 +21,12 @@ const COLOR = {
 };
 
 const cardStyle = {
-  background: "rgba(20,30,40,0.18)",
-  backdropFilter: "blur(22px)",
-  WebkitBackdropFilter: "blur(22px)",
-  border: "1px solid rgba(255,255,255,.10)",
+  background: "rgba(255,255,255,0.07)",
+  backdropFilter: "blur(20px)",
+  WebkitBackdropFilter: "blur(20px)",
+  border: "1px solid rgba(255,255,255,.14)",
   borderRadius: 18,
-  boxShadow: "0 25px 80px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.07)",
+  boxShadow: "0 8px 32px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.12)",
 };
 
 // ── Keyframes CSS ──
@@ -1364,15 +1364,15 @@ function KpiCard({ iconKey, label, valor, sub, equiv, accentColor, iconBg, iconC
     <div
       onClick={onClick}
       style={{
-        background: "rgba(20,30,40,0.18)",
-        backdropFilter: "blur(22px)",
-        WebkitBackdropFilter: "blur(22px)",
+        background: "rgba(255,255,255,0.07)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
         borderRadius: 18,
         padding: "16px 18px",
         cursor: "pointer",
         border: `1px solid ${neon.border}`,
         borderTop: `2px solid ${neon.top}`,
-        boxShadow: `0 25px 80px rgba(0,0,0,.40), 0 0 30px ${neon.glow}, inset 0 1px 0 rgba(255,255,255,.06)`,
+        boxShadow: `0 8px 32px rgba(0,0,0,.22), 0 0 30px ${neon.glow}, inset 0 1px 0 rgba(255,255,255,.12)`,
         transition: "box-shadow 0.25s cubic-bezier(.4,0,.2,1), transform 0.25s cubic-bezier(.4,0,.2,1)",
         display: "flex",
         flexDirection: "column",
@@ -1382,8 +1382,8 @@ function KpiCard({ iconKey, label, valor, sub, equiv, accentColor, iconBg, iconC
         overflow: "hidden",
         animation: "floatUp 0.45s cubic-bezier(0.34,1.2,0.64,1) both",
       }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 35px 100px rgba(0,0,0,.50), 0 0 50px ${neon.glow}, inset 0 1px 0 rgba(255,255,255,.1)`; e.currentTarget.style.transform = "translateY(-4px)"; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 25px 80px rgba(0,0,0,.40), 0 0 30px ${neon.glow}, inset 0 1px 0 rgba(255,255,255,.06)`; e.currentTarget.style.transform = "translateY(0)"; }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 16px 48px rgba(0,0,0,.30), 0 0 40px ${neon.glow}, inset 0 1px 0 rgba(255,255,255,.16)`; e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.background = "rgba(255,255,255,0.10)"; }}
+      onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 8px 32px rgba(0,0,0,.22), 0 0 30px ${neon.glow}, inset 0 1px 0 rgba(255,255,255,.12)`; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.background = "rgba(255,255,255,0.07)"; }}
     >
       {/* Ambient glow corner */}
       <div style={{ position: "absolute", top: -40, right: -40, width: 100, height: 100, borderRadius: "50%", background: neon.soft, pointerEvents: "none", filter: "blur(20px)" }} />
@@ -1903,9 +1903,9 @@ export default function DashboardPage() {
 
       {/* ── HERO PREMIUM ── */}
       <div style={{
-        background: "rgba(15,22,32,0.22)",
-        backdropFilter: "blur(28px)",
-        WebkitBackdropFilter: "blur(28px)",
+        background: "rgba(255,255,255,0.06)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
         border: "1px solid rgba(74,222,128,0.18)",
         borderLeft: "3px solid rgba(74,222,128,0.65)",
         borderRadius: 20,
@@ -2049,9 +2049,9 @@ export default function DashboardPage() {
           <div style={{ marginBottom: 16 }}>
             {/* ── Banner holográfico de fase ── */}
             <div style={{
-              background: "rgba(12,18,28,0.55)",
-              backdropFilter: "blur(28px)",
-              WebkitBackdropFilter: "blur(28px)",
+              background: "rgba(255,255,255,0.06)",
+              backdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(24px)",
               borderRadius: 20,
               padding: "24px 28px",
               marginBottom: 12,
@@ -2123,7 +2123,7 @@ export default function DashboardPage() {
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
 
               {/* ROI del Hato — glass azul */}
-              <div style={{ background: "rgba(20,30,50,0.25)", backdropFilter:"blur(22px)", WebkitBackdropFilter:"blur(22px)", borderRadius: 18, padding: 0, boxShadow: "0 25px 80px rgba(0,0,0,.40), 0 0 30px rgba(96,165,250,0.12), inset 0 1px 0 rgba(255,255,255,.06)", border:"1px solid rgba(96,165,250,0.28)", borderTop:"2px solid #60a5fa", position:"relative", overflow:"hidden" }}>
+              <div style={{ background: "rgba(255,255,255,0.07)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", borderRadius: 18, padding: 0, boxShadow: "0 8px 32px rgba(0,0,0,.22), 0 0 30px rgba(96,165,250,0.10), inset 0 1px 0 rgba(255,255,255,.12)", border:"1px solid rgba(96,165,250,0.30)", borderTop:"2px solid #60a5fa", position:"relative", overflow:"hidden" }}>
                 <div style={{ position:"absolute", right:-20, top:-20, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.07)", pointerEvents:"none" }} />
                 <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>📈 ROI del Hato</div>
@@ -2151,7 +2151,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Base reproductora — glass verde */}
-              <div style={{ background: "rgba(10,30,20,0.25)", backdropFilter:"blur(22px)", WebkitBackdropFilter:"blur(22px)", borderRadius: 18, padding: 0, boxShadow: "0 25px 80px rgba(0,0,0,.40), 0 0 30px rgba(74,222,128,0.12), inset 0 1px 0 rgba(255,255,255,.06)", border:"1px solid rgba(74,222,128,0.28)", borderTop:"2px solid #4ade80", position:"relative", overflow:"hidden" }}>
+              <div style={{ background: "rgba(255,255,255,0.07)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", borderRadius: 18, padding: 0, boxShadow: "0 8px 32px rgba(0,0,0,.22), 0 0 30px rgba(74,222,128,0.10), inset 0 1px 0 rgba(255,255,255,.12)", border:"1px solid rgba(74,222,128,0.30)", borderTop:"2px solid #4ade80", position:"relative", overflow:"hidden" }}>
                 <div style={{ position:"absolute", right:-20, top:-20, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.07)", pointerEvents:"none" }} />
                 <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>🐄 Base Reproductora</div>
@@ -2177,7 +2177,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Proyección primer lote — glass naranja */}
-              <div style={{ background: "rgba(30,18,10,0.25)", backdropFilter:"blur(22px)", WebkitBackdropFilter:"blur(22px)", borderRadius: 18, padding: 0, boxShadow: "0 25px 80px rgba(0,0,0,.40), 0 0 30px rgba(251,146,60,0.12), inset 0 1px 0 rgba(255,255,255,.06)", border:"1px solid rgba(251,146,60,0.28)", borderTop:"2px solid #fb923c", position:"relative", overflow:"hidden" }}>
+              <div style={{ background: "rgba(255,255,255,0.07)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", borderRadius: 18, padding: 0, boxShadow: "0 8px 32px rgba(0,0,0,.22), 0 0 30px rgba(251,146,60,0.10), inset 0 1px 0 rgba(255,255,255,.12)", border:"1px solid rgba(251,146,60,0.30)", borderTop:"2px solid #fb923c", position:"relative", overflow:"hidden" }}>
                 <div style={{ position:"absolute", right:-20, top:-20, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.07)", pointerEvents:"none" }} />
                 <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid rgba(255,255,255,0.12)" }}>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>💰 Proyección Primer Lote</div>
