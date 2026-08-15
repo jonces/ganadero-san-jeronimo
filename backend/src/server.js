@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+// v2 financial system — forces Railway redeploy with db push
 
 const authRoutes = require("./routes/auth");
 const usuarioRoutes = require("./routes/usuarios");
