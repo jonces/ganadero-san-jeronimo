@@ -2,112 +2,271 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://ganaderosg-backend.up.railway.app/api";
+async function apiFetch(path) {
+  const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("token") : null;
+  const r = await fetch(`${API_BASE}${path}`, { headers: token ? { Authorization:`Bearer ${token}` } : {} });
+  if (!r.ok) return null;
+  return r.json().catch(() => null);
+}
+
+function seccion(doc, autoTable, titulo, y) {
+  if (y > 240) { doc.addPage(); y = 20; }
+  doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(29,78,216);
+  doc.text(titulo, 14, y);
+  doc.setTextColor(30,30,30);
+  return y + 6;
+}
+
 async function generarPDF(inf, balance) {
   const { jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
+
+  // Cargar datos reales en paralelo
+  const [resultados, flujo, indicadores, animales, activosFijosRes, prestamos] = await Promise.all([
+    apiFetch("/estados-financieros/resultados"),
+    apiFetch("/estados-financieros/flujo-efectivo"),
+    apiFetch("/estados-financieros/indicadores"),
+    apiFetch("/animales?estado=ACTIVO"),
+    apiFetch("/activos-fijos"),
+    apiFetch("/prestamos"),
+  ]);
+
   const doc = new jsPDF({ orientation:"portrait", unit:"mm", format:"letter" });
   const W = doc.internal.pageSize.getWidth();
-  const fmt = (v) => v != null ? "C$ " + Number(v).toLocaleString("es-NI", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
+  const fmt = (v) => v != null && !isNaN(v) ? "C$ " + Number(v).toLocaleString("es-NI", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
+  const fmtPct = (v) => v != null ? Number(v).toFixed(2) + "%" : "—";
   const hoy = new Date().toLocaleDateString("es-NI", { year:"numeric", month:"long", day:"numeric" });
+  const addHeader = (pageNum) => {
+    doc.setFillColor(29,78,216); doc.rect(0,0,W,14,"F");
+    doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont("helvetica","bold");
+    doc.text("EXPEDIENTE FINANCIERO BANCARIO", 14, 9);
+    doc.text(`${inf.codigo} · ${hoy}`, W-14, 9, { align:"right" });
+    doc.setTextColor(30,30,30);
+  };
 
-  // Header
-  doc.setFillColor(29, 78, 216);
-  doc.rect(0, 0, W, 28, "F");
+  // ── PÁGINA 1: Portada ──────────────────────────────────────────────
+  doc.setFillColor(29, 78, 216); doc.rect(0, 0, W, 50, "F");
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16); doc.setFont("helvetica","bold");
-  doc.text("EXPEDIENTE FINANCIERO BANCARIO", 14, 12);
-  doc.setFontSize(9); doc.setFont("helvetica","normal");
-  doc.text("Henriquez Cattle Management — Sistema Financiero Ganadero", 14, 19);
-  doc.text(`ganaderosg.app`, W - 14, 19, { align:"right" });
+  doc.setFontSize(20); doc.setFont("helvetica","bold");
+  doc.text("EXPEDIENTE FINANCIERO", 14, 22);
+  doc.text("BANCARIO", 14, 32);
+  doc.setFontSize(10); doc.setFont("helvetica","normal");
+  doc.text("Henriquez Cattle Management — ganaderosg.app", 14, 42);
 
-  // Código y fecha
-  doc.setTextColor(30, 30, 30);
+  doc.setTextColor(30,30,30);
+  let y = 60;
   doc.setFontSize(10); doc.setFont("helvetica","bold");
-  doc.text(`Código: ${inf.codigo}`, 14, 36);
-  doc.setFont("helvetica","normal"); doc.setFontSize(9);
-  doc.text(`Fecha de emisión: ${hoy}`, 14, 42);
-  doc.text(`Empresa: ${inf.empresa || "Henriquez Cattle Management"}`, 14, 48);
-  if (inf.institucion) doc.text(`Institución destino: ${inf.institucion}`, 14, 54);
-  doc.text(`Tipo: ${inf.tipo?.replace(/_/g," ")}`, W - 14, 42, { align:"right" });
-  doc.text(`Estado: ${inf.estado}`, W - 14, 48, { align:"right" });
-  if (inf.montoSolicitado) doc.text(`Monto solicitado: ${fmt(inf.montoSolicitado)}`, W - 14, 54, { align:"right" });
-
-  let y = inf.institucion ? 62 : 58;
-
-  // Período
+  doc.text(`Código de expediente:`, 14, y); doc.setFont("helvetica","normal"); doc.text(inf.codigo, 70, y); y += 7;
+  doc.setFont("helvetica","bold"); doc.text(`Fecha de emisión:`, 14, y); doc.setFont("helvetica","normal"); doc.text(hoy, 70, y); y += 7;
+  doc.setFont("helvetica","bold"); doc.text(`Empresa:`, 14, y); doc.setFont("helvetica","normal"); doc.text(inf.empresa || "Henriquez Cattle Management", 70, y); y += 7;
+  if (inf.institucion) { doc.setFont("helvetica","bold"); doc.text(`Institución destino:`, 14, y); doc.setFont("helvetica","normal"); doc.text(inf.institucion, 70, y); y += 7; }
+  if (inf.montoSolicitado) { doc.setFont("helvetica","bold"); doc.text(`Monto solicitado:`, 14, y); doc.setFont("helvetica","normal"); doc.text(fmt(inf.montoSolicitado), 70, y); y += 7; }
+  if (inf.plazoMeses) { doc.setFont("helvetica","bold"); doc.text(`Plazo solicitado:`, 14, y); doc.setFont("helvetica","normal"); doc.text(`${inf.plazoMeses} meses`, 70, y); y += 7; }
+  if (inf.destinoCredito) { doc.setFont("helvetica","bold"); doc.text(`Destino del crédito:`, 14, y); doc.setFont("helvetica","normal"); doc.text(inf.destinoCredito, 70, y); y += 7; }
   if (inf.periodoDesde || inf.periodoHasta) {
-    doc.setFontSize(9);
     const desde = inf.periodoDesde ? new Date(inf.periodoDesde).toLocaleDateString("es-NI") : "";
     const hasta = inf.periodoHasta ? new Date(inf.periodoHasta).toLocaleDateString("es-NI") : "";
-    doc.text(`Período analizado: ${desde} al ${hasta}`, 14, y); y += 8;
+    doc.setFont("helvetica","bold"); doc.text(`Período analizado:`, 14, y); doc.setFont("helvetica","normal"); doc.text(`${desde} al ${hasta}`, 70, y); y += 7;
   }
+  y += 4; doc.setDrawColor(200,200,200); doc.line(14,y,W-14,y); y += 8;
 
-  // Línea divisoria
-  doc.setDrawColor(200,200,200); doc.line(14, y, W - 14, y); y += 6;
-
-  // Situación financiera
-  if (balance) {
-    doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(29,78,216);
-    doc.text("SITUACIÓN FINANCIERA", 14, y); y += 6;
-    doc.setTextColor(30,30,30);
-    autoTable(doc, {
-      startY: y,
-      margin: { left:14, right:14 },
-      head: [["Concepto","Valor"]],
-      body: [
-        ["Total de activos", fmt(balance.totalActivos)],
-        ["Activos en caja y bancos", fmt((balance.caja||0)+(balance.bancos||0))],
-        ["Activos fijos", fmt(balance.activosFijos)],
-        ["Activos biológicos (ganado)", fmt(balance.valorGanado)],
-        ["Total de pasivos", fmt(balance.totalPasivos)],
-        ["Patrimonio neto", fmt(balance.patrimonioNeto)],
-        ["Deudas activas", fmt(balance.totalDeudas)],
-      ],
-      headStyles: { fillColor:[29,78,216], textColor:255, fontStyle:"bold", fontSize:9 },
-      bodyStyles: { fontSize:9 },
-      alternateRowStyles: { fillColor:[240,245,255] },
-      columnStyles: { 1: { halign:"right", fontStyle:"bold" } },
-    });
-    y = doc.lastAutoTable.finalY + 8;
-  }
-
-  // Documentos incluidos
-  const docs = inf.documentosIncluidos || inf.versiones?.[0]?.snapshot?.documentos || [];
+  // Índice de documentos
+  const docs = inf.documentosIncluidos || [];
   if (docs.length > 0) {
     doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(29,78,216);
-    doc.text("DOCUMENTOS INCLUIDOS", 14, y); y += 6;
-    doc.setTextColor(30,30,30);
-    autoTable(doc, {
-      startY: y,
-      margin: { left:14, right:14 },
-      head: [["#","Documento"]],
-      body: docs.map((d, i) => [i+1, d]),
-      headStyles: { fillColor:[29,78,216], textColor:255, fontStyle:"bold", fontSize:9 },
-      bodyStyles: { fontSize:9 },
-    });
-    y = doc.lastAutoTable.finalY + 8;
+    doc.text("DOCUMENTOS INCLUIDOS EN ESTE EXPEDIENTE", 14, y); y += 7;
+    doc.setTextColor(30,30,30); doc.setFontSize(9); doc.setFont("helvetica","normal");
+    docs.forEach((d,i) => { doc.text(`${i+1}. ${d}`, 18, y); y += 6; });
   }
 
-  // QR / token de verificación
-  if (y > 230) { doc.addPage(); y = 20; }
-  doc.setFillColor(240,253,244); doc.roundedRect(14, y, W-28, 22, 3, 3, "F");
-  doc.setFontSize(9); doc.setFont("helvetica","bold"); doc.setTextColor(21,128,61);
-  doc.text("VERIFICACIÓN DE AUTENTICIDAD", 18, y+7);
-  doc.setFont("helvetica","normal"); doc.setTextColor(30,30,30);
-  doc.text(`Token: ${inf.token}`, 18, y+13);
-  doc.text(`Verificar en: ganaderosg.app/verify/report/${inf.token}`, 18, y+19);
-  y += 30;
+  // ── PÁGINA 2: Balance General ──────────────────────────────────────
+  doc.addPage(); addHeader(2); y = 22;
+  y = seccion(doc, autoTable, "BALANCE GENERAL — SITUACIÓN FINANCIERA", y);
+  if (balance) {
+    autoTable(doc, {
+      startY: y, margin:{left:14,right:14},
+      head:[["Concepto","Valor"]],
+      body:[
+        ["ACTIVOS",""],
+        ["  Caja y bancos disponible", fmt((balance.caja||0)+(balance.bancos||0))],
+        ["  Activos biológicos (ganado)", fmt(balance.valorGanado)],
+        ["  Activos fijos", fmt(balance.activosFijos) === "—" ? "C$ 0.00" : fmt(balance.activosFijos)],
+        ["TOTAL ACTIVOS", fmt(balance.totalActivos)],
+        ["PASIVOS",""],
+        ["  Préstamos y deudas activas", fmt(balance.totalDeudas)],
+        ["TOTAL PASIVOS", fmt(balance.totalPasivos)],
+        ["PATRIMONIO NETO", fmt(balance.patrimonioNeto)],
+      ],
+      headStyles:{fillColor:[29,78,216],textColor:255,fontStyle:"bold",fontSize:9},
+      bodyStyles:{fontSize:9},
+      alternateRowStyles:{fillColor:[240,245,255]},
+      columnStyles:{1:{halign:"right",fontStyle:"bold"}},
+      didParseCell:(d)=>{ if(d.row.raw[0]==="TOTAL ACTIVOS"||d.row.raw[0]==="TOTAL PASIVOS"||d.row.raw[0]==="PATRIMONIO NETO") { d.cell.styles.fontStyle="bold"; d.cell.styles.fillColor=[220,240,255]; } if(d.row.raw[0]==="ACTIVOS"||d.row.raw[0]==="PASIVOS") { d.cell.styles.fontStyle="bold"; d.cell.styles.fillColor=[235,245,255]; } },
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  }
 
-  // Pie de página
+  // ── Estado de Resultados ──────────────────────────────────────────
+  if (y > 200) { doc.addPage(); addHeader(); y = 22; }
+  y = seccion(doc, autoTable, "ESTADO DE RESULTADOS", y);
+  if (resultados) {
+    autoTable(doc, {
+      startY: y, margin:{left:14,right:14},
+      head:[["Concepto","Monto"]],
+      body:[
+        ["Ingresos por ventas", fmt(resultados.ingresoVentas)],
+        ["Costos directos", fmt(resultados.costosDirectos)],
+        ["MARGEN BRUTO", fmt(resultados.margenBruto)],
+        ["Gastos operativos", fmt(resultados.gastosOp)],
+        ["RESULTADO OPERATIVO", fmt(resultados.resultadoOperativo)],
+      ],
+      headStyles:{fillColor:[21,128,61],textColor:255,fontStyle:"bold",fontSize:9},
+      bodyStyles:{fontSize:9},
+      alternateRowStyles:{fillColor:[240,253,244]},
+      columnStyles:{1:{halign:"right",fontStyle:"bold"}},
+      didParseCell:(d)=>{ if(d.row.raw[0]==="MARGEN BRUTO"||d.row.raw[0]==="RESULTADO OPERATIVO") { d.cell.styles.fontStyle="bold"; d.cell.styles.fillColor=[209,250,229]; } },
+    });
+    y = doc.lastAutoTable.finalY + 6;
+    if (resultados.porCategoriaGastos && Object.keys(resultados.porCategoriaGastos).length > 0) {
+      doc.setFontSize(9); doc.setFont("helvetica","bold"); doc.setTextColor(30,30,30);
+      doc.text("Gastos por categoría:", 14, y); y += 4;
+      autoTable(doc, {
+        startY: y, margin:{left:14,right:14},
+        head:[["Categoría","Monto"]],
+        body: Object.entries(resultados.porCategoriaGastos).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,fmt(v)]),
+        headStyles:{fillColor:[107,114,128],textColor:255,fontSize:8},
+        bodyStyles:{fontSize:8},
+      });
+      y = doc.lastAutoTable.finalY + 8;
+    }
+  } else { doc.setFontSize(9); doc.text("Sin datos de resultados disponibles.", 14, y); y += 10; }
+
+  // ── PÁGINA 3: Flujo de Efectivo ────────────────────────────────────
+  doc.addPage(); addHeader(); y = 22;
+  y = seccion(doc, autoTable, "FLUJO DE EFECTIVO — ÚLTIMOS 12 MESES", y);
+  if (flujo?.meses?.length > 0) {
+    autoTable(doc, {
+      startY: y, margin:{left:14,right:14},
+      head:[["Mes","Ingresos","Egresos","Flujo Neto","Saldo Acum."]],
+      body: flujo.meses.map(m=>[m.mes, fmt(m.ingresos), fmt(m.egresos), fmt(m.flujoNeto), fmt(m.saldoAcumulado)]),
+      headStyles:{fillColor:[29,78,216],textColor:255,fontStyle:"bold",fontSize:8},
+      bodyStyles:{fontSize:8},
+      alternateRowStyles:{fillColor:[240,245,255]},
+      columnStyles:{1:{halign:"right"},2:{halign:"right"},3:{halign:"right",fontStyle:"bold"},4:{halign:"right"}},
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  } else { doc.setFontSize(9); doc.text("Sin datos de flujo de efectivo disponibles.", 14, y); y += 10; }
+
+  // ── Indicadores Financieros ────────────────────────────────────────
+  if (y > 200) { doc.addPage(); addHeader(); y = 22; }
+  y = seccion(doc, autoTable, "INDICADORES FINANCIEROS", y);
+  if (indicadores) {
+    autoTable(doc, {
+      startY: y, margin:{left:14,right:14},
+      head:[["Indicador","Valor","Descripción"]],
+      body:[
+        ["Liquidez corriente", indicadores.liquidez != null ? Number(indicadores.liquidez).toFixed(2) : "Datos insuficientes", "Capacidad de pagar deudas a corto plazo"],
+        ["Ratio de endeudamiento", fmtPct(indicadores.ratioEndeudamiento), "Deuda como % de activos totales"],
+        ["Margen neto", fmtPct(indicadores.margenNeto), "Utilidad como % de ingresos"],
+        ["ROA", fmtPct(indicadores.roa), "Retorno sobre activos totales"],
+        ["ROE", fmtPct(indicadores.roe), "Retorno sobre patrimonio"],
+        ["Capital de trabajo", fmt(indicadores.capitalTrabajo), "Activo corriente - Pasivo corriente"],
+      ],
+      headStyles:{fillColor:[29,78,216],textColor:255,fontStyle:"bold",fontSize:8},
+      bodyStyles:{fontSize:8},
+      alternateRowStyles:{fillColor:[240,245,255]},
+      columnStyles:{1:{halign:"right",fontStyle:"bold"}},
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  }
+
+  // ── PÁGINA 4: Inventario de Ganado ─────────────────────────────────
+  doc.addPage(); addHeader(); y = 22;
+  y = seccion(doc, autoTable, "INVENTARIO DE GANADO (ACTIVOS BIOLÓGICOS)", y);
+  const precioLibra = 85;
+  if (animales?.length > 0) {
+    const activos = animales.filter(a => a.estado === "ACTIVO");
+    const resumenGanado = {};
+    activos.forEach(a => {
+      const cat = a.sexo === "MACHO"
+        ? (a.pesoActual > 300 ? "Novillo/Toro" : "Ternero macho")
+        : (a.estadoReproductivo ? "Vaca reproductora" : a.pesoActual > 200 ? "Novilla" : "Ternera");
+      if (!resumenGanado[cat]) resumenGanado[cat] = { cantidad:0, pesoTotal:0, valorEstimado:0 };
+      resumenGanado[cat].cantidad++;
+      resumenGanado[cat].pesoTotal += a.pesoActual || 0;
+      resumenGanado[cat].valorEstimado += a.pesoActual ? a.pesoActual * precioLibra : (a.costoCompra || 0);
+    });
+    autoTable(doc, {
+      startY: y, margin:{left:14,right:14},
+      head:[["Categoría","Cantidad","Peso total (lb)","Valor estimado"]],
+      body:[
+        ...Object.entries(resumenGanado).map(([cat,d])=>[cat, d.cantidad, d.pesoTotal.toFixed(0)+" lb", fmt(d.valorEstimado)]),
+        ["TOTAL HATO", activos.length, activos.reduce((s,a)=>s+(a.pesoActual||0),0).toFixed(0)+" lb", fmt(activos.reduce((s,a)=>s+(a.pesoActual?a.pesoActual*precioLibra:(a.costoCompra||0)),0))],
+      ],
+      headStyles:{fillColor:[21,128,61],textColor:255,fontStyle:"bold",fontSize:9},
+      bodyStyles:{fontSize:9},
+      alternateRowStyles:{fillColor:[240,253,244]},
+      columnStyles:{1:{halign:"right"},2:{halign:"right"},3:{halign:"right",fontStyle:"bold"}},
+      didParseCell:(d)=>{ if(d.row.raw[0]==="TOTAL HATO") { d.cell.styles.fontStyle="bold"; d.cell.styles.fillColor=[209,250,229]; } },
+    });
+    y = doc.lastAutoTable.finalY + 6;
+    doc.setFontSize(7); doc.setTextColor(120,120,120);
+    doc.text(`* Valor estimado calculado a C$ ${precioLibra}/lb. No representa avalúo oficial.`, 14, y); y += 10;
+    doc.setTextColor(30,30,30);
+  } else { doc.setFontSize(9); doc.text("Sin animales activos registrados.", 14, y); y += 10; }
+
+  // ── Activos Fijos ──────────────────────────────────────────────────
+  if (y > 200) { doc.addPage(); addHeader(); y = 22; }
+  y = seccion(doc, autoTable, "REGISTRO DE ACTIVOS FIJOS", y);
+  if (Array.isArray(activosFijosRes) && activosFijosRes.length > 0) {
+    autoTable(doc, {
+      startY: y, margin:{left:14,right:14},
+      head:[["Nombre","Categoría","Adquisición","Valor actual","Estado"]],
+      body: activosFijosRes.map(a=>[a.nombre, a.categoria, a.fechaAdquisicion?new Date(a.fechaAdquisicion).toLocaleDateString("es-NI"):"—", fmt(a.valorActual||a.costoAdquisicion), a.estado]),
+      headStyles:{fillColor:[29,78,216],textColor:255,fontStyle:"bold",fontSize:8},
+      bodyStyles:{fontSize:8},
+      alternateRowStyles:{fillColor:[240,245,255]},
+      columnStyles:{3:{halign:"right",fontStyle:"bold"}},
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  } else { doc.setFontSize(9); doc.text("Sin activos fijos registrados.", 14, y); y += 10; }
+
+  // ── Préstamos y Deudas ────────────────────────────────────────────
+  if (y > 200) { doc.addPage(); addHeader(); y = 22; }
+  y = seccion(doc, autoTable, "ESTADO DE DEUDAS Y PRÉSTAMOS", y);
+  if (Array.isArray(prestamos) && prestamos.length > 0) {
+    autoTable(doc, {
+      startY: y, margin:{left:14,right:14},
+      head:[["Acreedor","Monto original","Saldo actual","Vencimiento","Estado"]],
+      body: prestamos.map(p=>[p.acreedor, fmt(p.montoOriginal), fmt(p.saldoActual), p.vencimiento?new Date(p.vencimiento).toLocaleDateString("es-NI"):"—", p.estado]),
+      headStyles:{fillColor:[220,38,38],textColor:255,fontStyle:"bold",fontSize:8},
+      bodyStyles:{fontSize:8},
+      alternateRowStyles:{fillColor:[254,242,242]},
+      columnStyles:{1:{halign:"right"},2:{halign:"right",fontStyle:"bold"}},
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  } else { doc.setFontSize(9); doc.text("Sin deudas o préstamos registrados.", 14, y); y += 10; }
+
+  // ── Verificación de autenticidad ───────────────────────────────────
+  if (y > 230) { doc.addPage(); addHeader(); y = 22; }
+  doc.setFillColor(240,253,244); doc.roundedRect(14,y,W-28,26,3,3,"F");
+  doc.setFontSize(10); doc.setFont("helvetica","bold"); doc.setTextColor(21,128,61);
+  doc.text("VERIFICACIÓN DE AUTENTICIDAD", 18, y+8);
+  doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(30,30,30);
+  doc.text(`Token único: ${inf.token}`, 18, y+15);
+  doc.text(`Verificar en: ganaderosg.app/verify/report/${inf.token}`, 18, y+21);
+
+  // Pie de página en todas las páginas
   const totalPages = doc.internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     doc.setFontSize(7); doc.setTextColor(150,150,150); doc.setFont("helvetica","normal");
     doc.text(`${inf.codigo} — Generado el ${hoy} — Página ${i} de ${totalPages}`, W/2, 272, { align:"center" });
-    doc.text("Este documento es confidencial y fue generado por ganaderosg.app", W/2, 276, { align:"center" });
+    doc.text("Documento confidencial generado por ganaderosg.app · Henriquez Cattle Management", W/2, 276, { align:"center" });
   }
 
-  doc.save(`${inf.codigo}-expediente.pdf`);
+  doc.save(`${inf.codigo}-expediente-bancario.pdf`);
 }
 
 const cardGlass = { background:"rgba(255,255,255,0.55)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", border:"1px solid rgba(0,0,0,0.10)", borderRadius:14, padding:"16px 20px", marginBottom:16 };
