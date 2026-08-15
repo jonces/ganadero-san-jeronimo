@@ -100,8 +100,10 @@ export default function ActivosPage() {
   // Distribución por categoría ganado
   const catGanado = {};
   animales.forEach(a => {
-    const cat = a.sexo === "MACHO" ? (a.nombre?.toLowerCase().includes("toro") ? "Toro" : a.pesoActual > 300 ? "Novillo" : "Ternero")
-      : (a.estadoReproductivo ? "Vaca reproductora" : a.pesoActual > 200 ? "Novilla" : "Ternera");
+    const cat = a.categoria
+      ? { CRIA:"Cría", TERNERO:"Ternero", TERNERA:"Ternera", TORO:"Toro", VACA:"Vaca", SEMENTAL:"Semental" }[a.categoria] || a.categoria
+      : a.sexo === "MACHO" ? (a.nombre?.toLowerCase().includes("toro") ? "Toro" : "Ternero")
+      : (a.estadoReproductivo ? "Vaca reproductora" : "Ternera");
     if (!catGanado[cat]) catGanado[cat] = { cantidad: 0, valor: 0 };
     catGanado[cat].cantidad++;
     catGanado[cat].valor += valorAnimal(a);

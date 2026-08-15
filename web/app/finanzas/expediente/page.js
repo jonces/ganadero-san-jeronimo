@@ -192,9 +192,11 @@ async function generarPDF(inf, balance) {
     const activos = animales.filter(a => a.estado === "ACTIVO");
     const resumenGanado = {};
     activos.forEach(a => {
-      const cat = a.sexo === "MACHO"
-        ? (a.pesoActual > 300 ? "Novillo/Toro" : "Ternero macho")
-        : (a.estadoReproductivo ? "Vaca reproductora" : a.pesoActual > 200 ? "Novilla" : "Ternera");
+      const catMap = { CRIA:"Cría", TERNERO:"Ternero", TERNERA:"Ternera", TORO:"Toro", VACA:"Vaca", SEMENTAL:"Semental" };
+      const cat = a.categoria
+        ? catMap[a.categoria] || a.categoria
+        : a.sexo === "MACHO" ? (a.nombre?.toLowerCase().includes("toro") ? "Toro" : "Ternero")
+        : (a.estadoReproductivo ? "Vaca reproductora" : "Ternera");
       if (!resumenGanado[cat]) resumenGanado[cat] = { cantidad:0, pesoTotal:0, valorEstimado:0 };
       resumenGanado[cat].cantidad++;
       resumenGanado[cat].pesoTotal += a.pesoActual || 0;
