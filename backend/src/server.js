@@ -131,10 +131,20 @@ app.listen(port, () => {
   }
   corregirTiposDeMedia();
   limpiarAnimalesEliminados();
+  migrarCategoriasViejas();
   upgradeCrias();
   // Re-chequear upgrades cada 24 horas
   setInterval(upgradeCrias, 24 * 60 * 60 * 1000);
 });
+
+async function migrarCategoriasViejas() {
+  try {
+    const prisma = require("./prisma");
+    const novillo = await prisma.animal.updateMany({ where: { categoria: { in: ["Novillo","NOVILLO"] } }, data: { categoria: "TERNERO" } });
+    const novilla = await prisma.animal.updateMany({ where: { categoria: { in: ["Novilla","NOVILLA"] } }, data: { categoria: "TERNERA" } });
+    if (novillo.count || novilla.count) console.log(`Migración categorías: ${novillo.count} Novillo→TERNERO, ${novilla.count} Novilla→TERNERA`);
+  } catch (e) { console.error("Error en migrarCategoriasViejas:", e.message); }
+}
 
 async function upgradeCrias() {
   try {

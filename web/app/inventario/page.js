@@ -16,18 +16,20 @@ function calcularEdad(fechaNac) {
 }
 
 function categoriaAnimal(a) {
-  if (!a.fechaNacimiento) {
-    return a.sexo === "HEMBRA" ? "Vaca" : "Toro";
+  // Usar categoria registrada si existe
+  if (a.categoria) {
+    const map = { CRIA:"Cría", TERNERO:"Ternero", TERNERA:"Ternera", TORO:"Toro", VACA:"Vaca", SEMENTAL:"Semental",
+                  Novillo:"Ternero", Novilla:"Ternera", NOVILLO:"Ternero", NOVILLA:"Ternera" };
+    return map[a.categoria] || a.categoria;
   }
+  if (!a.fechaNacimiento) return a.sexo === "HEMBRA" ? "Vaca" : "Toro";
   const meses = Math.floor((Date.now() - new Date(a.fechaNacimiento)) / (1000 * 60 * 60 * 24 * 30));
   if (a.sexo === "HEMBRA") {
-    if (meses < 6) return "Ternera";
-    if (meses < 24) return "Novilla";
-    return "Vaca";
+    if (meses < 6) return "Cría";
+    return meses < 24 ? "Ternera" : "Vaca";
   } else {
-    if (meses < 6) return "Ternero";
-    if (meses < 24) return "Novillo";
-    return "Toro";
+    if (meses < 6) return "Cría";
+    return meses < 24 ? "Ternero" : "Toro";
   }
 }
 
@@ -1550,7 +1552,7 @@ export default function InventarioPage() {
           </div>
           <select style={inputStyle} value={filtroCategoria} onChange={e => { setFiltroCategoria(e.target.value); setPagina(1); }}>
             <option value="">Categoría</option>
-            {["Vaca", "Toro", "Novillo", "Novilla", "Ternero", "Ternera"].map(c => <option key={c} value={c}>{c}</option>)}
+            {["Vaca", "Toro", "Ternero", "Ternera", "Cría", "Semental"].map(c => <option key={c} value={c}>{c}</option>)}
           </select>
           {potreros.length > 0 && (
             <select style={inputStyle} value={filtroPotrero} onChange={e => { setFiltroPotrero(e.target.value); setPagina(1); }}>
