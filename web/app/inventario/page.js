@@ -73,7 +73,7 @@ const COMERCIAL_CONFIG = {
 
 // ─── Modales (tema claro) ─────────────────────────────────────────────────────
 const modalBg = { background: "rgba(0,0,0,0.5)" };
-const modalPanel = { background: "rgba(15,22,32,0.85)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 20, padding: 24, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" };
+const modalPanel = { background: "rgba(255,255,255,0.80)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 20, padding: 24, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" };
 const li = { background: "rgba(255,255,255,0.60)", border: "1px solid rgba(0,0,0,0.15)", color: "#000000", borderRadius: 10, padding: "8px 12px", fontSize: 13, width: "100%", outline: "none" };
 
 function Badge({ text, color, bg, border }) {
@@ -429,8 +429,8 @@ function ModalEditarAnimal({ animal, hembrasActivas, onClose, onSuccess }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: "rgba(15,22,32,0.90)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 20, width: "100%", maxWidth: 540, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
-        <div style={{ padding: "18px 20px 14px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(15,22,32,0.95)", zIndex: 1 }}>
+      <div style={{ background: "rgba(255,255,255,0.82)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 20, width: "100%", maxWidth: 540, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}>
+        <div style={{ padding: "18px 20px 14px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(255,255,255,0.90)", zIndex: 1 }}>
           <div>
             <p style={{ color: T.textLight, fontSize: 11, margin: 0 }}>Editando</p>
             <h3 style={{ color: T.text, fontWeight: 800, fontSize: 17, margin: 0 }}>{animal.nombre || animal.identificador}</h3>
@@ -1299,7 +1299,7 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
     return (
       <>
         <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 40, background: "rgba(0,0,0,0.4)" }} />
-        <div style={{ position: "fixed", right: 0, top: 0, bottom: 0, zIndex: 50, width: "min(100vw, 400px)", background: "rgba(8,12,18,0.88)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderLeft: "1px solid rgba(255,255,255,0.12)", overflowY: "auto", boxShadow: "-4px 0 40px rgba(0,0,0,0.4)" }}>
+        <div style={{ position: "fixed", right: 0, top: 0, bottom: 0, zIndex: 50, width: "min(100vw, 400px)", background: "rgba(255,255,255,0.75)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)", borderLeft: "1px solid rgba(0,0,0,0.12)", overflowY: "auto", boxShadow: "-4px 0 40px rgba(0,0,0,0.4)" }}>
           {panelContent}
         </div>
       </>
@@ -1315,11 +1315,11 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
       bottom: 0,
       width: 440,
       zIndex: 9,
-      background: "rgba(8,12,18,0.88)",
+      background: "rgba(255,255,255,0.75)",
       backdropFilter: "blur(28px)",
       WebkitBackdropFilter: "blur(28px)",
-      borderLeft: "1px solid rgba(255,255,255,0.12)",
-      boxShadow: "-4px 0 40px rgba(0,0,0,0.4)",
+      borderLeft: "1px solid rgba(0,0,0,0.12)",
+      boxShadow: "-4px 0 40px rgba(0,0,0,0.2)",
       display: "flex",
       flexDirection: "column",
       overflowY: "auto",
