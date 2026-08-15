@@ -33,6 +33,7 @@ const prestamosRoutes = require("./routes/prestamos");
 const periodosFinancierosRoutes = require("./routes/periodos-financieros");
 const estadosFinancierosRoutes = require("./routes/estados-financieros");
 const informesFinancierosRoutes = require("./routes/informes-financieros");
+const finanzasPinRoutes = require("./routes/finanzas-pin");
 
 const app = express();
 app.use(cors());
@@ -71,6 +72,7 @@ app.use("/api/prestamos", prestamosRoutes);
 app.use("/api/periodos-financieros", periodosFinancierosRoutes);
 app.use("/api/estados-financieros", estadosFinancierosRoutes);
 app.use("/api/informes-financieros", informesFinancierosRoutes);
+app.use("/api/finanzas-pin", finanzasPinRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

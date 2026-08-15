@@ -62,6 +62,7 @@ model Finca {
   precioLibra         Float    @default(85)
   precioReproductora  Float    @default(29000)
   metaAnimales        Int      @default(150)
+  finanzasPin         String?
   createdAt    DateTime @default(now())
 
   usuarios    Usuario[]
