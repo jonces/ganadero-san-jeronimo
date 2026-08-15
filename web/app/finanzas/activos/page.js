@@ -75,11 +75,27 @@ export default function ActivosPage() {
 
   // Valor del hato
   const precioLibra = finca?.precioLibra || 85;
-  const valorHato = animales.reduce((s, a) => {
-    if (a.pesoActual) return s + (a.pesoActual * precioLibra);
-    return s + (a.costoCompra || 0);
-  }, 0);
-  const costoHato = animales.reduce((s, a) => s + (a.costoCompra || 0), 0);
+  const VALOR_TERNERO_FINCA = 17000; // C$17,000 fijo para crías nacidas en finca sin peso ni precio
+
+  function edadMeses(a) {
+    if (!a.fechaNacimiento) return 999;
+    return (Date.now() - new Date(a.fechaNacimiento)) / (1000 * 60 * 60 * 24 * 30.4);
+  }
+
+  function esTerneroSinDatos(a) {
+    // Sin peso y sin costoCompra, nacido en finca, menos de 7 meses
+    return !a.pesoActual && !a.costoCompra && a.origen === "FINCA" && edadMeses(a) < 7;
+  }
+
+  function valorAnimal(a) {
+    if (a.pesoActual) return a.pesoActual * precioLibra;
+    if (a.costoCompra) return a.costoCompra;
+    if (esTerneroSinDatos(a)) return VALOR_TERNERO_FINCA;
+    return 0;
+  }
+
+  const valorHato = animales.reduce((s, a) => s + valorAnimal(a), 0);
+  const costoHato = animales.reduce((s, a) => s + (a.costoCompra || (esTerneroSinDatos(a) ? VALOR_TERNERO_FINCA : 0)), 0);
 
   // Distribución por categoría ganado
   const catGanado = {};
@@ -88,7 +104,7 @@ export default function ActivosPage() {
       : (a.estadoReproductivo ? "Vaca reproductora" : a.pesoActual > 200 ? "Novilla" : "Ternera");
     if (!catGanado[cat]) catGanado[cat] = { cantidad: 0, valor: 0 };
     catGanado[cat].cantidad++;
-    catGanado[cat].valor += a.pesoActual ? a.pesoActual * precioLibra : (a.costoCompra || 0);
+    catGanado[cat].valor += valorAnimal(a);
   });
 
   return (

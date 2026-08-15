@@ -185,6 +185,9 @@ async function generarPDF(inf, balance) {
   doc.addPage(); addHeader(); y = 22;
   y = seccion(doc, autoTable, "INVENTARIO DE GANADO (ACTIVOS BIOLÓGICOS)", y);
   const precioLibra = 85;
+  const VALOR_TERNERO_FINCA = 17000;
+  function edadMesesPdf(a) { if (!a.fechaNacimiento) return 999; return (Date.now() - new Date(a.fechaNacimiento)) / (1000*60*60*24*30.4); }
+  function valorAnimalPdf(a) { if (a.pesoActual) return a.pesoActual * precioLibra; if (a.costoCompra) return a.costoCompra; if (!a.pesoActual && !a.costoCompra && a.origen==="FINCA" && edadMesesPdf(a)<7) return VALOR_TERNERO_FINCA; return 0; }
   if (animales?.length > 0) {
     const activos = animales.filter(a => a.estado === "ACTIVO");
     const resumenGanado = {};
@@ -195,14 +198,14 @@ async function generarPDF(inf, balance) {
       if (!resumenGanado[cat]) resumenGanado[cat] = { cantidad:0, pesoTotal:0, valorEstimado:0 };
       resumenGanado[cat].cantidad++;
       resumenGanado[cat].pesoTotal += a.pesoActual || 0;
-      resumenGanado[cat].valorEstimado += a.pesoActual ? a.pesoActual * precioLibra : (a.costoCompra || 0);
+      resumenGanado[cat].valorEstimado += valorAnimalPdf(a);
     });
     autoTable(doc, {
       startY: y, margin:{left:14,right:14},
       head:[["Categoría","Cantidad","Peso total (lb)","Valor estimado"]],
       body:[
         ...Object.entries(resumenGanado).map(([cat,d])=>[cat, d.cantidad, d.pesoTotal.toFixed(0)+" lb", fmt(d.valorEstimado)]),
-        ["TOTAL HATO", activos.length, activos.reduce((s,a)=>s+(a.pesoActual||0),0).toFixed(0)+" lb", fmt(activos.reduce((s,a)=>s+(a.pesoActual?a.pesoActual*precioLibra:(a.costoCompra||0)),0))],
+        ["TOTAL HATO", activos.length, activos.reduce((s,a)=>s+(a.pesoActual||0),0).toFixed(0)+" lb", fmt(activos.reduce((s,a)=>s+valorAnimalPdf(a),0))],
       ],
       headStyles:{fillColor:[21,128,61],textColor:255,fontStyle:"bold",fontSize:9},
       bodyStyles:{fontSize:9},
