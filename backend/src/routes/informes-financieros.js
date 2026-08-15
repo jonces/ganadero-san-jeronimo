@@ -3,14 +3,40 @@ const prisma = require("../prisma");
 const { requireAuth, requireNoEsCampo } = require("../middleware/auth");
 
 const router = express.Router();
-router.use(requireAuth);
-router.use(requireNoEsCampo);
 
 async function generarCodigo(fincaId) {
   const count = await prisma.informeFinanciero.count({ where: { fincaId } });
   const año = new Date().getFullYear();
   return `FIN-${año}-${String(count + 1).padStart(6, "0")}`;
 }
+
+// GET /api/informes-financieros/verificar/:token - PÚBLICO, sin auth
+router.get("/verificar/:token", async (req, res, next) => {
+  try {
+    const informe = await prisma.informeFinanciero.findFirst({
+      where: { token: req.params.token },
+      select: {
+        codigo: true, empresa: true, estado: true, tipo: true,
+        periodoDesde: true, periodoHasta: true, generadoEn: true,
+        finca: { select: { nombre: true } },
+      },
+    });
+    if (!informe) return res.status(404).json({ error: "Informe no encontrado" });
+    res.json({
+      valido: informe.estado === "GENERADO",
+      codigo: informe.codigo,
+      empresa: informe.empresa || informe.finca?.nombre,
+      tipo: informe.tipo,
+      periodo: `${informe.periodoDesde ? new Date(informe.periodoDesde).toLocaleDateString("es-NI") : ""} al ${informe.periodoHasta ? new Date(informe.periodoHasta).toLocaleDateString("es-NI") : ""}`,
+      fechaEmision: informe.generadoEn,
+      estado: informe.estado,
+    });
+  } catch (err) { next(err); }
+});
+
+// Rutas privadas — requieren autenticación
+router.use(requireAuth);
+router.use(requireNoEsCampo);
 
 // GET /api/informes-financieros
 router.get("/", async (req, res, next) => {
@@ -144,29 +170,6 @@ router.post("/:id/anular", async (req, res, next) => {
       data: { estado: "ANULADO", anulado: true, anuladoPor: req.user.sub, anuladoEn: new Date(), motivoAnulacion: motivo },
     });
     res.json({ ok: true });
-  } catch (err) { next(err); }
-});
-
-// GET /api/informes-financieros/verificar/:token - verificación pública (sin auth)
-router.get("/verificar/:token", async (req, res, next) => {
-  try {
-    const informe = await prisma.informeFinanciero.findFirst({
-      where: { token: req.params.token },
-      select: {
-        codigo: true, empresa: true, estado: true, anulado: true,
-        periodoDesde: true, periodoHasta: true, generadoEn: true,
-        finca: { select: { nombre: true } },
-      },
-    });
-    if (!informe) return res.status(404).json({ error: "Informe no encontrado" });
-    res.json({
-      valido: !informe.anulado && informe.estado === "GENERADO",
-      codigo: informe.codigo,
-      empresa: informe.empresa || informe.finca?.nombre,
-      periodo: { desde: informe.periodoDesde, hasta: informe.periodoHasta },
-      fechaEmision: informe.generadoEn,
-      estado: informe.anulado ? "ANULADO" : informe.estado,
-    });
   } catch (err) { next(err); }
 });
 
