@@ -129,7 +129,7 @@ model Animal {
   costoCompra     Float?    // Precio pagado para adquirirlo
   precioVenta     Float?    // Precio al que se quiere vender
   origen          String    @default("FINCA") // FINCA, COMPRADO
-  categoria       String?   // CRIA, TERNERO, TERNERA, NOVILLO, NOVILLA, TORO, VACA, SEMENTAL
+  categoria       String?   // CRIA, TERNERO, TERNERA, TORO, VACA, SEMENTAL
   estado          String    @default("ACTIVO")
   enPlanVenta     Boolean   @default(false)   // agregado manualmente al plan de venta
   // Estado reproductivo (solo hembras)

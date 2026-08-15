@@ -85,10 +85,8 @@ export default function AnimalesPage() {
             <select className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-500 focus:outline-none"
               value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}>
               <option value="CRIA">🐣 Cría (recién nacida)</option>
-              <option value="TERNERO">🐂 Ternero (macho, 6m-1año)</option>
-              <option value="TERNERA">🐄 Ternera (hembra, 6m-1año)</option>
-              <option value="NOVILLO">🐂 Novillo (macho, 1-2 años)</option>
-              <option value="NOVILLA">🐄 Novilla (hembra, 1-2 años)</option>
+              <option value="TERNERO">🐂 Ternero (macho)</option>
+              <option value="TERNERA">🐄 Ternera (hembra)</option>
               <option value="TORO">🐂 Toro (reproductor)</option>
               <option value="VACA">🐄 Vaca (adulta)</option>
               <option value="SEMENTAL">🐂 Semental</option>
