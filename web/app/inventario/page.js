@@ -34,22 +34,22 @@ function categoriaAnimal(a) {
 // ─── Tema claro ───────────────────────────────────────────────────────────────
 const T = {
   bg:        "transparent",
-  white:     "rgba(255,255,255,0.07)",
-  text:      "#ffffff",
-  textSec:   "rgba(255,255,255,0.70)",
-  textLight: "rgba(255,255,255,0.45)",
-  border:    "rgba(255,255,255,0.14)",
-  rowHover:  "rgba(255,255,255,0.08)",
-  rowSel:    "rgba(74,222,128,0.10)",
-  thead:     "rgba(255,255,255,0.05)",
+  white:     "rgba(255,255,255,0.55)",
+  text:      "#000000",
+  textSec:   "#1a1a1a",
+  textLight: "#333333",
+  border:    "rgba(0,0,0,0.15)",
+  rowHover:  "rgba(255,255,255,0.35)",
+  rowSel:    "rgba(74,222,128,0.20)",
+  thead:     "rgba(255,255,255,0.40)",
 };
 
 const inputStyle = {
-  background: "rgba(255,255,255,0.07)",
+  background: "rgba(255,255,255,0.60)",
   backdropFilter: "blur(12px)",
   WebkitBackdropFilter: "blur(12px)",
-  border: "1px solid rgba(255,255,255,0.14)",
-  color: "#ffffff",
+  border: "1px solid rgba(0,0,0,0.15)",
+  color: "#000000",
   borderRadius: 10,
   padding: "8px 12px",
   fontSize: 13,
@@ -74,7 +74,7 @@ const COMERCIAL_CONFIG = {
 // ─── Modales (tema claro) ─────────────────────────────────────────────────────
 const modalBg = { background: "rgba(0,0,0,0.5)" };
 const modalPanel = { background: "rgba(15,22,32,0.85)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 20, padding: 24, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" };
-const li = { background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: "#ffffff", borderRadius: 10, padding: "8px 12px", fontSize: 13, width: "100%", outline: "none" };
+const li = { background: "rgba(255,255,255,0.60)", border: "1px solid rgba(0,0,0,0.15)", color: "#000000", borderRadius: 10, padding: "8px 12px", fontSize: 13, width: "100%", outline: "none" };
 
 function Badge({ text, color, bg, border }) {
   return (
@@ -1484,7 +1484,7 @@ export default function InventarioPage() {
             { label: "Reservados",       valor: reservados.length, color: "#fb923c", bg: "rgba(251,146,60,0.10)",  border: "rgba(251,146,60,0.30)" },
             { label: "Vendidos",         valor: vendidos.length,   color: "rgba(255,255,255,0.60)", bg: "rgba(255,255,255,0.07)", border: "rgba(255,255,255,0.14)" },
           ].map(m => (
-            <div key={m.label} style={{ background: m.bg, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${m.border}`, borderRadius: 12, padding: "14px 16px" }}>
+            <div key={m.label} style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${m.border}`, borderRadius: 12, padding: "14px 16px" }}>
               <p style={{ color: m.color, fontWeight: 800, fontSize: 28, margin: 0, lineHeight: 1 }}>{m.valor}</p>
               <p style={{ color: T.textSec, fontSize: 12, fontWeight: 600, marginTop: 4 }}>{m.label}</p>
               {m.sub && <p style={{ color: T.textLight, fontSize: 11, marginTop: 2 }}>{m.sub}</p>}
@@ -1494,7 +1494,7 @@ export default function InventarioPage() {
 
         {/* Formulario registrar */}
         {showForm && (
-          <form onSubmit={handleCreate} style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, marginBottom: 20 }}>
+          <form onSubmit={handleCreate} style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 16, padding: 20, marginBottom: 20 }}>
             <h3 style={{ color: T.text, fontWeight: 800, fontSize: 16, marginBottom: 16, marginTop: 0 }}>Nuevo Animal</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Arete/ID *</label><input required style={{ ...li, width: "100%" }} value={form.identificador} onChange={e => setForm({ ...form, identificador: e.target.value })} /></div>
@@ -1598,7 +1598,7 @@ export default function InventarioPage() {
             ) : (
               <>
                 {/* Tabla — escritorio */}
-                <div style={{ display: isMobile ? "none" : "block", background: "rgba(255,255,255,0.07)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
+                <div style={{ display: isMobile ? "none" : "block", background: "rgba(255,255,255,0.55)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 12, overflow: "hidden" }}>
                   <div style={{ overflowX: "auto" }}>
                     <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
                       <thead>
@@ -1682,7 +1682,7 @@ export default function InventarioPage() {
                     const cc = COMERCIAL_CONFIG[a.estadoComercial] || COMERCIAL_CONFIG.NO_DISPONIBLE;
                     return (
                       <div key={a.id} onClick={() => setAnimalSeleccionado(a)}
-                        style={{ background: "rgba(255,255,255,0.07)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1px solid ${T.border}`, borderRadius: 12, padding: 14, display: "flex", gap: 12, cursor: "pointer" }}>
+                        style={{ background: "rgba(255,255,255,0.55)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 12, padding: 14, display: "flex", gap: 12, cursor: "pointer" }}>
                         <div style={{ width: 56, height: 56, borderRadius: 10, overflow: "hidden", flexShrink: 0, background: T.border }}>
                           {foto ? <img src={foto} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
                             : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: T.textLight }}><IconAnimal /></div>}
@@ -1716,12 +1716,12 @@ export default function InventarioPage() {
                   {perPage > 0 && totalPags > 1 && (
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                       <button onClick={() => setPagina(p => Math.max(1, p - 1))} disabled={paginaActual === 1}
-                        style={{ background: "rgba(255,255,255,0.07)", border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 14px", color: T.textSec, fontSize: 13, cursor: "pointer", opacity: paginaActual === 1 ? 0.4 : 1 }}>
+                        style={{ background: "rgba(255,255,255,0.55)", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 8, padding: "6px 14px", color: "#000000", fontSize: 13, cursor: "pointer", opacity: paginaActual === 1 ? 0.4 : 1 }}>
                         Anterior
                       </button>
                       <span style={{ color: T.textSec, fontSize: 13 }}>{paginaActual} / {totalPags}</span>
                       <button onClick={() => setPagina(p => Math.min(totalPags, p + 1))} disabled={paginaActual === totalPags}
-                        style={{ background: "rgba(255,255,255,0.07)", border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 14px", color: T.textSec, fontSize: 13, cursor: "pointer", opacity: paginaActual === totalPags ? 0.4 : 1 }}>
+                        style={{ background: "rgba(255,255,255,0.55)", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 8, padding: "6px 14px", color: "#000000", fontSize: 13, cursor: "pointer", opacity: paginaActual === totalPags ? 0.4 : 1 }}>
                         Siguiente
                       </button>
                     </div>
