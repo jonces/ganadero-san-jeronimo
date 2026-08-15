@@ -123,9 +123,9 @@ app.listen(port, () => {
   // Migraciones DESPUÉS de que el servidor ya responde al healthcheck
   const { execSync } = require("child_process");
   try {
-    console.log("Corriendo migraciones Prisma...");
-    execSync("npx prisma migrate deploy", { stdio: "inherit" });
-    console.log("Migraciones completadas.");
+    console.log("Aplicando schema Prisma (db push)...");
+    execSync("npx prisma db push --accept-data-loss", { stdio: "inherit" });
+    console.log("Schema aplicado correctamente.");
   } catch (e) {
     console.error("Error en migraciones:", e.message);
   }
