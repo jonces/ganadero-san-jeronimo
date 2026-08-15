@@ -131,4 +131,24 @@ app.listen(port, () => {
   }
   corregirTiposDeMedia();
   limpiarAnimalesEliminados();
+  upgradeCrias();
+  // Re-chequear upgrades cada 24 horas
+  setInterval(upgradeCrias, 24 * 60 * 60 * 1000);
 });
+
+async function upgradeCrias() {
+  try {
+    const hace6Meses = new Date();
+    hace6Meses.setMonth(hace6Meses.getMonth() - 6);
+    const crias = await prisma.animal.findMany({
+      where: { categoria: "CRIA", fechaNacimiento: { lte: hace6Meses }, estado: "ACTIVO" },
+      select: { id: true, sexo: true, identificador: true },
+    });
+    for (const c of crias) {
+      const nuevaCategoria = c.sexo === "MACHO" ? "TERNERO" : "TERNERA";
+      await prisma.animal.update({ where: { id: c.id }, data: { categoria: nuevaCategoria } });
+      console.log(`Auto-upgrade: ${c.identificador} CRIA → ${nuevaCategoria}`);
+    }
+    if (crias.length > 0) console.log(`Upgrades de crías: ${crias.length} animales actualizados`);
+  } catch (e) { console.error("Error en upgradeCrias:", e.message); }
+}

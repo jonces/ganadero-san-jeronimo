@@ -8,7 +8,7 @@ export default function AnimalesPage() {
   const [animales, setAnimales] = useState([]);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ identificador: "", nombre: "", raza: "", sexo: "HEMBRA" });
+  const [form, setForm] = useState({ identificador: "", nombre: "", raza: "", sexo: "HEMBRA", categoria: "CRIA", fechaNacimiento: "" });
 
   async function load() {
     try {
@@ -30,7 +30,7 @@ export default function AnimalesPage() {
     e.preventDefault();
     try {
       await api("/animales", { method: "POST", body: form });
-      setForm({ identificador: "", nombre: "", raza: "", sexo: "HEMBRA" });
+      setForm({ identificador: "", nombre: "", raza: "", sexo: "HEMBRA", categoria: "CRIA", fechaNacimiento: "" });
       setShowForm(false);
       load();
     } catch (err) {
@@ -82,6 +82,21 @@ export default function AnimalesPage() {
               <option value="HEMBRA">🐄 Hembra</option>
               <option value="MACHO">🐂 Macho</option>
             </select>
+            <select className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-500 focus:outline-none"
+              value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })}>
+              <option value="CRIA">🐣 Cría (recién nacida)</option>
+              <option value="TERNERO">🐂 Ternero (macho, 6m-1año)</option>
+              <option value="TERNERA">🐄 Ternera (hembra, 6m-1año)</option>
+              <option value="NOVILLO">🐂 Novillo (macho, 1-2 años)</option>
+              <option value="NOVILLA">🐄 Novilla (hembra, 1-2 años)</option>
+              <option value="TORO">🐂 Toro (reproductor)</option>
+              <option value="VACA">🐄 Vaca (adulta)</option>
+              <option value="SEMENTAL">🐂 Semental</option>
+            </select>
+            <input className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-green-500 focus:outline-none"
+              type="date" placeholder="Fecha de nacimiento"
+              value={form.fechaNacimiento} onChange={(e) => setForm({ ...form, fechaNacimiento: e.target.value })} />
+            <p className="text-xs text-gray-400 -mt-1">📅 La fecha de nacimiento permite el cambio automático de Cría → Ternero/a al cumplir 6 meses</p>
             <button className="w-full text-white rounded-xl p-3 font-bold" style={{ background: "#2d9e3f" }}>
               Guardar Animal
             </button>

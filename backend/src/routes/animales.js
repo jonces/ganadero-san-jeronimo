@@ -52,7 +52,7 @@ router.get("/:id", async (req, res, next) => {
 
 router.post("/", async (req, res, next) => {
   try {
-    const { identificador, nombre, raza, fierro, sexo, fechaNacimiento, pesoActual, observacion, estadoReproductivo, madreId, potrero, costoCompra, origen } = req.body;
+    const { identificador, nombre, raza, fierro, sexo, fechaNacimiento, pesoActual, observacion, estadoReproductivo, madreId, potrero, costoCompra, origen, categoria } = req.body;
     if (!identificador || !sexo) return res.status(400).json({ error: "identificador y sexo son requeridos" });
 
     // Si existe un animal con el mismo identificador en estado no-activo, eliminarlo para permitir reutilizar el arete
@@ -83,6 +83,7 @@ router.post("/", async (req, res, next) => {
         potrero: potrero || null,
         costoCompra: costoCompra ? Number(costoCompra) : null,
         origen: origen || "FINCA",
+        categoria: categoria || null,
         ...(sexo === "HEMBRA" && estadoReproductivo ? { estadoReproductivo } : {}),
         ...(madreId ? { madreId } : {}),
         fincaId: req.user.fincaId,
@@ -114,7 +115,7 @@ router.patch("/:id", async (req, res, next) => {
     const animal = await prisma.animal.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
     if (!animal) return res.status(404).json({ error: "Animal no encontrado" });
 
-    const { nombre, raza, fierro, pesoActual, estado, estadoReproductivo, fechaParto, fechaSecado, madreId, observacion, fechaNacimiento, potrero, estadoComercial, costoCompra, precioVenta, enPlanVenta } = req.body;
+    const { nombre, raza, fierro, pesoActual, estado, estadoReproductivo, fechaParto, fechaSecado, madreId, observacion, fechaNacimiento, potrero, estadoComercial, costoCompra, precioVenta, enPlanVenta, categoria } = req.body;
 
     const str = (v) => (v === "" || v === undefined) ? null : v;
     const data = {};
@@ -130,6 +131,7 @@ router.patch("/:id", async (req, res, next) => {
     if (costoCompra !== undefined) data.costoCompra = costoCompra ? Number(costoCompra) : null;
     if (precioVenta !== undefined) data.precioVenta = precioVenta ? Number(precioVenta) : null;
     if (enPlanVenta !== undefined) data.enPlanVenta = Boolean(enPlanVenta);
+    if (categoria !== undefined) data.categoria = categoria || null;
     if (fechaParto !== undefined) data.fechaParto = fechaParto ? new Date(fechaParto) : null;
     if (fechaSecado !== undefined) data.fechaSecado = fechaSecado ? new Date(fechaSecado) : null;
 
