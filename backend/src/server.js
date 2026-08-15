@@ -25,6 +25,13 @@ const finanzasRoutes = require("./routes/finanzas");
 const insumosRoutes = require("./routes/insumos");
 const reproduccionRoutes = require("./routes/reproduccion");
 const cuentasPagarRoutes = require("./routes/cuentas-pagar");
+const cuentasFinancierasRoutes = require("./routes/cuentas-financieras");
+const movimientosFinancierosRoutes = require("./routes/movimientos-financieros");
+const activosFijosRoutes = require("./routes/activos-fijos");
+const prestamosRoutes = require("./routes/prestamos");
+const periodosFinancierosRoutes = require("./routes/periodos-financieros");
+const estadosFinancierosRoutes = require("./routes/estados-financieros");
+const informesFinancierosRoutes = require("./routes/informes-financieros");
 
 const app = express();
 app.use(cors());
@@ -56,6 +63,13 @@ app.use("/api/finanzas", finanzasRoutes);
 app.use("/api/insumos", insumosRoutes);
 app.use("/api/reproduccion", reproduccionRoutes);
 app.use("/api/cuentas-pagar", cuentasPagarRoutes);
+app.use("/api/cuentas-financieras", cuentasFinancierasRoutes);
+app.use("/api/movimientos-financieros", movimientosFinancierosRoutes);
+app.use("/api/activos-fijos", activosFijosRoutes);
+app.use("/api/prestamos", prestamosRoutes);
+app.use("/api/periodos-financieros", periodosFinancierosRoutes);
+app.use("/api/estados-financieros", estadosFinancierosRoutes);
+app.use("/api/informes-financieros", informesFinancierosRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err);

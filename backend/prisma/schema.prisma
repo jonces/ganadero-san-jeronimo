@@ -59,9 +59,9 @@ model Finca {
   tipoCambio          Float    @default(36.5)
   activa              Boolean  @default(true)
   plan                String   @default("GRATUITO")
-  precioLibra         Float    @default(85)    // C$ por libra de novillo
-  precioReproductora  Float    @default(29000) // C$ precio promedio de vaca/novilla de vientre
-  metaAnimales        Int      @default(150)   // meta de cabezas de base
+  precioLibra         Float    @default(85)
+  precioReproductora  Float    @default(29000)
+  metaAnimales        Int      @default(150)
   createdAt    DateTime @default(now())
 
   usuarios    Usuario[]
@@ -77,6 +77,15 @@ model Finca {
   proveedores      Proveedor[]
   cuentasPorPagar  CuentaPorPagar[]
   insumos          Insumo[]
+  cuentasFinancieras   CuentaFinanciera[]
+  movimientosFinancieros MovimientoFinanciero[]
+  transferenciasInternas TransferenciaInterna[]
+  activosFijos         ActivoFijo[]
+  valuaciones          ValuacionActivo[]
+  prestamos            Prestamo[]
+  periodosFinancieros  PeriodoFinanciero[]
+  informesFinancieros  InformeFinanciero[]
+  auditoriaFinanciera  AuditoriaFinanciera[]
 }
 
 model Usuario {
@@ -194,14 +203,15 @@ model Incidente {
 model Gasto {
   id           String   @id @default(uuid())
   descripcion  String
-  categoria    String   // ALIMENTACION, MEDICAMENTO, MANTENIMIENTO, SALARIO, COMBUSTIBLE, OTRO
+  categoria    String
   monto        Float
   moneda       String   @default("NIO")
-  periodicidad String   // DIARIO, SEMANAL, QUINCENAL, MENSUAL, UNICO
+  tipoCambio   Float?
+  periodicidad String
   fecha        DateTime @default(now())
   notas        String?
-  responsable  String?  // nombre libre del que paga o registra
-  receptor     String?  // nombre completo de quien recibe el pago (firma en comprobante)
+  responsable  String?
+  receptor     String?
   fincaId      String
   finca        Finca    @relation(fields: [fincaId], references: [id])
   usuarioId    String
@@ -411,7 +421,7 @@ model Insumo {
   fincaId     String
   finca       Finca    @relation(fields: [fincaId], references: [id])
   nombre      String
-  categoria   String   // MEDICAMENTO, ALIMENTO, EQUIPO, HERRAMIENTA, OTRO
+  categoria   String
   unidad      String
   stockActual Float    @default(0)
   stockMinimo Float    @default(0)
@@ -420,4 +430,253 @@ model Insumo {
   notas       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ─── MÓDULO FINANCIERO PROFESIONAL ───────────────────────────────────────────
+
+model CuentaFinanciera {
+  id             String   @id @default(cuid())
+  fincaId        String
+  finca          Finca    @relation(fields: [fincaId], references: [id])
+  nombre         String
+  tipo           String   // CAJA, CAJA_CHICA, BANCO
+  banco          String?
+  moneda         String   @default("NIO")
+  ultimosCuatro  String?
+  saldoInicial   Decimal  @default(0) @db.Decimal(15,2)
+  saldoActual    Decimal  @default(0) @db.Decimal(15,2)
+  estado         String   @default("ACTIVA")
+  notas          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  movimientos           MovimientoFinanciero[]
+  transferenciasOrigen  TransferenciaInterna[] @relation("CuentaOrigen")
+  transferenciasDestino TransferenciaInterna[] @relation("CuentaDestino")
+}
+
+model MovimientoFinanciero {
+  id            String   @id @default(cuid())
+  fincaId       String
+  finca         Finca    @relation(fields: [fincaId], references: [id])
+  cuentaId      String?
+  cuenta        CuentaFinanciera? @relation(fields: [cuentaId], references: [id])
+  tipo          String   // INGRESO, EGRESO
+  categoria     String?
+  concepto      String
+  monto         Decimal  @db.Decimal(15,2)
+  moneda        String   @default("NIO")
+  tipoCambio    Decimal? @db.Decimal(10,4)
+  montoNIO      Decimal? @db.Decimal(15,2)
+  fecha         DateTime @default(now())
+  referencia    String?
+  comprobante   String?
+  sourceType    String?  // VENTA, GASTO, COMPRA, CUENTA_POR_PAGAR, PAGO_PRESTAMO, TRANSFERENCIA, MANUAL
+  sourceId      String?
+  usuarioId     String
+  observaciones String?
+  anulado       Boolean  @default(false)
+  motivoAnulacion String?
+  createdAt     DateTime @default(now())
+
+  @@index([fincaId, fecha])
+  @@index([fincaId, sourceType, sourceId])
+}
+
+model TransferenciaInterna {
+  id               String   @id @default(cuid())
+  fincaId          String
+  finca            Finca    @relation(fields: [fincaId], references: [id])
+  cuentaOrigenId   String
+  cuentaOrigen     CuentaFinanciera @relation("CuentaOrigen", fields: [cuentaOrigenId], references: [id])
+  cuentaDestinoId  String
+  cuentaDestino    CuentaFinanciera @relation("CuentaDestino", fields: [cuentaDestinoId], references: [id])
+  monto            Decimal  @db.Decimal(15,2)
+  moneda           String   @default("NIO")
+  concepto         String?
+  fecha            DateTime @default(now())
+  usuarioId        String
+  createdAt        DateTime @default(now())
+}
+
+model ActivoFijo {
+  id                  String   @id @default(cuid())
+  fincaId             String
+  finca               Finca    @relation(fields: [fincaId], references: [id])
+  codigo              String?
+  nombre              String
+  categoria           String   // TERRENO, VEHICULO, MAQUINARIA, INFRAESTRUCTURA, EQUIPO, HERRAMIENTA, SISTEMA_SOLAR, CORRAL, BODEGA, OTRO
+  descripcion         String?
+  fechaAdquisicion    DateTime?
+  costoAdquisicion    Decimal? @db.Decimal(15,2)
+  monedaAdquisicion   String   @default("NIO")
+  valorActual         Decimal? @db.Decimal(15,2)
+  metodoValoracion    String?  // COSTO_HISTORICO, VALOR_MERCADO, PERICIAL
+  fechaUltimaValuacion DateTime?
+  estado              String   @default("ACTIVO") // ACTIVO, VENDIDO, BAJA
+  ubicacion           String?
+  proveedor           String?
+  numeroDocumento     String?
+  documentoUrl        String?
+  notas               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  valuaciones ValuacionActivo[]
+}
+
+model ValuacionActivo {
+  id            String     @id @default(cuid())
+  fincaId       String
+  finca         Finca      @relation(fields: [fincaId], references: [id])
+  activoId      String?
+  activo        ActivoFijo? @relation(fields: [activoId], references: [id])
+  tipo          String     // GANADO_HATO, ACTIVO_FIJO, ANIMAL_INDIVIDUAL
+  referenciaId  String?
+  fecha         DateTime   @default(now())
+  metodo        String     // PESO_PRECIO, VALOR_MERCADO, PERICIAL, COSTO_HISTORICO
+  valorAnterior Decimal?   @db.Decimal(15,2)
+  valorNuevo    Decimal    @db.Decimal(15,2)
+  moneda        String     @default("NIO")
+  supuestos     String?
+  notas         String?
+  usuarioId     String
+  esRealizada   Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+}
+
+model Prestamo {
+  id             String   @id @default(cuid())
+  fincaId        String
+  finca          Finca    @relation(fields: [fincaId], references: [id])
+  acreedor       String
+  institucion    String?
+  tipo           String   // HIPOTECARIO, PERSONAL, COMERCIAL, LINEA_CREDITO, OTRO
+  referencia     String?
+  fechaInicio    DateTime
+  montoOriginal  Decimal  @db.Decimal(15,2)
+  moneda         String   @default("NIO")
+  saldoActual    Decimal  @db.Decimal(15,2)
+  tasaInteres    Decimal? @db.Decimal(6,4)
+  tipoTasa       String?  // FIJA, VARIABLE
+  plazoMeses     Int?
+  cuotaMensual   Decimal? @db.Decimal(15,2)
+  frecuencia     String   @default("MENSUAL")
+  proximaCuota   DateTime?
+  vencimiento    DateTime?
+  garantia       String?
+  proposito      String?
+  estado         String   @default("ACTIVO") // ACTIVO, PAGADO, VENCIDO, REFINANCIADO, CANCELADO
+  documentoUrl   String?
+  notas          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  cuotas CuotaPrestamo[]
+
+  @@index([fincaId, estado])
+}
+
+model CuotaPrestamo {
+  id           String   @id @default(cuid())
+  prestamoId   String
+  prestamo     Prestamo @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
+  numeroCuota  Int
+  fechaVence   DateTime
+  capital      Decimal  @db.Decimal(15,2)
+  interes      Decimal  @db.Decimal(15,2)
+  otrosCargos  Decimal  @default(0) @db.Decimal(15,2)
+  total        Decimal  @db.Decimal(15,2)
+  saldo        Decimal  @db.Decimal(15,2)
+  estado       String   @default("PENDIENTE") // PENDIENTE, PAGADA, VENCIDA
+  fechaPago    DateTime?
+  createdAt    DateTime @default(now())
+}
+
+model PeriodoFinanciero {
+  id          String   @id @default(cuid())
+  fincaId     String
+  finca       Finca    @relation(fields: [fincaId], references: [id])
+  anio        Int
+  mes         Int
+  tipo        String   @default("MENSUAL") // MENSUAL, ANUAL
+  estado      String   @default("ABIERTO") // ABIERTO, CERRADO
+  ingresos    Decimal? @db.Decimal(15,2)
+  gastos      Decimal? @db.Decimal(15,2)
+  flujoNeto   Decimal? @db.Decimal(15,2)
+  activos     Decimal? @db.Decimal(15,2)
+  pasivos     Decimal? @db.Decimal(15,2)
+  patrimonio  Decimal? @db.Decimal(15,2)
+  cerradoPor  String?
+  cerradoEn   DateTime?
+  reabiertoPor String?
+  reabiertaEn  DateTime?
+  motivoReapertura String?
+  notas       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([fincaId, anio, mes, tipo])
+  @@index([fincaId, estado])
+}
+
+model InformeFinanciero {
+  id               String   @id @default(cuid())
+  fincaId          String
+  finca            Finca    @relation(fields: [fincaId], references: [id])
+  codigo           String   @unique
+  tipo             String   @default("EXPEDIENTE_BANCARIO")
+  empresa          String?
+  institucion      String?
+  montoSolicitado  Decimal? @db.Decimal(15,2)
+  monedaSolicitud  String   @default("NIO")
+  plazoMeses       Int?
+  destinoCredito   String?
+  periodoDesde     DateTime
+  periodoHasta     DateTime
+  moneda           String   @default("NIO")
+  documentosIncluidos Json?
+  parametros       Json?
+  estado           String   @default("BORRADOR") // BORRADOR, GENERADO, ANULADO
+  token            String   @unique @default(cuid())
+  usuarioId        String
+  generadoEn       DateTime?
+  anulado          Boolean  @default(false)
+  anuladoPor       String?
+  anuladoEn        DateTime?
+  motivoAnulacion  String?
+  createdAt        DateTime @default(now())
+
+  versiones VersionInforme[]
+
+  @@index([fincaId, estado])
+}
+
+model VersionInforme {
+  id         String   @id @default(cuid())
+  informeId  String
+  informe    InformeFinanciero @relation(fields: [informeId], references: [id])
+  version    Int
+  pdfUrl     String?
+  excelUrl   String?
+  snapshot   Json?
+  usuarioId  String
+  createdAt  DateTime @default(now())
+}
+
+model AuditoriaFinanciera {
+  id            String   @id @default(cuid())
+  fincaId       String
+  finca         Finca    @relation(fields: [fincaId], references: [id])
+  usuarioId     String
+  entidad       String
+  entidadId     String?
+  accion        String   // CREAR, MODIFICAR, ANULAR, CERRAR, REABRIR, GENERAR_INFORME
+  valorAnterior Json?
+  valorNuevo    Json?
+  motivo        String?
+  createdAt     DateTime @default(now())
+
+  @@index([fincaId, createdAt])
+  @@index([entidad, entidadId])
 }
