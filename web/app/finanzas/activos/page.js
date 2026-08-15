@@ -46,12 +46,12 @@ export default function ActivosPage() {
     setLoading(true);
     try {
       const [a, r, anim, f] = await Promise.all([
-        api("/activos-fijos"),
-        api("/activos-fijos/resumen/totales"),
+        api("/activos-fijos").catch(() => []),
+        api("/activos-fijos/resumen/totales").catch(() => null),
         api("/animales").catch(() => []),
         api("/fincas/mi-finca").catch(() => null),
       ]);
-      setActivos(a);
+      setActivos(Array.isArray(a) ? a : []);
       setResumen(r);
       setAnimales(Array.isArray(anim) ? anim.filter(x => x.estado === "ACTIVO") : []);
       setFinca(f);

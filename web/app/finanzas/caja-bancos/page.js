@@ -46,7 +46,7 @@ export default function CajaBancosPage() {
 
   async function cargar() {
     setLoading(true);
-    try { setCuentas(await api("/cuentas-financieras")); }
+    try { const r = await api("/cuentas-financieras").catch(()=>[]); setCuentas(Array.isArray(r)?r:[]); }
     catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }

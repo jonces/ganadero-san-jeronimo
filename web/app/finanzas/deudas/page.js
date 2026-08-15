@@ -29,11 +29,11 @@ export default function DeudasPage() {
     setLoading(true);
     try {
       const [p, r, c] = await Promise.all([
-        api("/prestamos"),
-        api("/prestamos/resumen/totales"),
+        api("/prestamos").catch(() => []),
+        api("/prestamos/resumen/totales").catch(() => null),
         api("/cuentas-financieras").catch(() => []),
       ]);
-      setPrestamos(p);
+      setPrestamos(Array.isArray(p) ? p : []);
       setResumen(r);
       setCuentas(c);
     } catch (e) { setError(e.message); }
