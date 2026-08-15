@@ -27,6 +27,7 @@ const DOCUMENTOS_SUGERIDOS = [
 
 export default function ExpedientePage() {
   const [paso, setPaso] = useState(0);
+  const [dbListo, setDbListo] = useState(true);
   const [informes, setInformes] = useState([]);
   const [loadingInformes, setLoadingInformes] = useState(true);
   const [enviando, setEnviando] = useState(false);
@@ -55,7 +56,10 @@ export default function ExpedientePage() {
 
   useEffect(() => {
     Promise.all([
-      api("/informes-financieros").then(setInformes).catch(()=>[]),
+      api("/informes-financieros").then(setInformes).catch(e => {
+        setInformes([]);
+        if (e?.message?.includes("does not exist")) setDbListo(false);
+      }),
       api("/estados-financieros/resumen").then(setBalance).catch(()=>null),
     ]).finally(() => setLoadingInformes(false));
   }, []);
@@ -98,6 +102,12 @@ export default function ExpedientePage() {
   return (
     <div>
       {error && <div style={{ background:"#fee2e2", color:"#dc2626", borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:13 }}>{error}<button onClick={()=>setError("")} style={{ float:"right", background:"none", border:"none", cursor:"pointer", color:"#dc2626" }}>✕</button></div>}
+
+      {!dbListo && (
+        <div style={{ background:"rgba(254,243,199,0.90)", border:"1px solid #fcd34d", borderRadius:10, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#92400e" }}>
+          ⏳ <strong>Base de datos actualizando…</strong> El servidor está aplicando las tablas nuevas (1-3 min). Puedes llenar el formulario mientras esperas — al hacer clic en "Crear borrador" se guardará cuando esté listo. Recarga la página en unos minutos.
+        </div>
+      )}
 
       {/* Balance rápido */}
       {balance && (

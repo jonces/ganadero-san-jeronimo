@@ -21,7 +21,7 @@ export default function CierresPage() {
 
   async function cargar() {
     setLoading(true);
-    try { setPeriodos(await api("/periodos-financieros")); }
+    try { const r = await api("/periodos-financieros").catch(()=>[]); setPeriodos(Array.isArray(r)?r:[]); }
     catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }
