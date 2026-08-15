@@ -2,6 +2,114 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 
+async function generarPDF(inf, balance) {
+  const { jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+  const doc = new jsPDF({ orientation:"portrait", unit:"mm", format:"letter" });
+  const W = doc.internal.pageSize.getWidth();
+  const fmt = (v) => v != null ? "C$ " + Number(v).toLocaleString("es-NI", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
+  const hoy = new Date().toLocaleDateString("es-NI", { year:"numeric", month:"long", day:"numeric" });
+
+  // Header
+  doc.setFillColor(29, 78, 216);
+  doc.rect(0, 0, W, 28, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16); doc.setFont("helvetica","bold");
+  doc.text("EXPEDIENTE FINANCIERO BANCARIO", 14, 12);
+  doc.setFontSize(9); doc.setFont("helvetica","normal");
+  doc.text("Henriquez Cattle Management — Sistema Financiero Ganadero", 14, 19);
+  doc.text(`ganaderosg.app`, W - 14, 19, { align:"right" });
+
+  // Código y fecha
+  doc.setTextColor(30, 30, 30);
+  doc.setFontSize(10); doc.setFont("helvetica","bold");
+  doc.text(`Código: ${inf.codigo}`, 14, 36);
+  doc.setFont("helvetica","normal"); doc.setFontSize(9);
+  doc.text(`Fecha de emisión: ${hoy}`, 14, 42);
+  doc.text(`Empresa: ${inf.empresa || "Henriquez Cattle Management"}`, 14, 48);
+  if (inf.institucion) doc.text(`Institución destino: ${inf.institucion}`, 14, 54);
+  doc.text(`Tipo: ${inf.tipo?.replace(/_/g," ")}`, W - 14, 42, { align:"right" });
+  doc.text(`Estado: ${inf.estado}`, W - 14, 48, { align:"right" });
+  if (inf.montoSolicitado) doc.text(`Monto solicitado: ${fmt(inf.montoSolicitado)}`, W - 14, 54, { align:"right" });
+
+  let y = inf.institucion ? 62 : 58;
+
+  // Período
+  if (inf.periodoDesde || inf.periodoHasta) {
+    doc.setFontSize(9);
+    const desde = inf.periodoDesde ? new Date(inf.periodoDesde).toLocaleDateString("es-NI") : "";
+    const hasta = inf.periodoHasta ? new Date(inf.periodoHasta).toLocaleDateString("es-NI") : "";
+    doc.text(`Período analizado: ${desde} al ${hasta}`, 14, y); y += 8;
+  }
+
+  // Línea divisoria
+  doc.setDrawColor(200,200,200); doc.line(14, y, W - 14, y); y += 6;
+
+  // Situación financiera
+  if (balance) {
+    doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(29,78,216);
+    doc.text("SITUACIÓN FINANCIERA", 14, y); y += 6;
+    doc.setTextColor(30,30,30);
+    autoTable(doc, {
+      startY: y,
+      margin: { left:14, right:14 },
+      head: [["Concepto","Valor"]],
+      body: [
+        ["Total de activos", fmt(balance.totalActivos)],
+        ["Activos en caja y bancos", fmt((balance.caja||0)+(balance.bancos||0))],
+        ["Activos fijos", fmt(balance.activosFijos)],
+        ["Activos biológicos (ganado)", fmt(balance.valorGanado)],
+        ["Total de pasivos", fmt(balance.totalPasivos)],
+        ["Patrimonio neto", fmt(balance.patrimonioNeto)],
+        ["Deudas activas", fmt(balance.totalDeudas)],
+      ],
+      headStyles: { fillColor:[29,78,216], textColor:255, fontStyle:"bold", fontSize:9 },
+      bodyStyles: { fontSize:9 },
+      alternateRowStyles: { fillColor:[240,245,255] },
+      columnStyles: { 1: { halign:"right", fontStyle:"bold" } },
+    });
+    y = doc.lastAutoTable.finalY + 8;
+  }
+
+  // Documentos incluidos
+  const docs = inf.documentosIncluidos || inf.versiones?.[0]?.snapshot?.documentos || [];
+  if (docs.length > 0) {
+    doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(29,78,216);
+    doc.text("DOCUMENTOS INCLUIDOS", 14, y); y += 6;
+    doc.setTextColor(30,30,30);
+    autoTable(doc, {
+      startY: y,
+      margin: { left:14, right:14 },
+      head: [["#","Documento"]],
+      body: docs.map((d, i) => [i+1, d]),
+      headStyles: { fillColor:[29,78,216], textColor:255, fontStyle:"bold", fontSize:9 },
+      bodyStyles: { fontSize:9 },
+    });
+    y = doc.lastAutoTable.finalY + 8;
+  }
+
+  // QR / token de verificación
+  if (y > 230) { doc.addPage(); y = 20; }
+  doc.setFillColor(240,253,244); doc.roundedRect(14, y, W-28, 22, 3, 3, "F");
+  doc.setFontSize(9); doc.setFont("helvetica","bold"); doc.setTextColor(21,128,61);
+  doc.text("VERIFICACIÓN DE AUTENTICIDAD", 18, y+7);
+  doc.setFont("helvetica","normal"); doc.setTextColor(30,30,30);
+  doc.text(`Token: ${inf.token}`, 18, y+13);
+  doc.text(`Verificar en: ganaderosg.app/verify/report/${inf.token}`, 18, y+19);
+  y += 30;
+
+  // Pie de página
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7); doc.setTextColor(150,150,150); doc.setFont("helvetica","normal");
+    doc.text(`${inf.codigo} — Generado el ${hoy} — Página ${i} de ${totalPages}`, W/2, 272, { align:"center" });
+    doc.text("Este documento es confidencial y fue generado por ganaderosg.app", W/2, 276, { align:"center" });
+  }
+
+  doc.save(`${inf.codigo}-expediente.pdf`);
+}
+
 const cardGlass = { background:"rgba(255,255,255,0.55)", backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)", border:"1px solid rgba(0,0,0,0.10)", borderRadius:14, padding:"16px 20px", marginBottom:16 };
 const inputS = { background:"rgba(255,255,255,0.70)", border:"1px solid rgba(0,0,0,0.15)", borderRadius:8, padding:"8px 12px", fontSize:13, color:"#111", outline:"none", width:"100%", boxSizing:"border-box" };
 const labelS = { fontSize:11, color:"#6b7280", fontWeight:600, display:"block", marginBottom:4 };
@@ -238,8 +346,17 @@ export default function ExpedientePage() {
                     <div style={{ fontSize:11, color:"#6b7280" }}>La institución puede verificar la autenticidad del informe en: <strong>/verify/report/{informeGenerado.token}</strong></div>
                   </div>
                 )}
-                <div style={{ fontSize:12, color:"#6b7280" }}>
-                  💡 La generación de PDF con firma digital y el envío de Excel están disponibles en la próxima versión. El snapshot financiero fue guardado con este expediente.
+                <div style={{ display:"flex", gap:8, marginTop:8, flexWrap:"wrap" }}>
+                  <button onClick={() => generarPDF(informeGenerado, balance)}
+                    style={{ padding:"10px 20px", background:"#1d4ed8", color:"#fff", border:"none", borderRadius:8, fontWeight:700, fontSize:13, cursor:"pointer" }}>
+                    ⬇ Descargar PDF
+                  </button>
+                  {informeGenerado.token && (
+                    <button onClick={() => window.open(`/verify/report/${informeGenerado.token}`, "_blank")}
+                      style={{ padding:"10px 16px", background:"rgba(255,255,255,0.60)", border:"1px solid rgba(0,0,0,0.15)", borderRadius:8, fontWeight:600, fontSize:13, cursor:"pointer", color:"#374151" }}>
+                      🔗 Ver verificación
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -251,13 +368,16 @@ export default function ExpedientePage() {
               <div style={{ fontWeight:700, fontSize:13, color:"#111", marginBottom:12 }}>Expedientes anteriores</div>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {informes.slice(0,5).map(inf => (
-                  <div key={inf.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px", background:"rgba(255,255,255,0.40)", borderRadius:8, border:"1px solid rgba(0,0,0,0.08)", fontSize:12 }}>
+                  <div key={inf.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px", background:"rgba(255,255,255,0.40)", borderRadius:8, border:"1px solid rgba(0,0,0,0.08)", fontSize:12, flexWrap:"wrap", gap:8 }}>
                     <div>
                       <span style={{ fontWeight:700, fontFamily:"monospace", color:"#111" }}>{inf.codigo}</span>
                       <span style={{ marginLeft:10, color:"#6b7280" }}>{inf.tipo?.replace(/_/g," ")}</span>
                       {inf.empresa && <span style={{ marginLeft:10, color:"#374151" }}>{inf.empresa}</span>}
                     </div>
-                    <span style={{ fontWeight:700, fontSize:11, background:inf.estado==="GENERADO"?"#dcfce7":inf.estado==="BORRADOR"?"#fef3c7":"#fee2e2", color:inf.estado==="GENERADO"?"#15803d":inf.estado==="BORRADOR"?"#92400e":"#dc2626", padding:"2px 8px", borderRadius:20 }}>{inf.estado}</span>
+                    <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                      <span style={{ fontWeight:700, fontSize:11, background:inf.estado==="GENERADO"?"#dcfce7":inf.estado==="BORRADOR"?"#fef3c7":"#fee2e2", color:inf.estado==="GENERADO"?"#15803d":inf.estado==="BORRADOR"?"#92400e":"#dc2626", padding:"2px 8px", borderRadius:20 }}>{inf.estado}</span>
+                      {inf.estado === "GENERADO" && <button onClick={() => generarPDF(inf, balance)} style={{ padding:"4px 10px", background:"#1d4ed8", color:"#fff", border:"none", borderRadius:6, fontWeight:700, fontSize:11, cursor:"pointer" }}>⬇ PDF</button>}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -271,12 +391,28 @@ export default function ExpedientePage() {
         <div style={{ ...cardGlass, marginTop:24 }}>
           <div style={{ fontWeight:700, fontSize:13, color:"#111", marginBottom:12 }}>Expedientes generados</div>
           {informes.map(inf => (
-            <div key={inf.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 12px", background:"rgba(255,255,255,0.40)", borderRadius:8, border:"1px solid rgba(0,0,0,0.08)", marginBottom:6, fontSize:12 }}>
+            <div key={inf.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 14px", background:"rgba(255,255,255,0.50)", borderRadius:10, border:"1px solid rgba(0,0,0,0.10)", marginBottom:8, gap:10, flexWrap:"wrap" }}>
               <div>
-                <span style={{ fontWeight:700, fontFamily:"monospace", color:"#111" }}>{inf.codigo}</span>
-                <span style={{ marginLeft:10, color:"#6b7280" }}>{inf.tipo?.replace(/_/g," ")}</span>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontWeight:800, fontFamily:"monospace", color:"#111", fontSize:13 }}>{inf.codigo}</span>
+                  <span style={{ fontWeight:700, fontSize:11, background:inf.estado==="GENERADO"?"#dcfce7":inf.estado==="BORRADOR"?"#fef3c7":"#fee2e2", color:inf.estado==="GENERADO"?"#15803d":inf.estado==="BORRADOR"?"#92400e":"#dc2626", padding:"2px 8px", borderRadius:20 }}>{inf.estado}</span>
+                </div>
+                <div style={{ fontSize:11, color:"#6b7280", marginTop:2 }}>{inf.tipo?.replace(/_/g," ")}{inf.empresa ? ` · ${inf.empresa}` : ""}{inf.institucion ? ` → ${inf.institucion}` : ""}</div>
               </div>
-              <span style={{ fontWeight:700, fontSize:11, background:inf.estado==="GENERADO"?"#dcfce7":inf.estado==="BORRADOR"?"#fef3c7":"#fee2e2", color:inf.estado==="GENERADO"?"#15803d":inf.estado==="BORRADOR"?"#92400e":"#dc2626", padding:"2px 8px", borderRadius:20 }}>{inf.estado}</span>
+              <div style={{ display:"flex", gap:6 }}>
+                {inf.estado === "GENERADO" && (
+                  <button onClick={() => generarPDF(inf, balance)}
+                    style={{ padding:"7px 14px", background:"#1d4ed8", color:"#fff", border:"none", borderRadius:8, fontWeight:700, fontSize:12, cursor:"pointer" }}>
+                    ⬇ Descargar PDF
+                  </button>
+                )}
+                {inf.token && (
+                  <button onClick={() => window.open(`/verify/report/${inf.token}`, "_blank")}
+                    style={{ padding:"7px 14px", background:"rgba(255,255,255,0.60)", border:"1px solid rgba(0,0,0,0.15)", borderRadius:8, fontWeight:600, fontSize:12, cursor:"pointer", color:"#374151" }}>
+                    🔗 Verificar
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
