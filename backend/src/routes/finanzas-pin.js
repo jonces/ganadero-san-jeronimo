@@ -25,7 +25,7 @@ router.post("/verificar", requireAuth, async (req, res) => {
 // Cambiar PIN — solo ADMIN
 router.post("/cambiar", requireAuth, async (req, res) => {
   try {
-    if (req.user.role !== "ADMIN") return res.status(403).json({ error: "Solo el Gerente General puede cambiar el PIN" });
+    if (req.user.cargo !== "GERENTE_GENERAL" && req.user.role !== "SUPER_ADMIN") return res.status(403).json({ error: "Solo el Gerente General puede cambiar el PIN" });
     const { pin } = req.body;
     if (!pin || !/^\d{6}$/.test(pin)) return res.status(400).json({ error: "El nuevo PIN debe ser exactamente 6 dígitos numéricos" });
     await prisma.finca.update({ where: { id: req.user.fincaId }, data: { finanzasPin: pin } });
@@ -38,7 +38,7 @@ router.post("/cambiar", requireAuth, async (req, res) => {
 // Obtener estado del PIN (si está configurado o no) — solo ADMIN
 router.get("/estado", requireAuth, async (req, res) => {
   try {
-    if (req.user.role !== "ADMIN") return res.status(403).json({ error: "Acceso denegado" });
+    if (req.user.cargo !== "GERENTE_GENERAL" && req.user.role !== "SUPER_ADMIN") return res.status(403).json({ error: "Acceso denegado" });
     const finca = await prisma.finca.findUnique({ where: { id: req.user.fincaId }, select: { finanzasPin: true } });
     res.json({ configurado: !!finca?.finanzasPin });
   } catch (e) {

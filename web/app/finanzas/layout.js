@@ -231,7 +231,7 @@ export default function FinanzasLayout({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const [pinOk, setPinOk] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isGerenteGeneral, setIsGerenteGeneral] = useState(false);
   const [checking, setChecking] = useState(true);
   const activeTab = TABS.find(t => pathname.startsWith(t.path))?.key || "resumen";
 
@@ -243,10 +243,8 @@ export default function FinanzasLayout({ children }) {
       const token = sessionStorage.getItem("token");
       if (token) {
         const payload = JSON.parse(atob(token.split(".")[1]));
-        setIsAdmin(payload.role === "ADMIN");
-        // Si es ADMIN y no hay PIN configurado, dar acceso directo
-        if (payload.role === "ADMIN" && ok) setPinOk(true);
-        else if (ok) setPinOk(true);
+        setIsGerenteGeneral(payload.cargo === "GERENTE_GENERAL" || payload.role === "SUPER_ADMIN");
+        if (ok) setPinOk(true);
       }
     } catch {}
     setChecking(false);
@@ -257,7 +255,7 @@ export default function FinanzasLayout({ children }) {
   return (
     <AppLayout title="Finanzas" subtitle="SISTEMA FINANCIERO GANADERO">
       {!pinOk && (
-        <PinModal onSuccess={() => setPinOk(true)} isAdmin={isAdmin} />
+        <PinModal onSuccess={() => setPinOk(true)} isAdmin={isGerenteGeneral} />
       )}
       {/* Navegación interna */}
       <div style={{
