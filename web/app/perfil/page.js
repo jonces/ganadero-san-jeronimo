@@ -27,6 +27,7 @@ export default function PerfilPage() {
   const [guardandoPass, setGuardandoPass] = useState(false);
   const [msgPass, setMsgPass] = useState("");
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [fotoZoom, setFotoZoom] = useState(false);
   const fotoInputRef = useRef(null);
 
   useEffect(() => {
@@ -88,7 +89,6 @@ export default function PerfilPage() {
   );
 
   const inicial = perfil.nombre?.charAt(0).toUpperCase();
-  const [fotoZoom, setFotoZoom] = useState(false);
 
   return (
     <AppLayout title="Mi Perfil" subtitle="Datos de tu cuenta">
