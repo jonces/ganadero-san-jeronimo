@@ -242,23 +242,81 @@ export default function CartaVentaPage() {
 
   // ── CARTA ──
   const a = venta.animal || {};
-  const fotoAnimal = a.media?.find(m => m.tipo === "FOTO")?.url;
-  const fechaVenta = new Date(venta.fecha).toLocaleDateString("es-NI", { day: "numeric", month: "long", year: "numeric" });
-  const numCarta = `CV-${venta.id.slice(-8).toUpperCase()}`;
-  const tipoLabel = venta.tipoVenta === "EN_PIE" ? "En Pie" : "Por Destace";
+  const esPorPeso = venta.tipoVenta === "POR_PESO";
   const esPagado = venta.estadoPago === "PAGADO";
   const esParcial = venta.estadoPago === "PARCIAL";
-  const fechaLimiteStr = q.fechaLimite ? new Date(q.fechaLimite + "T12:00:00").toLocaleDateString("es-NI", { day: "numeric", month: "long", year: "numeric" }) : "___________________";
-  // Usar precioTotal del cuestionario si fue ingresado, si no el registrado en el sistema
+  const fotoAnimal = a.media?.find(m => m.tipo === "FOTO")?.url;
+  const fechaVenta = new Date(venta.fecha).toLocaleDateString("es-NI", { day: "numeric", month: "long", year: "numeric" });
+  const tc = venta.tipoCambio || 36.5;
   const precioTotalNum = Number(q.precioTotal || venta.precioNIO);
   const montoInicialNum = Number(q.montoInicial || 0);
   const saldoNum = precioTotalNum - montoInicialNum;
   const precioTotalFmt = fmt(precioTotalNum);
   const montoInicialFmt = fmt(montoInicialNum);
   const saldoFmt = fmt(saldoNum);
-  // USD aproximado usando tipo de cambio registrado
-  const tc = venta.tipoCambio || 36.5;
   const precioTotalUSD = fmt(precioTotalNum / tc);
+  const fechaLimiteStr = q.fechaLimite ? new Date(q.fechaLimite + "T12:00:00").toLocaleDateString("es-NI", { day: "numeric", month: "long", year: "numeric" }) : "___________________";
+
+  const numCarta = venta.numeroCarta
+    ? `CV-${new Date(venta.fecha).getFullYear()}-${String(venta.numeroCarta).padStart(6, "0")}`
+    : `CV-${venta.id.slice(-8).toUpperCase()}`;
+
+  const metodoPagoLabel = { EFECTIVO: "Efectivo", TRANSFERENCIA: "Transferencia bancaria", CHEQUE: "Cheque", CREDITO: "Crédito" }[venta.metodoPago] || venta.metodoPago;
+  const estadoPagoLabel = esPagado ? "Pagado en su totalidad" : esParcial ? "Pago parcial" : "Pendiente de pago";
+
+  const rendimientoStr = venta.pesoVivo && venta.pesoKg
+    ? `${((venta.pesoKg / venta.pesoVivo) * 100).toFixed(2)}%`
+    : "No disponible";
+
+  function categoriaDisplay(an) {
+    if (an.categoria) {
+      const map = { CRIA: "Cría", TERNERO: "Ternero", TERNERA: "Ternera", TORO: "Toro", VACA: "Vaca", SEMENTAL: "Semental" };
+      return map[an.categoria] || an.categoria;
+    }
+    if (!an.fechaNacimiento) return an.sexo === "HEMBRA" ? "Vaca" : "Toro";
+    const meses = Math.floor((Date.now() - new Date(an.fechaNacimiento)) / (1000 * 60 * 60 * 24 * 30));
+    if (meses < 6) return "Cría";
+    if (an.sexo === "HEMBRA") return meses < 24 ? "Ternera" : "Vaca";
+    return meses < 24 ? "Ternero" : "Toro";
+  }
+  function edadDisplay(an) {
+    if (!an.fechaNacimiento) return "No registrada";
+    const meses = Math.floor((Date.now() - new Date(an.fechaNacimiento)) / (1000 * 60 * 60 * 24 * 30));
+    if (meses < 12) return `${meses} meses`;
+    const años = Math.floor(meses / 12);
+    return `${años} año${años !== 1 ? "s" : ""}`;
+  }
+
+  // Color palette based on tipoVenta
+  const C = esPorPeso ? {
+    primary: "#4E1D0E",
+    secondary: "#784212",
+    accent: "#D4AC0D",
+    light: "#FDF3E7",
+    sectionBar: "#4E1D0E",
+    badgeBg: "#784212",
+    badgeText: "#F9E79F",
+    border: "#F0D9B5",
+  } : {
+    primary: "#145A32",
+    secondary: "#1E8449",
+    accent: "#D4AC0D",
+    light: "#E9F7EF",
+    sectionBar: "#145A32",
+    badgeBg: "#145A32",
+    badgeText: "#F9E79F",
+    border: "#AED6F1",
+  };
+
+  function SectionTitle({ num, title }) {
+    return (
+      <div style={{ background: C.sectionBar, color: "#fff", padding: "6px 28px", marginBottom: 0 }}>
+        <p style={{ fontSize: 11, fontWeight: 900, letterSpacing: 1.5, fontFamily: "sans-serif", margin: 0 }}>
+          {num}. {title.toUpperCase()}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -274,349 +332,352 @@ export default function CartaVentaPage() {
           : <p className="text-green-600 text-sm font-bold">✅ Documento firmado y listo</p>}
         <button onClick={() => window.print()}
           className="px-5 py-2 rounded-lg text-sm font-black text-white flex items-center gap-2"
-          style={{ background: firmado ? "#145A32" : "#9ca3af" }}>
+          style={{ background: firmado ? C.primary : "#9ca3af" }}>
           🖨️ Imprimir / PDF
         </button>
       </div>
 
-      {/* Documento */}
-      <div className="min-h-screen bg-gray-100 pt-16 print:pt-0 print:bg-white pb-8 print:pb-0">
-        <div className="max-w-[800px] mx-auto bg-white shadow-2xl print:shadow-none print:max-w-full" style={{ fontFamily: "'Georgia', serif" }}>
+      {/* Panel firma (print:hidden) */}
+      {!firmado && (
+        <div className="print:hidden fixed bottom-0 left-0 right-0 z-40 p-4 border-t border-green-200"
+          style={{ background: "#f0fdf4" }}>
+          <p className="text-sm font-bold mb-2" style={{ color: C.primary }}>✍️ Firma del Vendedor — dibuja tu firma aquí:</p>
+          <canvas ref={canvasRef} width={600} height={80}
+            className="bg-white rounded-lg border w-full touch-none cursor-crosshair"
+            style={{ maxHeight: 80, borderColor: C.secondary }}
+            onMouseDown={onStart} onMouseMove={onMove} onMouseUp={onEnd} onMouseLeave={onEnd}
+            onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd}
+          />
+          <div className="flex gap-2 mt-2">
+            <button onClick={limpiarFirma} className="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-white border border-gray-300">🗑️ Limpiar</button>
+            {hayFirma && <button onClick={confirmarFirma} className="px-4 py-1.5 rounded-lg text-xs font-black text-white" style={{ background: C.primary }}>✅ Confirmar firma</button>}
+          </div>
+        </div>
+      )}
 
-          {/* Encabezado */}
-          <div className="px-10 py-6" style={{ background: "linear-gradient(135deg,#145A32,#1E8449)" }}>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div style={{ position: "relative", width: 80, height: 64, overflow: "hidden" }}>
-                  <img src="/logo-base.jpg" alt="Logo" style={{ width: 80, height: "auto", objectFit: "cover", objectPosition: "top", display: "block" }} />
-                </div>
+      {/* Documento */}
+      <div className="min-h-screen bg-gray-100 pt-16 print:pt-0 print:bg-white pb-32 print:pb-0">
+        <div className="max-w-[816px] mx-auto bg-white shadow-2xl print:shadow-none">
+
+          {/* ENCABEZADO */}
+          <div style={{ background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`, padding: "16px 28px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <img src="/logo-base.jpg" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8, border: "2px solid rgba(255,255,255,0.3)" }} alt="Logo" />
                 <div>
-                  <p className="text-green-200 text-xs font-sans tracking-widest uppercase mb-1">Gestión Ganadera</p>
-                  <h1 className="text-white font-black text-3xl font-sans">{venta.finca?.nombre || "Finca Ganadera"}</h1>
-                  {venta.finca?.ubicacion && <p className="text-green-300 text-sm mt-1 font-sans">{venta.finca.ubicacion}</p>}
+                  <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 9, letterSpacing: 3, textTransform: "uppercase", fontFamily: "sans-serif", margin: 0 }}>GESTIÓN GANADERA</p>
+                  <h1 style={{ color: "#fff", fontSize: 26, fontWeight: 900, margin: "2px 0", fontFamily: "sans-serif" }}>{venta.finca?.nombre || "GANADERÍA"}</h1>
+                  <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, fontFamily: "sans-serif", margin: 0 }}>📍 {venta.finca?.ubicacion || "Nicaragua"}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-green-200 text-xs font-sans">No. de Carta</p>
-                <p className="text-white font-black text-xl font-sans">{numCarta}</p>
-                <p className="text-green-200 text-xs font-sans mt-1">{fechaVenta}</p>
+              <div style={{ textAlign: "right" }}>
+                <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 9, fontFamily: "sans-serif", margin: "0 0 4px" }}>No. de Carta</p>
+                <div style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.5)", borderRadius: 6, padding: "6px 14px", display: "inline-block" }}>
+                  <p style={{ color: "#fff", fontWeight: 900, fontSize: 15, fontFamily: "monospace", margin: 0 }}>{numCarta}</p>
+                </div>
+                <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, fontFamily: "sans-serif", margin: "6px 0 0" }}>Fecha: {fechaVenta}</p>
               </div>
             </div>
           </div>
 
-          {/* Título */}
-          <div className="text-center py-5 border-b-2" style={{ borderColor: "#145A32" }}>
-            <h2 className="text-2xl font-black tracking-wide font-sans" style={{ color: "#145A32" }}>
+          {/* TÍTULO Y BADGE */}
+          <div style={{ textAlign: "center", padding: "16px 28px 12px", borderBottom: `2px solid ${C.primary}` }}>
+            <h2 style={{ color: C.primary, fontSize: 20, fontWeight: 900, letterSpacing: 2, fontFamily: "sans-serif", margin: "0 0 8px" }}>
               CARTA DE VENTA DE GANADO
             </h2>
-            <p className="text-gray-500 text-sm mt-1 font-sans">
-              {esPagado ? "Documento Legal de Transferencia de Propiedad"
-                : esParcial ? "Documento de Compraventa con Pago Parcial"
-                : "Promesa de Compraventa — Pago Pendiente"}
+            <div style={{ display: "inline-block", background: C.sectionBar, color: C.badgeText, padding: "4px 20px", borderRadius: 20, fontSize: 11, fontWeight: 900, fontFamily: "sans-serif", letterSpacing: 1, marginBottom: 8 }}>
+              {esPorPeso ? "VENTA POR PESO (DESTAZADO)" : "VENTA EN PIE"}
+            </div>
+            <p style={{ color: "#666", fontSize: 11, fontFamily: "sans-serif", margin: 0 }}>
+              {esPorPeso ? "Documento de Compraventa y Liquidación por Peso" : "Documento de Compraventa y Transferencia de Ganado"}
             </p>
-            {q.lugar && <p className="text-gray-400 text-xs mt-0.5 font-sans">{q.lugar}</p>}
+            {q.lugar && <p style={{ color: "#999", fontSize: 10, fontFamily: "sans-serif", margin: "4px 0 0" }}>{q.lugar}</p>}
           </div>
 
-          <div className="px-10 py-6 space-y-6">
+          {/* PÁRRAFO INTRODUCTORIO */}
+          <div style={{ padding: "12px 28px", background: C.light, borderBottom: `1px solid ${C.border}` }}>
+            <p style={{ fontSize: 10.5, lineHeight: 1.6, color: "#333", fontFamily: "Georgia, serif", margin: 0 }}>
+              {esPagado && <>
+                Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
+                en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
+                declaro haber recibido del señor(a) <strong>{venta.comprador || "___________________"}</strong>,
+                en concepto de compraventa la cantidad de <strong>C$ {fmt(venta.precioNIO)} córdobas netos (USD ${fmt(venta.precioUSD)})</strong>,
+                de los cuales me doy por bien pagado y satisfecho, otorgando a favor del comprador la presente carta de venta, libre de todo gravamen.
+              </>}
+              {esParcial && <>
+                Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
+                en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
+                y el señor(a) <strong>{venta.comprador || "___________________"}</strong>, en calidad de comprador,
+                hacemos constar que hemos acordado la venta del referido animal por la suma total de{" "}
+                <strong>C$ {precioTotalFmt} (equivalente a USD ${precioTotalUSD} al tipo de cambio de C$ {tc} por dólar)</strong>.
+                El comprador ha entregado un abono inicial de <strong>C$ {montoInicialFmt}</strong>, quedando un saldo pendiente de{" "}
+                <strong>C$ {saldoFmt}</strong> que deberá ser cancelado a más tardar el día <strong>{fechaLimiteStr}</strong>,
+                mediante {FORMAS[q.formaPagoSaldo] || "la forma de pago acordada"}{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : ""}.
+              </>}
+              {!esPagado && !esParcial && <>
+                Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
+                en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
+                y el señor(a) <strong>{venta.comprador || "___________________"}</strong>, en calidad de comprador,
+                suscribimos la presente promesa de compraventa por la suma total acordada de{" "}
+                <strong>C$ {precioTotalFmt} (equivalente a USD ${precioTotalUSD} al tipo de cambio de C$ {tc} por dólar)</strong>,
+                monto que el comprador se compromete a cancelar en su totalidad a más tardar el día{" "}
+                <strong>{fechaLimiteStr}</strong>, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}
+                {q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : ""}.
+                Hasta tanto no se efectúe el pago total, la propiedad legal del animal permanece a nombre del vendedor.
+              </>}
+            </p>
+          </div>
 
-            {/* Párrafo introductorio dinámico */}
-            <div className="text-gray-700 text-sm leading-relaxed">
-              {esPagado && (
-                <p>
-                  Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
-                  en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
-                  declaro haber recibido del señor(a) <strong>{venta.comprador || "___________________"}</strong>,
-                  en concepto de compraventa la cantidad de <strong>C$ {fmt(venta.precioNIO)} córdobas netos
-                  (USD ${fmt(venta.precioUSD)})</strong>, de los cuales me doy por bien pagado y satisfecho,
-                  otorgando a favor del comprador la presente carta de venta, libre de todo gravamen.
-                </p>
-              )}
-              {esParcial && (
-                <p>
-                  Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
-                  en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
-                  y el señor(a) <strong>{venta.comprador || "___________________"}</strong>, en calidad de comprador,
-                  hacemos constar que hemos acordado la venta del referido animal por la suma total de{" "}
-                  <strong>C$ {precioTotalFmt} (equivalente a USD ${precioTotalUSD} al tipo de cambio de C$ {tc} por dólar)</strong>.
-                  El comprador ha entregado al vendedor un abono inicial de <strong>C$ {montoInicialFmt}</strong> en concepto de
-                  anticipo, del cual el vendedor se da por recibido, quedando un saldo pendiente de{" "}
-                  <strong>C$ {saldoFmt}</strong> que deberá ser cancelado a más tardar el día <strong>{fechaLimiteStr}</strong>,
-                  mediante {FORMAS[q.formaPagoSaldo] || "la forma de pago acordada"}{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : ""}.
-                </p>
-              )}
-              {!esPagado && !esParcial && (
-                <p>
-                  Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
-                  en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
-                  y el señor(a) <strong>{venta.comprador || "___________________"}</strong>, en calidad de comprador,
-                  suscribimos la presente promesa de compraventa por la suma total acordada de{" "}
-                  <strong>C$ {precioTotalFmt} (equivalente a USD ${precioTotalUSD} al tipo de cambio de C$ {tc} por dólar)</strong>,
-                  monto que el comprador se compromete a cancelar en su totalidad a más tardar el día{" "}
-                  <strong>{fechaLimiteStr}</strong>, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}
-                  {q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : ""}.
-                  Hasta tanto no se efectúe el pago total, la propiedad legal del animal permanece a nombre del vendedor.
-                </p>
-              )}
-            </div>
-
-            {/* I. Animal */}
-            <div>
-              <h3 className="text-sm font-black uppercase tracking-widest mb-3 font-sans" style={{ color: "#145A32", borderBottom: "2px solid #145A32", paddingBottom: 4 }}>
-                I. Descripción del Animal
-              </h3>
-              <div className="flex gap-5">
-                {fotoAnimal && (
-                  <div className="shrink-0">
-                    <img src={fotoAnimal} alt="Animal" className="rounded-lg object-cover border-2 border-gray-200" style={{ width: 120, height: 100 }} />
-                    <p className="text-gray-400 text-xs text-center mt-1 font-sans">Foto del animal</p>
-                  </div>
-                )}
-                <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                  {[
-                    ["Nombre / Alias", a.nombre || "—"],
-                    ["Arete / Identificador", a.identificador || "—"],
-                    ["Raza", a.raza || "Sin raza definida"],
-                    ["Fierro / Marca", a.fierro || "Sin fierro"],
-                    ["Sexo", a.sexo === "HEMBRA" ? "Hembra" : "Macho"],
-                    ["Peso", venta.pesoKg ? `${venta.pesoKg} ${venta.unidadPeso || "KG"}` : "No especificado"],
-                    ["Color / Descripción", a.observacion || "No especificado"],
-                    ["Estado reproductivo", a.estadoReproductivo || "—"],
-                  ].map(([k, v]) => (
-                    <div key={k} className="flex gap-1">
-                      <span className="text-gray-500 font-sans shrink-0">{k}:</span>
-                      <span className="font-bold font-sans text-gray-800">{v}</span>
-                    </div>
-                  ))}
-                </div>
+          {/* SECCIÓN I - ANIMAL */}
+          <SectionTitle num="I" title="Descripción del Animal" />
+          <div style={{ padding: "14px 28px", borderBottom: `1px solid ${C.border}` }}>
+            <div style={{ display: "flex", gap: 16 }}>
+              <div style={{ width: 120, flexShrink: 0 }}>
+                {fotoAnimal
+                  ? <img src={fotoAnimal} style={{ width: 120, height: 96, objectFit: "cover", borderRadius: 6, border: `2px solid ${C.border}` }} alt="Animal" />
+                  : <div style={{ width: 120, height: 96, background: C.light, borderRadius: 6, border: `2px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>🐄</div>
+                }
+                <p style={{ fontSize: 9, color: "#999", textAlign: "center", margin: "4px 0 0", fontFamily: "sans-serif" }}>Foto del animal</p>
               </div>
-            </div>
-
-            {/* II. Condiciones */}
-            <div>
-              <h3 className="text-sm font-black uppercase tracking-widest mb-3 font-sans" style={{ color: "#145A32", borderBottom: "2px solid #145A32", paddingBottom: 4 }}>
-                II. Condiciones de la Venta
-              </h3>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px" }}>
                 {[
-                  ["Tipo de venta", tipoLabel],
-                  ["Precio total en Córdobas", `C$ ${fmt(venta.precioNIO)}`],
-                  ["Precio total en Dólares", `USD $${fmt(venta.precioUSD)}`],
-                  ["Tipo de cambio", `C$ ${venta.tipoCambio} por USD`],
-                  ["Método de pago", { EFECTIVO:"Efectivo", TRANSFERENCIA:"Transferencia Bancaria", CHEQUE:"Cheque", CREDITO:"Crédito" }[venta.metodoPago] || venta.metodoPago],
-                  ["Estado del pago", { PAGADO:"Pagado en su totalidad", PENDIENTE:"Pendiente de pago", PARCIAL:"Pago parcial" }[venta.estadoPago]],
-                  ["Precio total acordado", `C$ ${precioTotalFmt} (USD $${precioTotalUSD})`],
-                  ...(esParcial ? [["Abono inicial recibido", `C$ ${montoInicialFmt}`]] : []),
-                  ...(esParcial ? [["Saldo pendiente", `C$ ${saldoFmt}`]] : []),
-                  ...(q.fechaLimite ? [["Fecha límite de pago", fechaLimiteStr]] : []),
-                  ...(q.cuotas !== "1" ? [["Forma de pago del saldo", `${q.cuotas} cuotas de C$ ${fmt(q.montoCuota)} c/u`]] : []),
-                  ...(venta.pesoKg ? [["Precio por unidad de peso", `C$ ${fmt(venta.precioKg)} / ${venta.unidadPeso || "KG"}`]] : []),
-                  ...(venta.numeroFactura ? [["No. Factura", venta.numeroFactura]] : []),
-                  ...(venta.descuento ? [["Descuento aplicado", `C$ ${fmt(venta.descuento)}`]] : []),
-                ].map(([k, v]) => (
-                  <div key={k} className="flex gap-1">
-                    <span className="text-gray-500 font-sans shrink-0">{k}:</span>
-                    <span className="font-bold font-sans text-gray-800">{v}</span>
+                  ["🐄 Arete / Identificador", a.identificador || "No registrado"],
+                  ["⚥ Sexo", a.sexo === "HEMBRA" ? "Hembra" : "Macho"],
+                  ["🏷 Nombre / Alias", a.nombre || "—"],
+                  ["🔥 Fierro / Marca", a.fierro || "—"],
+                  ["🐂 Categoría", categoriaDisplay(a)],
+                  esPorPeso
+                    ? ["⚖️ Peso vivo estimado", venta.pesoVivo ? `${venta.pesoVivo} lb` : "No registrado"]
+                    : ["⚖️ Peso aproximado", venta.pesoKg ? `${venta.pesoKg} lb` : "No registrado"],
+                  ["🧬 Raza", a.raza || "No registrada"],
+                  ["❤️ Estado reproductivo", a.estadoReproductivo || "—"],
+                  ["🎨 Color / Descripción", a.observacion || "No especificado"],
+                  ["📅 Edad aproximada", edadDisplay(a)],
+                  ["🏡 Finca de procedencia", venta.finca?.nombre || "No registrada"],
+                  ["📍 Comunidad / Municipio", venta.finca?.ubicacion || "No registrada"],
+                ].map(([label, value]) => (
+                  <div key={label} style={{ display: "flex", gap: 4, alignItems: "flex-start" }}>
+                    <span style={{ fontSize: 9.5, color: "#666", fontFamily: "sans-serif", whiteSpace: "nowrap", flexShrink: 0 }}>{label}:</span>
+                    <span style={{ fontSize: 9.5, fontWeight: 700, color: "#222", fontFamily: "sans-serif" }}>{value}</span>
                   </div>
                 ))}
               </div>
-              {venta.notas && (
-                <div className="mt-3 p-3 rounded-lg bg-gray-50 border border-gray-200">
-                  <p className="text-xs text-gray-500 font-sans font-bold uppercase mb-1">Notas adicionales:</p>
-                  <p className="text-sm text-gray-700 font-sans">{venta.notas}</p>
-                </div>
-              )}
-            </div>
-
-            {/* III. Partes */}
-            <div>
-              <h3 className="text-sm font-black uppercase tracking-widest mb-3 font-sans" style={{ color: "#145A32", borderBottom: "2px solid #145A32", paddingBottom: 4 }}>
-                III. Datos de las Partes
-              </h3>
-              <div className="grid grid-cols-2 gap-6 text-sm">
-                <div className="rounded-lg p-4 border border-gray-200">
-                  <p className="font-black text-xs uppercase tracking-widest font-sans mb-2" style={{ color: "#145A32" }}>Vendedor</p>
-                  <p className="font-bold font-sans text-gray-800">{venta.usuario?.nombre || "—"}</p>
-                  <p className="text-gray-500 font-sans text-xs mt-0.5">{venta.finca?.nombre}</p>
-                  {venta.usuario?.email && <p className="text-gray-400 font-sans text-xs mt-0.5">{venta.usuario.email}</p>}
-                </div>
-                <div className="rounded-lg p-4 border border-gray-200">
-                  <p className="font-black text-xs uppercase tracking-widest font-sans mb-2" style={{ color: "#145A32" }}>Comprador</p>
-                  <p className="font-bold font-sans text-gray-800">{venta.comprador || "—"}</p>
-                  {venta.telefonoComprador && <p className="text-gray-500 font-sans text-xs mt-0.5">Tel: {venta.telefonoComprador}</p>}
-                  {venta.direccionComprador && <p className="text-gray-400 font-sans text-xs mt-0.5">{venta.direccionComprador}</p>}
-                </div>
-              </div>
-            </div>
-
-            {/* IV. Cláusulas */}
-            <div>
-              <h3 className="text-sm font-black uppercase tracking-widest mb-3 font-sans" style={{ color: "#145A32", borderBottom: "2px solid #145A32", paddingBottom: 4 }}>
-                IV. Cláusulas y Condiciones
-              </h3>
-              <ol className="space-y-2 text-sm text-gray-600 font-sans list-decimal pl-5">
-
-                <li>El vendedor declara ser el legítimo propietario del animal descrito y que éste se encuentra libre de todo gravamen, hipoteca, embargo o cualquier carga legal al momento de la firma del presente documento.</li>
-
-                <li>El animal se transfiere en el estado físico y sanitario en que se encuentra al momento de la firma. El comprador declara haberlo inspeccionado y aceptarlo en dicho estado.</li>
-
-                <li>El vendedor garantiza que el animal no ha sido reportado como robado, no se encuentra en litigio, ni tiene ningún impedimento legal que afecte su venta, traslado o registro a nombre del comprador.</li>
-
-                {esPagado && <>
-                  <li>El comprador ha cancelado la totalidad del monto pactado de <strong>C$ {fmt(venta.precioNIO)} (USD ${fmt(venta.precioUSD)})</strong> mediante {({ EFECTIVO:"pago en efectivo", TRANSFERENCIA:"transferencia bancaria", CHEQUE:"cheque", CREDITO:"crédito" }[venta.metodoPago] || venta.metodoPago)}, del cual el vendedor se da por recibido y satisfecho en su totalidad. Esta transacción se considera finiquitada y el vendedor renuncia a cualquier reclamo futuro sobre el monto convenido.</li>
-                  <li>Con la cancelación total del precio acordado, la propiedad del animal se transfiere de manera inmediata, irrevocable y sin condición alguna al comprador desde la fecha de firma del presente documento.</li>
-                  <li>Una vez suscrita esta carta de venta, el comprador asume plena responsabilidad sobre el animal, incluyendo enfermedades, accidentes, pérdidas o cualquier eventualidad posterior a su recepción.</li>
-                </>}
-
-                {esParcial && <>
-                  <li>
-                    El precio total acordado por el animal es de <strong>C$ {precioTotalFmt} (USD ${precioTotalUSD})</strong>.
-                    El comprador ha entregado al vendedor la suma de <strong>C$ {montoInicialFmt}</strong> en concepto de abono inicial,
-                    del cual el vendedor se da por recibido. El saldo pendiente es de <strong>C$ {saldoFmt}</strong>,
-                    el cual deberá ser cancelado a más tardar el día <strong>{fechaLimiteStr}</strong>,
-                    mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}
-                    {q.cuotas !== "1" ? `, dividido en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : " en un solo pago"}.
-                  </li>
-                  <li>
-                    Mientras el saldo de <strong>C$ {saldoFmt}</strong> no sea cancelado en su totalidad,
-                    la propiedad legal del animal permanece a nombre del vendedor. El comprador podrá hacer uso del animal
-                    pero no podrá venderlo, donarlo, pignorar ni trasladarlo fuera del municipio de{" "}
-                    {q.lugar || "___________________"} sin autorización expresa y escrita del vendedor.
-                  </li>
-                  <li>
-                    En caso de que el comprador incumpla con el pago del saldo restante en la fecha establecida,
-                    {" "}{CONSECUENCIAS[q.consecuencia]}. El vendedor no estará obligado a devolver el abono inicial
-                    de <strong>C$ {montoInicialFmt}</strong> ya recibido, salvo acuerdo expreso y por escrito entre ambas partes.
-                  </li>
-                  <li>
-                    Una vez que el comprador cancele la totalidad del saldo de <strong>C$ {saldoFmt}</strong>,
-                    el vendedor se compromete a extender una carta de venta definitiva y transferir la propiedad
-                    plena del animal, sin costo adicional, dentro de los tres días hábiles siguientes al pago.
-                  </li>
-                </>}
-
-                {!esPagado && !esParcial && <>
-                  <li>
-                    La presente carta constituye una promesa formal de compraventa. El precio total acordado por el animal
-                    es de <strong>C$ {precioTotalFmt} (USD ${precioTotalUSD})</strong>. El comprador se compromete
-                    a cancelar dicho monto en su totalidad a más tardar el día <strong>{fechaLimiteStr}</strong>,
-                    mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}
-                    {q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : " en un solo pago"}.
-                  </li>
-                  <li>
-                    Hasta que se efectúe el pago íntegro de <strong>C$ {precioTotalFmt}</strong>, la propiedad
-                    legal del animal permanece exclusivamente a nombre del vendedor. El comprador no podrá venderlo,
-                    donarlo, trasladarlo fuera del municipio ni pignorar el animal bajo ningún concepto, sin la
-                    autorización previa y por escrito del vendedor.
-                  </li>
-                  <li>
-                    En caso de que el comprador no realice el pago total en la fecha pactada del{" "}
-                    <strong>{fechaLimiteStr}</strong>, {CONSECUENCIAS[q.consecuencia]}.
-                    Esta cláusula será exigible sin necesidad de trámite judicial previo si ambas partes así
-                    lo acuerdan ante la Autoridad Municipal.
-                  </li>
-                  <li>
-                    Una vez recibido el pago completo de <strong>C$ {precioTotalFmt}</strong>, el vendedor
-                    extenderá de inmediato la carta de venta definitiva y transferirá la propiedad plena e
-                    irrevocable del animal al comprador.
-                  </li>
-                </>}
-
-                {q.observacionExtra && (
-                  <li><strong>Condición especial acordada por las partes:</strong> {q.observacionExtra}</li>
-                )}
-
-                <li>El presente documento se firma en {q.lugar || "el lugar indicado"}, en presencia de la Autoridad Municipal correspondiente{(q.testigo1 || q.testigo2) ? ` y de los testigos ${[q.testigo1, q.testigo2].filter(Boolean).join(" y ")}` : ""}, quienes dan fe de la legalidad y voluntariedad del acto, otorgándole plena validez legal dentro del territorio.</li>
-
-                <li>Cualquier disputa derivada del presente acuerdo que no pueda resolverse entre las partes será sometida a la jurisdicción de los tribunales competentes de la República de Nicaragua, conforme a las leyes vigentes.</li>
-              </ol>
-            </div>
-
-            {/* V. Firmas */}
-            <div>
-              <h3 className="text-sm font-black uppercase tracking-widest mb-4 font-sans" style={{ color: "#145A32", borderBottom: "2px solid #145A32", paddingBottom: 4 }}>
-                V. Firmas y Certificación
-              </h3>
-
-              {!firmado && (
-                <div className="print:hidden mb-5 p-4 rounded-xl border-2 border-dashed border-green-300 bg-green-50">
-                  <p className="text-sm font-bold text-green-800 mb-2 font-sans">✍️ Firma del Vendedor — dibuja tu firma aquí:</p>
-                  <canvas ref={canvasRef} width={500} height={100}
-                    className="bg-white rounded-lg border border-gray-300 w-full touch-none cursor-crosshair"
-                    style={{ maxHeight: 100 }}
-                    onMouseDown={onStart} onMouseMove={onMove} onMouseUp={onEnd} onMouseLeave={onEnd}
-                    onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd}
-                  />
-                  <div className="flex gap-2 mt-2">
-                    <button onClick={limpiarFirma} className="px-3 py-1.5 rounded-lg text-xs font-bold text-gray-600 bg-white border border-gray-300 font-sans">🗑️ Limpiar</button>
-                    {hayFirma && <button onClick={confirmarFirma} className="px-4 py-1.5 rounded-lg text-xs font-black text-white font-sans" style={{ background: "#145A32" }}>✅ Confirmar firma</button>}
-                  </div>
-                </div>
-              )}
-
-              {/* Vendedor y Comprador */}
-              <div className="grid grid-cols-2 gap-10 mt-4">
-                <div className="text-center">
-                  <div className="h-20 border-b-2 border-gray-400 flex items-end justify-center pb-1 mb-2 relative">
-                    {firmaSrc && <img src={firmaSrc} alt="Firma" className="h-16 object-contain absolute bottom-1"/>}
-                  </div>
-                  <p className="font-bold text-sm font-sans text-gray-800">{venta.usuario?.nombre || "___________________"}</p>
-                  <p className="text-xs font-black font-sans text-gray-500">VENDEDOR</p>
-                  <p className="text-xs text-gray-400 font-sans mt-0.5">{venta.finca?.nombre}</p>
-                  <p className="text-xs text-gray-400 font-sans mt-0.5">Fecha: {fechaVenta}</p>
-                </div>
-                <div className="text-center">
-                  <div className="h-20 border-b-2 border-gray-400 mb-2"/>
-                  <p className="font-bold text-sm font-sans text-gray-800">{venta.comprador || "___________________"}</p>
-                  <p className="text-xs font-black font-sans text-gray-500">COMPRADOR</p>
-                  {venta.telefonoComprador && <p className="text-xs text-gray-400 font-sans mt-0.5">Tel: {venta.telefonoComprador}</p>}
-                  <p className="text-xs text-gray-400 font-sans mt-0.5">Fecha: ___________________</p>
-                </div>
-              </div>
-
-              {/* Testigos si los hay */}
-              {(q.testigo1 || q.testigo2) && (
-                <div className="grid grid-cols-2 gap-10 mt-8">
-                  {[q.testigo1, q.testigo2].map((t, i) => t ? (
-                    <div key={i} className="text-center">
-                      <div className="h-16 border-b-2 border-gray-300 mb-2"/>
-                      <p className="font-bold text-sm font-sans text-gray-800">{t}</p>
-                      <p className="text-xs font-black font-sans text-gray-400">TESTIGO {i + 1}</p>
-                      <p className="text-xs text-gray-400 font-sans mt-0.5">Fecha: ___________________</p>
-                    </div>
-                  ) : <div key={i}/>)}
-                </div>
-              )}
-
-              {/* Autoridad Municipal */}
-              <div className="mt-8 flex justify-center">
-                <div className="text-center w-72">
-                  <div className="h-20 border-b-2 border-gray-400 mb-2"/>
-                  <p className="font-bold text-sm font-sans text-gray-800">___________________</p>
-                  <p className="text-xs font-black font-sans mt-0.5" style={{ color: "#145A32" }}>AUTORIDAD MUNICIPAL / TESTIGO OFICIAL</p>
-                  <p className="text-xs text-gray-500 font-sans mt-0.5">Cargo: ___________________</p>
-                  <p className="text-xs text-gray-400 font-sans mt-1">Sello:</p>
-                  <div className="mt-1 mx-auto rounded-full border-2 border-dashed border-gray-300" style={{ width: 56, height: 56 }}/>
-                  <p className="text-xs text-gray-400 font-sans mt-1">Fecha: ___________________</p>
-                </div>
-              </div>
-
-              <p className="text-xs text-gray-400 font-sans text-center mt-5 italic">
-                En fe de lo cual, las partes firman el presente documento en {q.lugar || "el lugar indicado"} el día {fechaVenta}, en presencia de la Autoridad Municipal quien certifica la legalidad del acto.
-              </p>
-            </div>
-
-            {/* Pie */}
-            <div className="text-center pt-4 border-t border-gray-200">
-              <p className="text-xs text-gray-400 font-sans">Documento generado el {new Date().toLocaleDateString("es-NI", { day:"numeric", month:"long", year:"numeric" })} · {numCarta} · GanaderoSG</p>
-              <p className="text-xs text-gray-300 font-sans mt-0.5">ganaderosg.app · Sistema de Gestión Ganadera</p>
             </div>
           </div>
+
+          {/* SECCIÓN II - CONDICIONES */}
+          <SectionTitle num="II" title={esPorPeso ? "Pesaje y Liquidación" : "Condiciones de la Venta"} />
+          {esPorPeso ? (
+            <div style={{ padding: "14px 28px", display: "grid", gridTemplateColumns: "1fr auto", gap: 20, borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "4px 0" }}>
+                {[
+                  ["Modalidad de venta", "Por Peso (Destazado)"],
+                  ["Peso canal / Destazado", `${venta.pesoKg || 0} lb`],
+                  ["Precio por libra", `C$ ${fmt(venta.precioKg)}`],
+                  ["Rendimiento estimado", rendimientoStr],
+                  ["Fecha de pesaje", fechaVenta],
+                  ["Lugar de pesaje", venta.finca?.nombre || "—"],
+                  ["Método de pago", metodoPagoLabel],
+                  ["Estado del pago", estadoPagoLabel],
+                  ["Tipo de cambio utilizado", `C$ ${tc} por USD`],
+                  ...(venta.notas ? [["Observaciones", venta.notas]] : []),
+                ].map(([k, v]) => (
+                  <div key={k} style={{ display: "flex", gap: 6, padding: "3px 0", borderBottom: "1px solid #f0f0f0" }}>
+                    <span style={{ fontSize: 9.5, color: "#666", fontFamily: "sans-serif", flexShrink: 0 }}>{k}:</span>
+                    <span style={{ fontSize: 9.5, fontWeight: 700, color: k === "Estado del pago" && esPagado ? "#1a8c4e" : "#222", fontFamily: "sans-serif" }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ width: 200, background: "#f8f9fa", border: `2px solid ${C.primary}`, borderRadius: 8, padding: "12px", flexShrink: 0 }}>
+                <p style={{ fontSize: 10, fontWeight: 900, color: C.primary, fontFamily: "sans-serif", margin: "0 0 8px", textAlign: "center", letterSpacing: 1 }}>CÁLCULO DE LA VENTA</p>
+                <div style={{ fontSize: 9.5, fontFamily: "sans-serif", color: "#333" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span>Peso vendido (lb)</span>
+                    <span style={{ fontWeight: 700 }}>{venta.pesoKg || 0}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span>× Precio por lb (C$)</span>
+                    <span style={{ fontWeight: 700 }}>{fmt(venta.precioKg)}</span>
+                  </div>
+                  <div style={{ borderTop: "1px solid #ddd", paddingTop: 4, marginTop: 4 }}>
+                    {[
+                      ["Subtotal", `C$ ${fmt(precioTotalNum)}`],
+                      ["Descuento", `C$ ${fmt(venta.descuento || 0)}`],
+                      ["Comisión", `C$ ${fmt(venta.comision || 0)}`],
+                    ].map(([k, v]) => (
+                      <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                        <span>{k}:</span><span style={{ fontWeight: 700 }}>{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ background: C.primary, color: "#fff", padding: "8px", borderRadius: 4, marginTop: 8, textAlign: "center" }}>
+                    <p style={{ fontSize: 9, margin: "0 0 2px", opacity: 0.8 }}>TOTAL A PAGAR:</p>
+                    <p style={{ fontSize: 13, fontWeight: 900, margin: "0 0 2px" }}>C$ {fmt(precioTotalNum)}</p>
+                    <p style={{ fontSize: 9, margin: 0, opacity: 0.8 }}>USD ${fmt(precioTotalNum / tc)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: "14px 28px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 20px", borderBottom: `1px solid ${C.border}` }}>
+              {[
+                ["Tipo de venta", "En Pie (Animal Vivo)"],
+                ["Método de pago", metodoPagoLabel],
+                ["Cantidad de animales", "1"],
+                ["Estado del pago", estadoPagoLabel],
+                ["Precio total acordado", `C$ ${fmt(precioTotalNum)}`],
+                ["Lugar de entrega", venta.finca?.nombre || "No especificado"],
+                ["Equivalente en USD", `USD $${fmt(precioTotalNum / tc)}`],
+                ["Fecha de entrega", fechaVenta],
+                ["Tipo de cambio utilizado", `C$ ${tc} por USD`],
+                ...(esParcial ? [["Abono inicial recibido", `C$ ${montoInicialFmt}`]] : []),
+                ...(esParcial ? [["Saldo pendiente", `C$ ${saldoFmt}`]] : []),
+                ...(q.fechaLimite ? [["Fecha límite de pago", fechaLimiteStr]] : []),
+                ["Observaciones", venta.notas || "Ninguna"],
+              ].map(([k, v]) => (
+                <div key={k} style={{ display: "flex", gap: 6, padding: "3px 0", borderBottom: "1px solid #f0f0f0" }}>
+                  <span style={{ fontSize: 9.5, color: "#666", fontFamily: "sans-serif", flexShrink: 0 }}>{k}:</span>
+                  <span style={{ fontSize: 9.5, fontWeight: 700, color: k === "Estado del pago" && esPagado ? "#1a8c4e" : "#222", fontFamily: "sans-serif" }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* SECCIÓN III - PARTES */}
+          <SectionTitle num="III" title="Datos de las Partes" />
+          <div style={{ padding: "14px 28px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, borderBottom: `1px solid ${C.border}` }}>
+            {[
+              {
+                role: "VENDEDOR",
+                icon: "🤝",
+                nombre: venta.usuario?.nombre || "—",
+                id: venta.vendedorIdentificacion || "—",
+                tel: venta.vendedorTelefono || venta.usuario?.email || "—",
+                dir: venta.vendedorDireccion || venta.finca?.ubicacion || "—",
+                showFirma: true,
+              },
+              {
+                role: "COMPRADOR",
+                icon: "🤝",
+                nombre: venta.comprador || "—",
+                id: venta.compradorIdentificacion || "—",
+                tel: venta.telefonoComprador || "—",
+                dir: venta.direccionComprador || "—",
+                showFirma: false,
+              },
+            ].map(p => (
+              <div key={p.role} style={{ border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px" }}>
+                <p style={{ fontSize: 10, fontWeight: 900, color: C.primary, fontFamily: "sans-serif", margin: "0 0 8px", display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ fontSize: 14 }}>{p.icon}</span> {p.role}
+                </p>
+                {[
+                  ["👤 Nombre", p.nombre],
+                  ["🪪 Identificación", p.id],
+                  ["📞 Teléfono", p.tel],
+                  ["📍 Dirección", p.dir],
+                ].map(([k, v]) => (
+                  <div key={k} style={{ display: "flex", gap: 6, marginBottom: 3 }}>
+                    <span style={{ fontSize: 9, color: "#666", fontFamily: "sans-serif", flexShrink: 0 }}>{k}:</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: "#222", fontFamily: "sans-serif" }}>{v}</span>
+                  </div>
+                ))}
+                <div style={{ marginTop: 10, borderTop: "1.5px solid #888", paddingTop: 2 }}>
+                  <p style={{ fontSize: 9, color: "#666", fontFamily: "sans-serif", margin: 0 }}>Firma:</p>
+                  {p.showFirma && firmaSrc && (
+                    <img src={firmaSrc} style={{ height: 40, objectFit: "contain", display: "block", marginTop: 4 }} alt="Firma vendedor" />
+                  )}
+                  {(!p.showFirma || !firmaSrc) && (
+                    <div style={{ height: 36, borderBottom: "1px solid #555", marginTop: 4 }} />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* SECCIÓN IV - CLÁUSULAS */}
+          <SectionTitle num="IV" title="Cláusulas y Condiciones" />
+          <div style={{ padding: "12px 28px", borderBottom: `1px solid ${C.border}` }}>
+            <ol style={{ margin: 0, paddingLeft: 18, fontSize: 9.5, lineHeight: 1.6, color: "#444", fontFamily: "Georgia, serif" }}>
+              <li style={{ marginBottom: 6 }}>El vendedor declara ser el legítimo propietario del animal descrito y que éste se encuentra libre de todo gravamen, hipoteca, embargo o cualquier carga legal al momento de la firma del presente documento.</li>
+              <li style={{ marginBottom: 6 }}>El animal se transfiere en el estado físico y sanitario en que se encuentra al momento de la firma. El comprador declara haberlo inspeccionado y aceptarlo en dicho estado.</li>
+              <li style={{ marginBottom: 6 }}>
+                {esPorPeso
+                  ? "El vendedor declara la procedencia del animal identificado en este documento. El comprador acepta la operación bajo la modalidad de venta por peso y reconoce como base de liquidación el peso y precio unitario consignados en esta carta. Una vez cancelado el monto total, todos los derechos sobre el producto vendido se transfieren al comprador."
+                  : "El vendedor garantiza la legítima propiedad del animal y declara que el mismo se encuentra libre de todo gravamen, embargo o litigio. El comprador recibe el animal en el estado físico y sanitario en que se encuentra al momento de la entrega, asumiendo a partir de esta fecha toda responsabilidad sobre el mismo."}
+              </li>
+              {esPagado && <>
+                <li style={{ marginBottom: 6 }}>El comprador ha cancelado la totalidad del monto pactado de <strong>C$ {fmt(venta.precioNIO)} (USD ${fmt(venta.precioUSD)})</strong> mediante {metodoPagoLabel.toLowerCase()}, del cual el vendedor se da por recibido y satisfecho. Esta transacción se considera finiquitada.</li>
+                <li style={{ marginBottom: 6 }}>Con la cancelación total del precio acordado, la propiedad del animal se transfiere de manera inmediata, irrevocable y sin condición alguna al comprador desde la fecha de firma del presente documento.</li>
+              </>}
+              {esParcial && <>
+                <li style={{ marginBottom: 6 }}>El precio total acordado es de <strong>C$ {precioTotalFmt}</strong>. El comprador ha entregado un abono inicial de <strong>C$ {montoInicialFmt}</strong>, quedando un saldo pendiente de <strong>C$ {saldoFmt}</strong> que deberá ser cancelado a más tardar el día <strong>{fechaLimiteStr}</strong>{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : " en un solo pago"}, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}.</li>
+                <li style={{ marginBottom: 6 }}>Mientras el saldo no sea cancelado en su totalidad, la propiedad legal del animal permanece a nombre del vendedor. En caso de incumplimiento, {CONSECUENCIAS[q.consecuencia]}.</li>
+              </>}
+              {!esPagado && !esParcial && <>
+                <li style={{ marginBottom: 6 }}>El comprador se compromete a cancelar la suma de <strong>C$ {precioTotalFmt}</strong> a más tardar el día <strong>{fechaLimiteStr}</strong>{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} c/u` : ""}` : ""}, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}. Hasta el pago total, la propiedad permanece a nombre del vendedor.</li>
+                <li style={{ marginBottom: 6 }}>En caso de incumplimiento en la fecha pactada, {CONSECUENCIAS[q.consecuencia]}.</li>
+              </>}
+              {!esPagado && <li style={{ marginBottom: 6 }}>El comprador se compromete a realizar el pago en los términos acordados, entendiendo que la propiedad legal del animal no se transfiere hasta la cancelación total del monto pactado.</li>}
+              {q.observacionExtra && <li style={{ marginBottom: 6 }}><strong>Condición especial:</strong> {q.observacionExtra}</li>}
+              <li style={{ marginBottom: 6 }}>El presente documento se firma en {q.lugar || "el lugar indicado"}, en presencia de la Autoridad Municipal{(q.testigo1 || q.testigo2) ? ` y de los testigos ${[q.testigo1, q.testigo2].filter(Boolean).join(" y ")}` : ""}, quienes dan fe de la legalidad y voluntariedad del acto.</li>
+              <li>Cualquier disputa derivada del presente acuerdo será sometida a la jurisdicción de los tribunales competentes de la República de Nicaragua, conforme a las leyes vigentes.</li>
+            </ol>
+          </div>
+
+          {/* SECCIÓN V - TESTIGO */}
+          <SectionTitle num="V" title="Testigo y Certificación" />
+          <div style={{ padding: "12px 28px", borderBottom: `1px solid ${C.border}` }}>
+            <div style={{ display: "flex", gap: 20, alignItems: "flex-end", flexWrap: "wrap" }}>
+              {["Nombre", "Cargo", "Firma"].map(label => (
+                <div key={label}>
+                  <p style={{ fontSize: 9, color: "#666", fontFamily: "sans-serif", margin: "0 0 2px" }}>{label}:</p>
+                  <div style={{ borderBottom: "1px solid #888", width: 150, height: 20 }} />
+                </div>
+              ))}
+              <div>
+                <p style={{ fontSize: 9, color: "#666", fontFamily: "sans-serif", margin: "0 0 2px" }}>Sello:</p>
+                <div style={{ width: 48, height: 48, borderRadius: "50%", border: "1.5px dashed #999" }} />
+              </div>
+              <div>
+                <p style={{ fontSize: 9, color: "#666", fontFamily: "sans-serif", margin: "0 0 2px" }}>Fecha:</p>
+                <p style={{ fontSize: 9.5, fontFamily: "sans-serif", color: "#555" }}>____/____/________</p>
+              </div>
+            </div>
+            {(q.testigo1 || q.testigo2) && (
+              <div style={{ display: "flex", gap: 40, marginTop: 16 }}>
+                {[q.testigo1, q.testigo2].map((t, i) => t ? (
+                  <div key={i}>
+                    <div style={{ borderBottom: "1px solid #888", width: 150, height: 30, marginBottom: 4 }} />
+                    <p style={{ fontSize: 9, color: "#333", fontFamily: "sans-serif", margin: 0 }}>{t}</p>
+                    <p style={{ fontSize: 8, color: "#999", fontFamily: "sans-serif", margin: 0 }}>TESTIGO {i + 1}</p>
+                  </div>
+                ) : null)}
+              </div>
+            )}
+            <p style={{ fontSize: 9, color: "#666", fontFamily: "Georgia, serif", marginTop: 12, fontStyle: "italic" }}>
+              En fe de lo cual, las partes firman el presente documento en {q.lugar || "el lugar indicado"} el día {fechaVenta}.
+            </p>
+          </div>
+
+          {/* FOOTER */}
+          <div style={{ background: C.primary, padding: "10px 28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 9, fontFamily: "sans-serif", margin: 0 }}>
+              Documento generado el {new Date().toLocaleDateString("es-NI", { day: "numeric", month: "long", year: "numeric" })}
+            </p>
+            <p style={{ color: "rgba(255,255,255,0.9)", fontSize: 9, fontFamily: "sans-serif", margin: 0, textAlign: "center" }}>
+              GanaderoSG — Sistema de Gestión Ganadera
+            </p>
+            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 9, fontFamily: "sans-serif", margin: 0 }}>
+              ganaderosg.app · {numCarta}
+            </p>
+          </div>
+
         </div>
       </div>
 
       <style jsx global>{`
         @media print {
-          @page { size: A4; margin: 1cm; }
+          @page { size: letter portrait; margin: 0.5cm; }
           body { background: white !important; }
           .print\\:hidden { display: none !important; }
         }

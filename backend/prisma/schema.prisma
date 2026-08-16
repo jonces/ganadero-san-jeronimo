@@ -260,6 +260,12 @@ model Venta {
   estadoVenta       String    @default("CONFIRMADA") // PROCESO, CONFIRMADA, REVERSADA
   reservaId         String?
   motivoRevision    String?
+  pesoVivo             Float?
+  compradorIdentificacion String?
+  vendedorIdentificacion  String?
+  vendedorTelefono        String?
+  vendedorDireccion       String?
+  numeroCarta             Int?
   fecha         DateTime   @default(now())
   animalId      String
   animal        Animal     @relation(fields: [animalId], references: [id])

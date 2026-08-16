@@ -47,6 +47,9 @@ export default function VentasPage() {
     metodoPago: "EFECTIVO", estadoPago: "PAGADO",
     numeroFactura: "", comision: "", descuento: "", impuestos: "",
     comprador: "", telefonoComprador: "", direccionComprador: "",
+    compradorIdentificacion: "",
+    vendedorIdentificacion: "", vendedorTelefono: "", vendedorDireccion: "",
+    pesoVivo: "",
     notas: "", fecha: new Date().toISOString().slice(0, 10),
   });
 
@@ -139,7 +142,7 @@ export default function VentasPage() {
       if (!res.ok) throw new Error(data.error || "Error");
       setShowForm(false);
       setArchivos([]);
-      setForm({ animalId: "", tipoVenta: "EN_PIE", moneda: "NIO", precioOriginal: "", pesoKg: "", precioKg: "", metodoPago: "EFECTIVO", estadoPago: "PAGADO", numeroFactura: "", comision: "", descuento: "", impuestos: "", comprador: "", telefonoComprador: "", direccionComprador: "", notas: "", fecha: new Date().toISOString().slice(0, 10) });
+      setForm({ animalId: "", tipoVenta: "EN_PIE", moneda: "NIO", precioOriginal: "", pesoKg: "", precioKg: "", metodoPago: "EFECTIVO", estadoPago: "PAGADO", numeroFactura: "", comision: "", descuento: "", impuestos: "", comprador: "", telefonoComprador: "", direccionComprador: "", compradorIdentificacion: "", vendedorIdentificacion: "", vendedorTelefono: "", vendedorDireccion: "", pesoVivo: "", notas: "", fecha: new Date().toISOString().slice(0, 10) });
       load();
     } catch (err) { setError(err.message); }
     finally { setEnviando(false); }
@@ -268,7 +271,21 @@ export default function VentasPage() {
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs font-bold text-white/50 uppercase">Peso (libras) *</label>
+                        <label className="text-xs font-bold text-white/50 uppercase">Peso Vivo (libras)</label>
+                        <div className="relative mt-1">
+                          <input type="number" step="0.1"
+                            className="w-full rounded-xl p-3 pr-10 focus:outline-none text-white"
+                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
+                            placeholder="Ej: 1100" value={form.pesoVivo}
+                            onChange={(e) => setForm({ ...form, pesoVivo: e.target.value })} />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 font-bold text-sm">lb</span>
+                        </div>
+                      </div>
+                      <div style={{ gridColumn: "span 1" }} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-bold text-white/50 uppercase">Peso Canal (libras) *</label>
                         <div className="relative mt-1">
                           <input type="number" step="0.1"
                             className="w-full rounded-xl p-3 pr-10 focus:outline-none text-white text-lg font-black"
@@ -443,13 +460,49 @@ export default function VentasPage() {
                         placeholder="Ciudad, País" value={form.direccionComprador} onChange={(e) => setForm({ ...form, direccionComprador: e.target.value })} />
                     </div>
                   </div>
+                  <div>
+                    <label className="text-xs font-bold text-white/50 uppercase">Cédula / Identificación del comprador</label>
+                    <input className="w-full rounded-xl p-3 mt-1 focus:outline-none text-white"
+                      style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
+                      placeholder="Nº de cédula o ID" value={form.compradorIdentificacion} onChange={(e) => setForm({ ...form, compradorIdentificacion: e.target.value })} />
+                  </div>
+                </div>
+              </section>
+
+              {/* Sección: Datos del vendedor para la carta */}
+              <section>
+                <h3 className="text-xs font-black text-white/40 uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-black" style={{ background: "#d69e2e" }}>5</span>
+                  Datos del Vendedor (para la carta)
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-bold text-white/50 uppercase">Cédula / Identificación del vendedor</label>
+                    <input className="w-full rounded-xl p-3 mt-1 focus:outline-none text-white"
+                      style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
+                      placeholder="Nº de cédula o ID" value={form.vendedorIdentificacion} onChange={(e) => setForm({ ...form, vendedorIdentificacion: e.target.value })} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-bold text-white/50 uppercase">Teléfono del vendedor</label>
+                      <input className="w-full rounded-xl p-3 mt-1 focus:outline-none text-white"
+                        style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
+                        placeholder="+505 8888-0000" value={form.vendedorTelefono} onChange={(e) => setForm({ ...form, vendedorTelefono: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-white/50 uppercase">Dirección del vendedor</label>
+                      <input className="w-full rounded-xl p-3 mt-1 focus:outline-none text-white"
+                        style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" }}
+                        placeholder="Ciudad, País" value={form.vendedorDireccion} onChange={(e) => setForm({ ...form, vendedorDireccion: e.target.value })} />
+                    </div>
+                  </div>
                 </div>
               </section>
 
               {/* Sección: Documentos y obs */}
               <section>
                 <h3 className="text-xs font-black text-white/40 uppercase tracking-widest mb-3 flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-black" style={{ background: "#d69e2e" }}>5</span>
+                  <span className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center font-black" style={{ background: "#d69e2e" }}>6</span>
                   Observaciones y Evidencia
                 </h3>
                 <div className="space-y-3">
