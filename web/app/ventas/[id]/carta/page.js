@@ -397,39 +397,49 @@ export default function CartaVentaPage() {
           {/* PÁRRAFO INTRODUCTORIO */}
           <div style={{ padding: "12px 28px", background: C.light, borderBottom: `1px solid ${C.border}` }}>
             <p style={{ fontSize: 10.5, lineHeight: 1.6, color: "#333", fontFamily: "Georgia, serif", margin: 0 }}>
-              {esPagado && <>
-                Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
-                en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
-                declaro haber recibido del señor(a) <strong>{venta.comprador || "___________________"}</strong>,
-                en concepto de compraventa la cantidad de <strong>C$ {fmt(venta.precioNIO)} córdobas netos (USD ${fmt(venta.precioUSD)})</strong>,
-                de los cuales me doy por bien pagado y satisfecho, otorgando a favor del comprador la presente carta de venta, libre de todo gravamen.
-              </>}
-              {esParcial && <>
-                Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
-                en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
-                y el señor(a) <strong>{venta.comprador || "___________________"}</strong>, en calidad de comprador,
-                hacemos constar que hemos acordado la venta del referido animal por la suma total de{" "}
-                <strong>C$ {precioTotalFmt} (equivalente a USD ${precioTotalUSD} al tipo de cambio de C$ {tc} por dólar)</strong>.
-                El comprador ha entregado un abono inicial de <strong>C$ {montoInicialFmt}</strong>, quedando un saldo pendiente de{" "}
-                <strong>C$ {saldoFmt}</strong> que deberá ser cancelado a más tardar el día <strong>{fechaLimiteStr}</strong>,
-                mediante {FORMAS[q.formaPagoSaldo] || "la forma de pago acordada"}{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : ""}.
-              </>}
-              {!esPagado && !esParcial && <>
-                Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
-                en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
-                y el señor(a) <strong>{venta.comprador || "___________________"}</strong>, en calidad de comprador,
-                suscribimos la presente promesa de compraventa por la suma total acordada de{" "}
-                <strong>C$ {precioTotalFmt} (equivalente a USD ${precioTotalUSD} al tipo de cambio de C$ {tc} por dólar)</strong>,
-                monto que el comprador se compromete a cancelar en su totalidad a más tardar el día{" "}
-                <strong>{fechaLimiteStr}</strong>, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}
-                {q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : ""}.
-                Hasta tanto no se efectúe el pago total, la propiedad legal del animal permanece a nombre del vendedor.
+              {esPorPeso ? <>
+                Por medio de la presente se hace constar que <strong>{venta.usuario?.nombre || "___________________"}</strong>,
+                en calidad de vendedor, realiza la venta a <strong>{venta.comprador || "___________________"}</strong>,
+                en calidad de comprador, del animal identificado en este documento,
+                bajo la modalidad de <strong>VENTA POR PESO (DESTAZADO)</strong>.
+                {esPagado && <> El comprador ha cancelado la totalidad del monto correspondiente de <strong>C$ {fmt(venta.precioNIO)} (USD ${fmt(venta.precioUSD)})</strong>, del cual el vendedor se da por bien recibido y satisfecho.</>}
+                {esParcial && <> Las partes acuerdan el pago del monto total de <strong>C$ {precioTotalFmt}</strong>, habiéndose entregado un abono inicial de <strong>C$ {montoInicialFmt}</strong>, con un saldo pendiente de <strong>C$ {saldoFmt}</strong> a cancelar a más tardar el <strong>{fechaLimiteStr}</strong>.</>}
+                {!esPagado && !esParcial && <> El monto total acordado es de <strong>C$ {precioTotalFmt} (USD ${precioTotalUSD})</strong>, el cual el comprador se compromete a cancelar a más tardar el día <strong>{fechaLimiteStr}</strong>.</>}
+              </> : <>
+                {esPagado && <>
+                  Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
+                  en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
+                  declaro haber recibido del señor(a) <strong>{venta.comprador || "___________________"}</strong>,
+                  en concepto de compraventa la cantidad de <strong>C$ {fmt(venta.precioNIO)} córdobas netos (USD ${fmt(venta.precioUSD)})</strong>,
+                  de los cuales me doy por bien pagado y satisfecho, otorgando a favor del comprador la presente carta de venta, libre de todo gravamen.
+                </>}
+                {esParcial && <>
+                  Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
+                  en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
+                  y el señor(a) <strong>{venta.comprador || "___________________"}</strong>, en calidad de comprador,
+                  hacemos constar que hemos acordado la venta del referido animal por la suma total de{" "}
+                  <strong>C$ {precioTotalFmt} (equivalente a USD ${precioTotalUSD} al tipo de cambio de C$ {tc} por dólar)</strong>.
+                  El comprador ha entregado un abono inicial de <strong>C$ {montoInicialFmt}</strong>, quedando un saldo pendiente de{" "}
+                  <strong>C$ {saldoFmt}</strong> que deberá ser cancelado a más tardar el día <strong>{fechaLimiteStr}</strong>,
+                  mediante {FORMAS[q.formaPagoSaldo] || "la forma de pago acordada"}{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : ""}.
+                </>}
+                {!esPagado && !esParcial && <>
+                  Por medio del presente documento, yo <strong>{venta.usuario?.nombre || "___________________"}</strong>,
+                  en mi calidad de vendedor y propietario legítimo del animal descrito a continuación,
+                  y el señor(a) <strong>{venta.comprador || "___________________"}</strong>, en calidad de comprador,
+                  suscribimos la presente promesa de compraventa por la suma total acordada de{" "}
+                  <strong>C$ {precioTotalFmt} (equivalente a USD ${precioTotalUSD} al tipo de cambio de C$ {tc} por dólar)</strong>,
+                  monto que el comprador se compromete a cancelar en su totalidad a más tardar el día{" "}
+                  <strong>{fechaLimiteStr}</strong>, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}
+                  {q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : ""}.
+                  Hasta tanto no se efectúe el pago total, la propiedad legal del animal permanece a nombre del vendedor.
+                </>}
               </>}
             </p>
           </div>
 
           {/* SECCIÓN I - ANIMAL */}
-          <SectionTitle num="I" title="Descripción del Animal" />
+          <SectionTitle num="I" title={esPorPeso ? "Identificación y Procedencia del Animal" : "Descripción del Animal"} />
           <div style={{ padding: "14px 28px", borderBottom: `1px solid ${C.border}` }}>
             <div style={{ display: "flex", gap: 16 }}>
               <div style={{ width: 120, flexShrink: 0 }}>
@@ -597,31 +607,52 @@ export default function CartaVentaPage() {
           {/* SECCIÓN IV - CLÁUSULAS */}
           <SectionTitle num="IV" title="Cláusulas y Condiciones" />
           <div style={{ padding: "12px 28px", borderBottom: `1px solid ${C.border}` }}>
-            <ol style={{ margin: 0, paddingLeft: 18, fontSize: 9.5, lineHeight: 1.6, color: "#444", fontFamily: "Georgia, serif" }}>
-              <li style={{ marginBottom: 6 }}>El vendedor declara ser el legítimo propietario del animal descrito y que éste se encuentra libre de todo gravamen, hipoteca, embargo o cualquier carga legal al momento de la firma del presente documento.</li>
-              <li style={{ marginBottom: 6 }}>El animal se transfiere en el estado físico y sanitario en que se encuentra al momento de la firma. El comprador declara haberlo inspeccionado y aceptarlo en dicho estado.</li>
-              <li style={{ marginBottom: 6 }}>
-                {esPorPeso
-                  ? "El vendedor declara la procedencia del animal identificado en este documento. El comprador acepta la operación bajo la modalidad de venta por peso y reconoce como base de liquidación el peso y precio unitario consignados en esta carta. Una vez cancelado el monto total, todos los derechos sobre el producto vendido se transfieren al comprador."
-                  : "El vendedor garantiza la legítima propiedad del animal y declara que el mismo se encuentra libre de todo gravamen, embargo o litigio. El comprador recibe el animal en el estado físico y sanitario en que se encuentra al momento de la entrega, asumiendo a partir de esta fecha toda responsabilidad sobre el mismo."}
-              </li>
-              {esPagado && <>
-                <li style={{ marginBottom: 6 }}>El comprador ha cancelado la totalidad del monto pactado de <strong>C$ {fmt(venta.precioNIO)} (USD ${fmt(venta.precioUSD)})</strong> mediante {metodoPagoLabel.toLowerCase()}, del cual el vendedor se da por recibido y satisfecho. Esta transacción se considera finiquitada.</li>
-                <li style={{ marginBottom: 6 }}>Con la cancelación total del precio acordado, la propiedad del animal se transfiere de manera inmediata, irrevocable y sin condición alguna al comprador desde la fecha de firma del presente documento.</li>
-              </>}
-              {esParcial && <>
-                <li style={{ marginBottom: 6 }}>El precio total acordado es de <strong>C$ {precioTotalFmt}</strong>. El comprador ha entregado un abono inicial de <strong>C$ {montoInicialFmt}</strong>, quedando un saldo pendiente de <strong>C$ {saldoFmt}</strong> que deberá ser cancelado a más tardar el día <strong>{fechaLimiteStr}</strong>{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : " en un solo pago"}, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}.</li>
-                <li style={{ marginBottom: 6 }}>Mientras el saldo no sea cancelado en su totalidad, la propiedad legal del animal permanece a nombre del vendedor. En caso de incumplimiento, {CONSECUENCIAS[q.consecuencia]}.</li>
-              </>}
-              {!esPagado && !esParcial && <>
-                <li style={{ marginBottom: 6 }}>El comprador se compromete a cancelar la suma de <strong>C$ {precioTotalFmt}</strong> a más tardar el día <strong>{fechaLimiteStr}</strong>{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} c/u` : ""}` : ""}, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}. Hasta el pago total, la propiedad permanece a nombre del vendedor.</li>
-                <li style={{ marginBottom: 6 }}>En caso de incumplimiento en la fecha pactada, {CONSECUENCIAS[q.consecuencia]}.</li>
-              </>}
-              {!esPagado && <li style={{ marginBottom: 6 }}>El comprador se compromete a realizar el pago en los términos acordados, entendiendo que la propiedad legal del animal no se transfiere hasta la cancelación total del monto pactado.</li>}
-              {q.observacionExtra && <li style={{ marginBottom: 6 }}><strong>Condición especial:</strong> {q.observacionExtra}</li>}
-              <li style={{ marginBottom: 6 }}>El presente documento se firma en {q.lugar || "el lugar indicado"}, en presencia de la Autoridad Municipal{(q.testigo1 || q.testigo2) ? ` y de los testigos ${[q.testigo1, q.testigo2].filter(Boolean).join(" y ")}` : ""}, quienes dan fe de la legalidad y voluntariedad del acto.</li>
-              <li>Cualquier disputa derivada del presente acuerdo será sometida a la jurisdicción de los tribunales competentes de la República de Nicaragua, conforme a las leyes vigentes.</li>
-            </ol>
+            {esPorPeso ? (
+              <ol style={{ margin: 0, paddingLeft: 18, fontSize: 9.5, lineHeight: 1.6, color: "#444", fontFamily: "Georgia, serif" }}>
+                <li style={{ marginBottom: 6 }}>El vendedor declara ser el legítimo propietario del animal identificado en este documento y que el mismo se encuentra libre de todo gravamen, hipoteca, embargo o carga legal al momento de la firma.</li>
+                <li style={{ marginBottom: 6 }}>La presente operación se realiza bajo la modalidad de <strong>VENTA POR PESO (DESTAZADO)</strong>. El precio se determina con base en el peso canal o destazado del animal, conforme a lo acordado entre las partes.</li>
+                <li style={{ marginBottom: 6 }}>Ambas partes reconocen como base de liquidación un peso de <strong>{venta.pesoKg || 0} lb</strong> y un precio de <strong>C$ {fmt(venta.precioKg)}/lb</strong>, resultando un monto total de <strong>C$ {fmt(precioTotalNum)} (USD ${fmt(precioTotalNum / tc)})</strong>, al tipo de cambio de C$ {tc} por dólar.</li>
+                <li style={{ marginBottom: 6 }}>El comprador declara haber inspeccionado el animal y acepta la operación de venta por peso en las condiciones descritas en el presente documento, reconociendo el peso y precio como correctos y definitivos.</li>
+                <li style={{ marginBottom: 6 }}>Una vez realizada la entrega del animal al comprador o al rastro designado, el vendedor queda exonerado de toda responsabilidad respecto al estado, manejo o rendimiento del producto derivado.</li>
+                <li style={{ marginBottom: 6 }}>
+                  {esPagado
+                    ? <>El comprador ha cancelado la totalidad del monto acordado de <strong>C$ {fmt(venta.precioNIO)} (USD ${fmt(venta.precioUSD)})</strong> mediante {metodoPagoLabel.toLowerCase()}, del cual el vendedor se da por bien recibido y satisfecho. Esta operación se considera <strong>completamente liquidada</strong>.</>
+                    : esParcial
+                    ? <>El precio total acordado es de <strong>C$ {precioTotalFmt}</strong>. El comprador ha entregado un abono inicial de <strong>C$ {montoInicialFmt}</strong>, quedando un saldo pendiente de <strong>C$ {saldoFmt}</strong> a cancelar a más tardar el día <strong>{fechaLimiteStr}</strong>{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : ""}, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}.</>
+                    : <>El comprador se compromete a cancelar la suma total de <strong>C$ {precioTotalFmt}</strong> a más tardar el día <strong>{fechaLimiteStr}</strong>{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} c/u` : ""}` : ""}, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}. Esta operación se considera <strong>pendiente de liquidación</strong> hasta la cancelación total del monto.</>
+                  }
+                </li>
+                {(esParcial || (!esPagado && !esParcial)) && (
+                  <li style={{ marginBottom: 6 }}>En caso de incumplimiento en la fecha de pago pactada, {CONSECUENCIAS[q.consecuencia]}.</li>
+                )}
+                <li style={{ marginBottom: 6 }}>El vendedor garantiza que el animal no ha sido comprometido en ninguna operación previa pendiente de pago ni se encuentra sujeto a ningún acuerdo que impida la presente transacción.</li>
+                {q.observacionExtra && <li style={{ marginBottom: 6 }}><strong>Condición especial:</strong> {q.observacionExtra}</li>}
+                <li style={{ marginBottom: 6 }}>El presente documento se firma en {q.lugar || "el lugar indicado"}{(q.testigo1 || q.testigo2) ? `, en presencia de los testigos ${[q.testigo1, q.testigo2].filter(Boolean).join(" y ")}, quienes dan fe de la legalidad y voluntariedad del acto` : ""}.</li>
+                <li>Cualquier disputa derivada del presente acuerdo será sometida a la jurisdicción de los tribunales competentes de la República de Nicaragua, conforme a las leyes vigentes.</li>
+              </ol>
+            ) : (
+              <ol style={{ margin: 0, paddingLeft: 18, fontSize: 9.5, lineHeight: 1.6, color: "#444", fontFamily: "Georgia, serif" }}>
+                <li style={{ marginBottom: 6 }}>El vendedor declara ser el legítimo propietario del animal descrito y que éste se encuentra libre de todo gravamen, hipoteca, embargo o cualquier carga legal al momento de la firma del presente documento.</li>
+                <li style={{ marginBottom: 6 }}>El animal se transfiere en el estado físico y sanitario en que se encuentra al momento de la firma. El comprador declara haberlo inspeccionado y aceptarlo en dicho estado.</li>
+                <li style={{ marginBottom: 6 }}>El vendedor garantiza la legítima propiedad del animal y declara que el mismo se encuentra libre de todo gravamen, embargo o litigio. El comprador recibe el animal en el estado físico y sanitario en que se encuentra al momento de la entrega, asumiendo a partir de esta fecha toda responsabilidad sobre el mismo.</li>
+                {esPagado && <>
+                  <li style={{ marginBottom: 6 }}>El comprador ha cancelado la totalidad del monto pactado de <strong>C$ {fmt(venta.precioNIO)} (USD ${fmt(venta.precioUSD)})</strong> mediante {metodoPagoLabel.toLowerCase()}, del cual el vendedor se da por recibido y satisfecho. Esta transacción se considera finiquitada.</li>
+                  <li style={{ marginBottom: 6 }}>Con la cancelación total del precio acordado, la propiedad del animal se transfiere de manera inmediata, irrevocable y sin condición alguna al comprador desde la fecha de firma del presente documento.</li>
+                </>}
+                {esParcial && <>
+                  <li style={{ marginBottom: 6 }}>El precio total acordado es de <strong>C$ {precioTotalFmt}</strong>. El comprador ha entregado un abono inicial de <strong>C$ {montoInicialFmt}</strong>, quedando un saldo pendiente de <strong>C$ {saldoFmt}</strong> que deberá ser cancelado a más tardar el día <strong>{fechaLimiteStr}</strong>{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} cada uno` : ""}` : " en un solo pago"}, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}.</li>
+                  <li style={{ marginBottom: 6 }}>Mientras el saldo no sea cancelado en su totalidad, la propiedad legal del animal permanece a nombre del vendedor. En caso de incumplimiento, {CONSECUENCIAS[q.consecuencia]}.</li>
+                </>}
+                {!esPagado && !esParcial && <>
+                  <li style={{ marginBottom: 6 }}>El comprador se compromete a cancelar la suma de <strong>C$ {precioTotalFmt}</strong> a más tardar el día <strong>{fechaLimiteStr}</strong>{q.cuotas !== "1" ? `, en ${q.cuotas} pagos${q.montoCuota ? ` de C$ ${fmt(Number(q.montoCuota))} c/u` : ""}` : ""}, mediante {FORMAS[q.formaPagoSaldo] || "la forma acordada"}. Hasta el pago total, la propiedad permanece a nombre del vendedor.</li>
+                  <li style={{ marginBottom: 6 }}>En caso de incumplimiento en la fecha pactada, {CONSECUENCIAS[q.consecuencia]}.</li>
+                </>}
+                {!esPagado && <li style={{ marginBottom: 6 }}>El comprador se compromete a realizar el pago en los términos acordados, entendiendo que la propiedad legal del animal no se transfiere hasta la cancelación total del monto pactado.</li>}
+                {q.observacionExtra && <li style={{ marginBottom: 6 }}><strong>Condición especial:</strong> {q.observacionExtra}</li>}
+                <li style={{ marginBottom: 6 }}>El presente documento se firma en {q.lugar || "el lugar indicado"}, en presencia de la Autoridad Municipal{(q.testigo1 || q.testigo2) ? ` y de los testigos ${[q.testigo1, q.testigo2].filter(Boolean).join(" y ")}` : ""}, quienes dan fe de la legalidad y voluntariedad del acto.</li>
+                <li>Cualquier disputa derivada del presente acuerdo será sometida a la jurisdicción de los tribunales competentes de la República de Nicaragua, conforme a las leyes vigentes.</li>
+              </ol>
+            )}
           </div>
 
           {/* SECCIÓN V - TESTIGO */}
