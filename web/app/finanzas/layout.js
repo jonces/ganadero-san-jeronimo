@@ -47,7 +47,7 @@ function PinModal({ onSuccess, esGerente, router }) {
         body: JSON.stringify({ pin: code }),
       });
       const d = await r.json();
-      if (r.ok) { sessionStorage.setItem(PIN_SESSION_KEY, "1"); onSuccess(); }
+      if (r.ok) { sessionStorage.setItem(PIN_SESSION_KEY, String(Date.now())); onSuccess(); }
       else setError(d.error || "Código incorrecto");
     } catch { setError("Error de conexión"); }
     setLoading(false);
@@ -144,8 +144,10 @@ export default function FinanzasLayout({ children }) {
   const activeTab = TABS.find(t => pathname.startsWith(t.path))?.key || "resumen";
 
   useEffect(() => {
-    const ok = sessionStorage.getItem(PIN_SESSION_KEY) === "1";
+    const ts = sessionStorage.getItem(PIN_SESSION_KEY);
+    const ok = ts && (Date.now() - Number(ts)) < 3 * 60 * 60 * 1000; // 3 horas
     if (ok) setPinOk(true);
+    else sessionStorage.removeItem(PIN_SESSION_KEY); // limpiar si expiró
     try {
       const token = sessionStorage.getItem("token");
       if (token) {
