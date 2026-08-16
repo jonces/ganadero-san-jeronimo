@@ -84,16 +84,23 @@ function tiempoDesde(fecha) {
   return `Hace ${Math.floor(hrs / 24)}d`;
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://ganadero-san-jeronimo-production.up.railway.app/api";
+
 export default function EquipoPage() {
   const [equipo, setEquipo]           = useState([]);
   const [conectados, setConectados]   = useState([]);
+  const [pines, setPines]             = useState({}); // { userId: pin }
+  const [pinEditando, setPinEditando] = useState(null); // userId
+  const [pinInput, setPinInput]       = useState("");
+  const [pinMsg, setPinMsg]           = useState("");
+  const [pinGuardando, setPinGuardando] = useState(false);
   const [error, setError]             = useState("");
   const [showForm, setShowForm]       = useState(false);
   const [enviando, setEnviando]       = useState(false);
   const [esAdmin, setEsAdmin]         = useState(false);
   const [esGerente, setEsGerente]     = useState(false);
   const [puedeEditar, setPuedeEditar] = useState(false);
-  const [editando, setEditando]       = useState(null); // usuario que se está editando
+  const [editando, setEditando]       = useState(null);
   const [guardando, setGuardando]     = useState(false);
   const [form, setForm] = useState({
     nombre: "", email: "", password: "", role: "TRABAJADOR", cargo: "",
@@ -113,15 +120,59 @@ export default function EquipoPage() {
     } catch { setConectados([]); }
   }
 
+  async function loadPines() {
+    try {
+      const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("token") : null;
+      const r = await fetch(`${API_BASE}/finanzas-pin/usuarios`, { headers: { Authorization: `Bearer ${token}` } });
+      if (r.ok) {
+        const data = await r.json();
+        const map = {};
+        data.forEach(u => { map[u.id] = u.finanzasPin; });
+        setPines(map);
+      }
+    } catch {}
+  }
+
+  async function guardarPin(userId) {
+    if (!pinInput || !/^\d{6}$/.test(pinInput)) { setPinMsg("Debe ser exactamente 6 dígitos"); return; }
+    setPinGuardando(true); setPinMsg("");
+    try {
+      const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("token") : null;
+      const r = await fetch(`${API_BASE}/finanzas-pin/usuario/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ pin: pinInput }),
+      });
+      const d = await r.json();
+      if (r.ok) { setPines(prev => ({ ...prev, [userId]: pinInput })); setPinEditando(null); setPinInput(""); }
+      else setPinMsg(d.error || "Error al guardar");
+    } catch { setPinMsg("Error de conexión"); }
+    setPinGuardando(false);
+  }
+
+  async function quitarPin(userId) {
+    if (!confirm("¿Quitar acceso a Finanzas de este usuario?")) return;
+    try {
+      const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("token") : null;
+      await fetch(`${API_BASE}/finanzas-pin/usuario/${userId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      setPines(prev => ({ ...prev, [userId]: null }));
+    } catch {}
+  }
+
+  function generarPinAleatorio() {
+    return String(Math.floor(100000 + Math.random() * 900000));
+  }
+
   useEffect(() => {
     const u = getUsuario();
     setEsAdmin(u?.role === "ADMIN" || u?.role === "SUPER_ADMIN");
-    const gerente = u?.cargo === "GERENTE_GENERAL" || u?.role === "ADMIN" || u?.role === "SUPER_ADMIN";
+    const gerente = u?.cargo === "GERENTE_GENERAL" || u?.role === "SUPER_ADMIN";
     setEsGerente(gerente);
-    setPuedeEditar(gerente);
+    setPuedeEditar(gerente || u?.role === "ADMIN");
     load();
     if (gerente) {
       loadConectados();
+      loadPines();
       const interval = setInterval(loadConectados, 30000);
       return () => clearInterval(interval);
     }
@@ -372,40 +423,66 @@ export default function EquipoPage() {
               </div>
               <div className="space-y-3">
                 {grupo.usuarios.map(u => (
-                  <div key={u.id} className="rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xl" style={glass}>
-                    <div className="flex items-center gap-3">
-                      <div style={{ width: 48, height: 48, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, background: cargoGrad(u.cargo), flexShrink: 0 }}>
-                        {cargoIcon(u.cargo)}
+                  <div key={u.id} className="rounded-2xl shadow-xl overflow-hidden" style={glass}>
+                    <div className="p-4 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div style={{ width: 48, height: 48, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, background: cargoGrad(u.cargo), flexShrink: 0 }}>
+                          {cargoIcon(u.cargo)}
+                        </div>
+                        <div>
+                          <p style={{ fontWeight: 800, color: "#fff", fontSize: 15 }}>{u.nombre}</p>
+                          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 1 }}>
+                            {cargoLabel(u.cargo)}
+                            {u.role === "ADMIN" && (
+                              <span style={{ marginLeft: 6, background: "rgba(139,92,246,0.3)", color: "#c4b5fd", padding: "1px 7px", borderRadius: 99, fontSize: 10, fontWeight: 700 }}>Admin</span>
+                            )}
+                          </p>
+                          <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, marginTop: 2 }}>{u.email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p style={{ fontWeight: 800, color: "#fff", fontSize: 15 }}>{u.nombre}</p>
-                        <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, marginTop: 1 }}>
-                          {cargoLabel(u.cargo)}
-                          {u.role === "ADMIN" && (
-                            <span style={{ marginLeft: 6, background: "rgba(139,92,246,0.3)", color: "#c4b5fd", padding: "1px 7px", borderRadius: 99, fontSize: 10, fontWeight: 700 }}>
-                              Admin
-                            </span>
-                          )}
-                        </p>
-                        <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, marginTop: 2 }}>{u.email}</p>
+                      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                        {puedeEditar && (
+                          <button onClick={() => setEditando(u)} className="text-sm font-bold px-3 py-2 rounded-xl"
+                            style={{ background: "rgba(139,92,246,0.3)", border: "1px solid rgba(139,92,246,0.5)", color: "#c4b5fd" }}>✏️</button>
+                        )}
+                        {esAdmin && u.role !== "ADMIN" && (
+                          <button onClick={() => eliminar(u.id)} className="text-sm font-bold px-3 py-2 rounded-xl"
+                            style={{ background: "rgba(220,38,38,0.3)", border: "1px solid rgba(220,38,38,0.5)", color: "#fca5a5" }}>🗑️</button>
+                        )}
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                      {puedeEditar && (
-                        <button onClick={() => setEditando(u)}
-                          className="text-sm font-bold px-3 py-2 rounded-xl"
-                          style={{ background: "rgba(139,92,246,0.3)", border: "1px solid rgba(139,92,246,0.5)", color: "#c4b5fd" }}>
-                          ✏️
-                        </button>
-                      )}
-                      {esAdmin && u.role !== "ADMIN" && (
-                        <button onClick={() => eliminar(u.id)}
-                          className="text-sm font-bold px-3 py-2 rounded-xl"
-                          style={{ background: "rgba(220,38,38,0.3)", border: "1px solid rgba(220,38,38,0.5)", color: "#fca5a5" }}>
-                          🗑️
-                        </button>
-                      )}
-                    </div>
+                    {/* Código de acceso a Finanzas — solo visible para Gerente General */}
+                    {esGerente && (
+                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, background: "rgba(0,0,0,0.2)" }}>
+                        <span style={{ fontSize: 14 }}>💰</span>
+                        <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, fontWeight: 600 }}>Código Finanzas:</span>
+                        {pinEditando === u.id ? (
+                          <>
+                            <input
+                              type="text" inputMode="numeric" maxLength={6} placeholder="6 dígitos"
+                              value={pinInput} onChange={e => { if (/^\d{0,6}$/.test(e.target.value)) setPinInput(e.target.value); }}
+                              style={{ width: 90, padding: "4px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: 14, fontWeight: 700, letterSpacing: 4, outline: "none" }}
+                              autoFocus
+                            />
+                            <button onClick={() => { const p = generarPinAleatorio(); setPinInput(p); }} style={{ fontSize: 11, color: "#a3e635", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>🎲 Generar</button>
+                            <button onClick={() => guardarPin(u.id)} disabled={pinGuardando} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: "#15803d", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>{pinGuardando ? "..." : "Guardar"}</button>
+                            <button onClick={() => { setPinEditando(null); setPinInput(""); setPinMsg(""); }} style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", background: "none", border: "none", cursor: "pointer" }}>✕</button>
+                            {pinMsg && <span style={{ fontSize: 11, color: "#f87171" }}>{pinMsg}</span>}
+                          </>
+                        ) : pines[u.id] ? (
+                          <>
+                            <span style={{ fontFamily: "monospace", fontSize: 15, fontWeight: 800, color: "#4ade80", letterSpacing: 3 }}>{pines[u.id]}</span>
+                            <button onClick={() => { setPinEditando(u.id); setPinInput(pines[u.id] || ""); }} style={{ fontSize: 11, color: "#93c5fd", background: "none", border: "none", cursor: "pointer" }}>✏️ Cambiar</button>
+                            <button onClick={() => quitarPin(u.id)} style={{ fontSize: 11, color: "#f87171", background: "none", border: "none", cursor: "pointer" }}>Quitar acceso</button>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 12, fontStyle: "italic" }}>Sin acceso</span>
+                            <button onClick={() => { setPinEditando(u.id); setPinInput(""); }} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: "#1a3a6c", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>+ Asignar código</button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -420,33 +497,56 @@ export default function EquipoPage() {
               </h2>
               <div className="space-y-3">
                 {sinCargo.map(u => (
-                  <div key={u.id} className="rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xl" style={glass}>
-                    <div className="flex items-center gap-3">
-                      <div style={{ width: 48, height: 48, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, background: "linear-gradient(135deg,#374151,#6B7280)" }}>
-                        {u.nombre.charAt(0).toUpperCase()}
+                  <div key={u.id} className="rounded-2xl shadow-xl overflow-hidden" style={glass}>
+                    <div className="p-4 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div style={{ width: 48, height: 48, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, background: "linear-gradient(135deg,#374151,#6B7280)" }}>
+                          {u.nombre.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p style={{ fontWeight: 800, color: "#fff", fontSize: 15 }}>{u.nombre}</p>
+                          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>{u.role === "ADMIN" ? "Administrador" : "Trabajador"}</p>
+                          <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11 }}>{u.email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p style={{ fontWeight: 800, color: "#fff", fontSize: 15 }}>{u.nombre}</p>
-                        <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>{u.role === "ADMIN" ? "Administrador" : "Trabajador"}</p>
-                        <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11 }}>{u.email}</p>
+                      <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                        {puedeEditar && (
+                          <button onClick={() => setEditando(u)} className="text-sm font-bold px-3 py-2 rounded-xl"
+                            style={{ background: "rgba(139,92,246,0.3)", border: "1px solid rgba(139,92,246,0.5)", color: "#c4b5fd" }}>✏️</button>
+                        )}
+                        {esAdmin && u.role !== "ADMIN" && (
+                          <button onClick={() => eliminar(u.id)} className="text-sm font-bold px-3 py-2 rounded-xl"
+                            style={{ background: "rgba(220,38,38,0.3)", border: "1px solid rgba(220,38,38,0.5)", color: "#fca5a5" }}>🗑️</button>
+                        )}
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                      {puedeEditar && (
-                        <button onClick={() => setEditando(u)}
-                          className="text-sm font-bold px-3 py-2 rounded-xl"
-                          style={{ background: "rgba(139,92,246,0.3)", border: "1px solid rgba(139,92,246,0.5)", color: "#c4b5fd" }}>
-                          ✏️
-                        </button>
-                      )}
-                      {esAdmin && u.role !== "ADMIN" && (
-                        <button onClick={() => eliminar(u.id)}
-                          className="text-sm font-bold px-3 py-2 rounded-xl"
-                          style={{ background: "rgba(220,38,38,0.3)", border: "1px solid rgba(220,38,38,0.5)", color: "#fca5a5" }}>
-                          🗑️
-                        </button>
-                      )}
-                    </div>
+                    {esGerente && (
+                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10, background: "rgba(0,0,0,0.2)" }}>
+                        <span style={{ fontSize: 14 }}>💰</span>
+                        <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, fontWeight: 600 }}>Código Finanzas:</span>
+                        {pinEditando === u.id ? (
+                          <>
+                            <input type="text" inputMode="numeric" maxLength={6} placeholder="6 dígitos" value={pinInput}
+                              onChange={e => { if (/^\d{0,6}$/.test(e.target.value)) setPinInput(e.target.value); }}
+                              style={{ width: 90, padding: "4px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.1)", color: "#fff", fontSize: 14, fontWeight: 700, letterSpacing: 4, outline: "none" }} autoFocus />
+                            <button onClick={() => setPinInput(generarPinAleatorio())} style={{ fontSize: 11, color: "#a3e635", background: "none", border: "none", cursor: "pointer" }}>🎲 Generar</button>
+                            <button onClick={() => guardarPin(u.id)} disabled={pinGuardando} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: "#15803d", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>{pinGuardando ? "..." : "Guardar"}</button>
+                            <button onClick={() => { setPinEditando(null); setPinInput(""); }} style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", background: "none", border: "none", cursor: "pointer" }}>✕</button>
+                          </>
+                        ) : pines[u.id] ? (
+                          <>
+                            <span style={{ fontFamily: "monospace", fontSize: 15, fontWeight: 800, color: "#4ade80", letterSpacing: 3 }}>{pines[u.id]}</span>
+                            <button onClick={() => { setPinEditando(u.id); setPinInput(pines[u.id] || ""); }} style={{ fontSize: 11, color: "#93c5fd", background: "none", border: "none", cursor: "pointer" }}>✏️ Cambiar</button>
+                            <button onClick={() => quitarPin(u.id)} style={{ fontSize: 11, color: "#f87171", background: "none", border: "none", cursor: "pointer" }}>Quitar acceso</button>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 12, fontStyle: "italic" }}>Sin acceso</span>
+                            <button onClick={() => { setPinEditando(u.id); setPinInput(""); }} style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: "#1a3a6c", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>+ Asignar código</button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

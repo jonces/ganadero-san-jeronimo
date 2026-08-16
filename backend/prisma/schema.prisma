@@ -62,7 +62,6 @@ model Finca {
   precioLibra         Float    @default(85)
   precioReproductora  Float    @default(29000)
   metaAnimales        Int      @default(150)
-  finanzasPin         String?
   createdAt    DateTime @default(now())
 
   usuarios    Usuario[]
@@ -101,6 +100,7 @@ model Usuario {
   resetExpira  DateTime?
   fotoPerfil   String?
   cargo           String?  // GERENTE_GENERAL, ADMINISTRADOR, RESPONSABLE_NOMINA, TRABAJADOR_CAMPO, VAQUERO, OTRO
+  finanzasPin     String?
   lastSeen        DateTime?
   tokenVersion    Int      @default(0)
   createdAt       DateTime @default(now())
