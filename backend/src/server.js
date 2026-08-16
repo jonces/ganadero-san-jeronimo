@@ -134,10 +134,22 @@ app.listen(port, () => {
   corregirTiposDeMedia();
   limpiarAnimalesEliminados();
   migrarCategoriasViejas();
+  migrarAdminSinCargo();
   upgradeCrias();
   // Re-chequear upgrades cada 24 horas
   setInterval(upgradeCrias, 24 * 60 * 60 * 1000);
 });
+
+async function migrarAdminSinCargo() {
+  try {
+    const prisma = require("./prisma");
+    const r = await prisma.usuario.updateMany({
+      where: { role: "ADMIN", cargo: null },
+      data: { cargo: "GERENTE_GENERAL" },
+    });
+    if (r.count) console.log(`Migración: ${r.count} ADMIN sin cargo → GERENTE_GENERAL`);
+  } catch (e) { console.error("Error en migrarAdminSinCargo:", e.message); }
+}
 
 async function migrarCategoriasViejas() {
   try {

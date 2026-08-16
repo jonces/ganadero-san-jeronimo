@@ -18,7 +18,7 @@ router.post("/registro", async (req, res, next) => {
     const passwordHash = await bcrypt.hash(password, 10);
     const finca = await prisma.finca.create({ data: { nombre: nombreFinca, ubicacion } });
     const usuario = await prisma.usuario.create({
-      data: { nombre, email, passwordHash, role: "ADMIN", fincaId: finca.id },
+      data: { nombre, email, passwordHash, role: "ADMIN", cargo: "GERENTE_GENERAL", fincaId: finca.id },
     });
 
     const token = jwt.sign(
