@@ -88,14 +88,23 @@ export default function PerfilPage() {
   );
 
   const inicial = perfil.nombre?.charAt(0).toUpperCase();
+  const [fotoZoom, setFotoZoom] = useState(false);
 
   return (
     <AppLayout title="Mi Perfil" subtitle="Datos de tu cuenta">
+      {/* Lightbox foto */}
+      {fotoZoom && perfil.fotoPerfil && (
+        <div onClick={() => setFotoZoom(false)} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.92)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out" }}>
+          <img src={perfil.fotoPerfil} alt="foto" style={{ maxWidth: "90vw", maxHeight: "90vh", borderRadius: 20, boxShadow: "0 32px 96px rgba(0,0,0,0.8)", objectFit: "contain" }} />
+          <button onClick={() => setFotoZoom(false)} style={{ position: "absolute", top: 20, right: 24, fontSize: 32, color: "#fff", background: "none", border: "none", cursor: "pointer", lineHeight: 1 }}>✕</button>
+        </div>
+      )}
       {/* Avatar y datos */}
       <div className="rounded-3xl p-6 mb-5 flex flex-col items-center gap-3 shadow-2xl" style={glass}>
         <div className="relative">
           <div className="w-24 h-24 rounded-full overflow-hidden shadow-xl flex items-center justify-center font-black text-4xl text-white"
-            style={{ background: ROLE_BG[perfil.role] || "rgba(255,255,255,0.1)", border: `2px solid ${ROLE_COLOR[perfil.role] || "#fff"}` }}>
+            style={{ background: ROLE_BG[perfil.role] || "rgba(255,255,255,0.1)", border: `2px solid ${ROLE_COLOR[perfil.role] || "#fff"}`, cursor: perfil.fotoPerfil ? "zoom-in" : "default" }}
+            onClick={() => perfil.fotoPerfil && setFotoZoom(true)}>
             {perfil.fotoPerfil
               ? <img src={perfil.fotoPerfil} alt="foto" className="w-full h-full object-cover" />
               : inicial}
