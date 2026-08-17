@@ -10,7 +10,7 @@ const COLOR = {
   green:   "#4ade80",
   greenDk: "#16a34a",
   bg:      "transparent",
-  white:   "rgba(10,20,30,0.28)",
+  white:   "rgba(8,18,12,0.65)",
   text:    "#ffffff",
   muted:   "rgba(255,255,255,0.55)",
   border:  "rgba(255,255,255,.18)",
@@ -21,12 +21,12 @@ const COLOR = {
 };
 
 const cardStyle = {
-  background: "rgba(255,255,255,0.07)",
+  background: "rgba(8,18,12,0.72)",
   backdropFilter: "blur(20px)",
   WebkitBackdropFilter: "blur(20px)",
-  border: "1px solid rgba(255,255,255,.14)",
+  border: "1px solid rgba(255,255,255,.18)",
   borderRadius: 18,
-  boxShadow: "0 8px 32px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.12)",
+  boxShadow: "0 8px 32px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.10)",
 };
 
 // ── Keyframes CSS ──

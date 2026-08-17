@@ -235,7 +235,7 @@ export default function AppLayout({ children, title, subtitle, searchBar, rightE
 
   return (
     <div className="min-h-screen flex" style={{
-      backgroundImage: "linear-gradient(rgba(0,0,0,0.12),rgba(0,0,0,0.12)), url(https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=2560&q=80)",
+      backgroundImage: "linear-gradient(rgba(0,0,0,0.62),rgba(0,0,0,0.62)), url(https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=2560&q=80)",
       backgroundSize: "cover",
       backgroundPosition: "center",
       backgroundAttachment: "fixed",
