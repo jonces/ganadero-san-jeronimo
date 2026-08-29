@@ -131,7 +131,7 @@ function ModalPonerEnVenta({ animal, onClose, onSuccess }) {
           <h3 className="font-black text-xl" style={{ color: T.text }}>Poner en venta</h3>
           <button type="button" onClick={onClose} style={{ color: T.textLight }}><IconX /></button>
         </div>
-        <p style={{ color: T.textSec, fontSize: 13 }}>{animal.nombre || animal.identificador}</p>
+        <p style={{ color: T.textSec, fontSize: 13 }}>{animal.identificador}</p>
         {error && <p style={{ color: "#DC2626", fontSize: 13, background: "#FEE2E2", borderRadius: 8, padding: "8px 12px" }}>{error}</p>}
         <div>
           <label style={{ color: T.textSec, fontSize: 12 }}>Precio *</label>
@@ -205,7 +205,7 @@ function ModalReservar({ animal, onClose, onSuccess }) {
           <h3 className="font-black text-xl" style={{ color: T.text }}>Registrar reserva</h3>
           <button type="button" onClick={onClose} style={{ color: T.textLight }}><IconX /></button>
         </div>
-        <p style={{ color: T.textSec, fontSize: 13 }}>{animal.nombre || animal.identificador}</p>
+        <p style={{ color: T.textSec, fontSize: 13 }}>{animal.identificador}</p>
         {error && <p style={{ color: "#DC2626", fontSize: 13, background: "#FEE2E2", borderRadius: 8, padding: "8px 12px" }}>{error}</p>}
         <div>
           <label style={{ color: T.textSec, fontSize: 12 }}>Cliente *</label>
@@ -288,7 +288,7 @@ function ModalCompletarVenta({ animal, onClose, onSuccess }) {
           <h3 className="font-black text-xl" style={{ color: T.text }}>Completar venta</h3>
           <button type="button" onClick={onClose} style={{ color: T.textLight }}><IconX /></button>
         </div>
-        <p style={{ color: T.textSec, fontSize: 13 }}>{animal.nombre || animal.identificador}</p>
+        <p style={{ color: T.textSec, fontSize: 13 }}>{animal.identificador}</p>
         {error && <p style={{ color: "#DC2626", fontSize: 13, background: "#FEE2E2", borderRadius: 8, padding: "8px 12px" }}>{error}</p>}
 
         <div className="grid grid-cols-2 gap-2">
@@ -435,7 +435,7 @@ function ModalEditarAnimal({ animal, hembrasActivas, onClose, onSuccess }) {
         <div style={{ padding: "18px 20px 14px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "rgba(255,255,255,0.90)", zIndex: 1 }}>
           <div>
             <p style={{ color: T.textLight, fontSize: 11, margin: 0 }}>Editando</p>
-            <h3 style={{ color: T.text, fontWeight: 800, fontSize: 17, margin: 0 }}>{animal.nombre || animal.identificador}</h3>
+            <h3 style={{ color: T.text, fontWeight: 800, fontSize: 17, margin: 0 }}>{animal.identificador}</h3>
           </div>
           <button type="button" onClick={onClose} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "4px 8px", cursor: "pointer", color: T.textSec }}><IconX /></button>
         </div>
@@ -737,7 +737,7 @@ function ModalInforme({ animal, onClose }) {
       doc.text("INFORME COMPLETO DE ANIMAL", MARGIN, 10);
       doc.setFontSize(20);
       doc.setFont("helvetica", "bold");
-      doc.text(animal.nombre || animal.identificador, MARGIN, 25);
+      doc.text(animal.identificador, MARGIN, 25);
       if (animal.nombre) {
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
@@ -904,7 +904,7 @@ function ModalInforme({ animal, onClose }) {
         doc.text(`Página ${i} de ${totalPags}`, PAGE_W - MARGIN, 290, { align: "right" });
       }
 
-      const nombre = (animal.nombre || animal.identificador).replace(/\s+/g, "_");
+      const nombre = (animal.identificador).replace(/\s+/g, "_");
       doc.save(`Informe_${nombre}.pdf`);
     } catch (err) {
       alert("Error al generar el PDF: " + err.message);
@@ -934,7 +934,7 @@ function ModalInforme({ animal, onClose }) {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <div>
               <p style={{ fontSize: 11, opacity: 0.7, marginBottom: 2 }}>INFORME COMPLETO</p>
-              <h2 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>{animal.nombre || animal.identificador}</h2>
+              <h2 style={{ fontSize: 22, fontWeight: 900, margin: 0 }}>{animal.identificador}</h2>
               {animal.nombre && <p style={{ fontSize: 12, opacity: 0.8, margin: "2px 0 0" }}>{animal.identificador}</p>}
             </div>
             <button onClick={onClose} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 8, color: "#fff", padding: "6px 10px", cursor: "pointer", fontSize: 18, lineHeight: 1 }}>✕</button>
@@ -1184,7 +1184,7 @@ function PanelAnimal({ animal, onClose, onRefresh, isMobile, hembrasActivas }) {
       <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
         {/* Nombre + badges */}
         <div style={{ marginBottom: 14 }}>
-          <h2 style={{ color: T.text, fontWeight: 800, fontSize: 20, margin: "0 0 2px" }}>{animal.nombre || animal.identificador}</h2>
+          <h2 style={{ color: T.text, fontWeight: 800, fontSize: 20, margin: "0 0 2px" }}>{animal.identificador}</h2>
           {animal.nombre && <p style={{ color: T.textLight, fontSize: 13, margin: "0 0 8px" }}>{animal.identificador}</p>}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             <Badge text={ec.label} color={ec.color} bg={ec.bg} border={ec.border} />
@@ -1662,8 +1662,7 @@ export default function InventarioPage() {
                                 </div>
                               </td>
                               <td style={{ padding: "10px 12px", maxWidth: 160 }}>
-                                <p style={{ color: T.text, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", margin: 0 }}>{a.nombre || <span style={{ color: T.textLight }}>Sin nombre</span>}</p>
-                                <p style={{ color: T.textLight, fontSize: 11, marginTop: 2, margin: 0 }}>{a.raza || "Sin raza"}</p>
+                                <p style={{ color: T.textLight, fontSize: 11, margin: 0 }}>{a.raza || "Sin raza"}</p>
                               </td>
                               <td style={{ padding: "10px 12px", color: "#334155", fontFamily: "monospace", whiteSpace: "nowrap", fontWeight: 600 }}>{a.identificador}</td>
                               <td style={{ padding: "10px 12px", color: T.textSec, whiteSpace: "nowrap" }}>{categoriaAnimal(a)}</td>
@@ -1705,10 +1704,10 @@ export default function InventarioPage() {
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-                            <p style={{ color: T.text, fontWeight: 700, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nombre || a.identificador}</p>
+                            <p style={{ color: T.text, fontWeight: 700, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.identificador}</p>
                             <span style={{ color: T.textLight, flexShrink: 0 }}><IconChevron /></span>
                           </div>
-                          <p style={{ color: T.textLight, fontSize: 12, margin: "2px 0 6px" }}>{a.identificador} · {categoriaAnimal(a)}</p>
+                          <p style={{ color: T.textLight, fontSize: 12, margin: "2px 0 6px" }}>{categoriaAnimal(a)}</p>
                           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                             <Badge text={ec.label} color={ec.color} bg={ec.bg} border={ec.border} />
                             <Badge text={cc.label} color={cc.color} bg={cc.bg} border={cc.border} />
