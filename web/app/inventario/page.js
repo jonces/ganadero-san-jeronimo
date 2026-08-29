@@ -1346,6 +1346,9 @@ export default function InventarioPage() {
   const [animalSeleccionado, setAnimalSeleccionado] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [vistaInventario, setVistaInventario] = useState(() => {
+    try { return localStorage.getItem("inventoryView") || "list"; } catch { return "list"; }
+  });
   const [enviando, setEnviando] = useState(false);
   const [form, setForm] = useState({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", categoria: "", pesoActual: "", observacion: "", estadoReproductivo: "", madreId: "", fechaNacimiento: "", potrero: "", costoCompra: "", precioVenta: "", origen: "FINCA" });
   const [archivos, setArchivos] = useState([]);
@@ -1580,6 +1583,23 @@ export default function InventarioPage() {
             <option value="25">25 por página</option>
             <option value="50">50 por página</option>
           </select>
+          {/* Toggle vista Lista / Tarjetas (solo escritorio) */}
+          {!isMobile && (
+            <div style={{ display: "flex", gap: 2, background: "rgba(255,255,255,0.60)", border: "1px solid rgba(0,0,0,0.15)", borderRadius: 10, padding: 3 }}>
+              <button title="Vista lista" onClick={() => { setVistaInventario("list"); try { localStorage.setItem("inventoryView","list"); } catch {} }}
+                style={{ padding: "5px 10px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 16, lineHeight: 1,
+                  background: vistaInventario === "list" ? "#16a34a" : "transparent",
+                  color: vistaInventario === "list" ? "#fff" : "#64748B", transition: "all .15s" }}>
+                ☷
+              </button>
+              <button title="Vista tarjetas" onClick={() => { setVistaInventario("grid"); try { localStorage.setItem("inventoryView","grid"); } catch {} }}
+                style={{ padding: "5px 10px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 16, lineHeight: 1,
+                  background: vistaInventario === "grid" ? "#16a34a" : "transparent",
+                  color: vistaInventario === "grid" ? "#fff" : "#64748B", transition: "all .15s" }}>
+                ▦
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Chips de fierro */}
@@ -1613,8 +1633,49 @@ export default function InventarioPage() {
               <div style={{ textAlign: "center", color: T.textLight, padding: "48px 0", fontSize: 14 }}>Cargando inventario...</div>
             ) : (
               <>
+                {/* Vista Tarjetas — escritorio */}
+                {!isMobile && vistaInventario === "grid" && (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
+                    {paginados.length === 0 ? (
+                      <div style={{ gridColumn: "1/-1", textAlign: "center", color: T.textLight, padding: "48px 0" }}>Sin resultados</div>
+                    ) : paginados.map(a => {
+                      const foto = a.media?.find(m => m.tipo === "FOTO" || m.tipo === "imagen")?.url;
+                      const ec = ESTADO_CONFIG[a.estado] || ESTADO_CONFIG.ACTIVO;
+                      return (
+                        <div key={a.id} onClick={() => setAnimalSeleccionado(animalSeleccionado?.id === a.id ? null : a)}
+                          style={{ background: "rgba(255,255,255,0.60)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: `1.5px solid ${animalSeleccionado?.id === a.id ? "#16a34a" : "rgba(0,0,0,0.10)"}`, borderRadius: 14, overflow: "hidden", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s", boxShadow: animalSeleccionado?.id === a.id ? "0 0 0 2px #16a34a40" : "0 2px 8px rgba(0,0,0,0.08)" }}
+                          onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.14)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = animalSeleccionado?.id === a.id ? "0 0 0 2px #16a34a40" : "0 2px 8px rgba(0,0,0,0.08)"; }}>
+                          {/* Foto */}
+                          <div style={{ position: "relative", width: "100%", paddingTop: "75%", background: "rgba(0,0,0,0.06)" }}>
+                            {foto
+                              ? <img src={foto} alt="animal" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                              : <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 4, color: T.textLight }}>
+                                  <IconAnimal />
+                                  <span style={{ fontSize: 10 }}>Sin foto</span>
+                                </div>}
+                            {/* Badge arete superpuesto */}
+                            <span style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.55)", color: "#fff", borderRadius: 7, padding: "2px 8px", fontSize: 12, fontWeight: 700, fontFamily: "monospace", backdropFilter: "blur(4px)" }}>
+                              {a.identificador}
+                            </span>
+                          </div>
+                          {/* Info */}
+                          <div style={{ padding: "10px 12px 12px" }}>
+                            <p style={{ color: T.text, fontWeight: 700, margin: "0 0 2px", fontSize: 13 }}>{a.raza || "Sin raza"}</p>
+                            <p style={{ color: T.textSec, fontSize: 12, margin: "0 0 6px" }}>{categoriaAnimal(a)}{a.pesoActual ? ` · ${a.pesoActual} lb` : ""}</p>
+                            {a.potrero && <p style={{ color: T.textLight, fontSize: 11, margin: "0 0 6px" }}>📍 {a.potrero}</p>}
+                            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                              <Badge text={ec.label} color={ec.color} bg={ec.bg} border={ec.border} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* Tabla — escritorio */}
-                <div style={{ display: isMobile ? "none" : "block", background: "rgba(255,255,255,0.55)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 12, overflow: "hidden" }}>
+                <div style={{ display: isMobile ? "none" : vistaInventario === "grid" ? "none" : "block", background: "rgba(255,255,255,0.55)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 12, overflow: "hidden" }}>
                   <div style={{ overflowX: "auto" }}>
                     <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
                       <thead>
