@@ -448,7 +448,6 @@ function ModalEditarAnimal({ animal, hembrasActivas, onClose, onSuccess }) {
               <label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Arete / ID</label>
               <input style={{ ...li, width: "100%", boxSizing: "border-box", background: T.bg, color: T.textLight }} value={animal.identificador} disabled />
             </div>
-            {F("Nombre", "nombre")}
             {F("Raza", "raza")}
             {F("Fierro / marca", "fierro")}
             {F("Peso actual (lb)", "pesoActual", "number")}
@@ -1500,7 +1499,6 @@ export default function InventarioPage() {
             <h3 style={{ color: T.text, fontWeight: 800, fontSize: 16, marginBottom: 16, marginTop: 0 }}>Nuevo Animal</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Arete/ID *</label><input required style={{ ...li, width: "100%" }} value={form.identificador} onChange={e => setForm({ ...form, identificador: e.target.value })} /></div>
-              <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Nombre</label><input style={{ ...li, width: "100%" }} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Sexo *</label><select style={{ ...li, width: "100%" }} value={form.sexo} onChange={e => setForm({ ...form, sexo: e.target.value, categoria: "", estadoReproductivo: "" })}><option value="HEMBRA">Hembra</option><option value="MACHO">Macho</option></select></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Categoría *</label><select required style={{ ...li, width: "100%" }} value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })}>
                 <option value="">Seleccionar...</option>
