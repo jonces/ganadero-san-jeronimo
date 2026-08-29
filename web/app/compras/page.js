@@ -37,8 +37,10 @@ export default function ComprasPage() {
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [editandoId, setEditandoId] = useState(null); // null = nueva compra, id = editando
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
+  const [eliminando, setEliminando] = useState(null); // id de la compra a eliminar
   const [animales, setAnimales] = useState([]);
   const [busqAnimal, setBusqAnimal] = useState("");
   const [modoAnimal, setModoAnimal] = useState("nuevo"); // "nuevo" | "existente"
@@ -88,10 +90,57 @@ export default function ComprasPage() {
   const cantidadAnimales = form.tipo === "ANIMAL" ? (form.animalesIds?.length || 0) : Number(form.cantidad || 1);
   const total = form.tipo === "ANIMAL" ? cantidadAnimales * precioUnitNum : Number(form.cantidad || 1) * precioUnitNum;
 
+  function abrirEditar(c) {
+    setEditandoId(c.id);
+    setForm({
+      tipo: c.tipo,
+      descripcion: c.descripcion || "",
+      proveedor: c.proveedor || "",
+      cantidad: String(c.cantidad || 1),
+      precioUnit: String(c.precioUnit || ""),
+      fecha: c.fecha ? c.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      factura: c.factura || "",
+      notas: c.notas || "",
+      animalesIds: [],
+      pagadoDeCaja: "",
+    });
+    setShowModal(true);
+  }
+
+  async function eliminar(id) {
+    if (!confirm("¿Eliminar esta compra? Esta acción no se puede deshacer.")) return;
+    setEliminando(id);
+    try {
+      await api(`/compras/${id}`, { method: "DELETE" });
+      await cargar();
+    } catch (e) { alert(e.message); }
+    finally { setEliminando(null); }
+  }
+
   async function guardar() {
     if (!form.descripcion || !form.precioUnit) return alert("Completa descripción y precio");
     setGuardando(true);
     try {
+      // EDICIÓN de compra existente
+      if (editandoId) {
+        await api(`/compras/${editandoId}`, { method: "PATCH", body: {
+          tipo:        form.tipo,
+          descripcion: form.descripcion,
+          proveedor:   form.proveedor,
+          cantidad:    Number(form.cantidad || 1),
+          precioUnit:  precioUnitNum,
+          fecha:       form.fecha,
+          factura:     form.factura,
+          notas:       form.notas,
+        }});
+        setShowModal(false);
+        setEditandoId(null);
+        setForm(FORM_VACIO);
+        await cargar();
+        return;
+      }
+
+      // NUEVA compra
       let animalesIds = form.animalesIds;
 
       if (form.tipo === "ANIMAL" && modoAnimal === "nuevo") {
@@ -130,7 +179,7 @@ export default function ComprasPage() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div />
-        <button onClick={() => { setForm(FORM_VACIO); setShowModal(true); }}
+        <button onClick={() => { setForm(FORM_VACIO); setEditandoId(null); setShowModal(true); }}
           style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: T.green, color: T.white, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
           + Nueva compra
         </button>
@@ -185,7 +234,7 @@ export default function ComprasPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: T.bg }}>
-                  {["Fecha", "Tipo", "Descripción", "Proveedor", "Cant.", "Precio unit.", "Total"].map(h => (
+                  {["Fecha", "Tipo", "Descripción", "Proveedor", "Cant.", "Precio unit.", "Total", ""].map(h => (
                     <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontSize: 12, fontWeight: 700, color: T.textSec, borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -206,6 +255,19 @@ export default function ComprasPage() {
                       <td style={{ padding: "10px 14px", fontSize: 13, color: T.textSec }}>{Number(c.cantidad).toLocaleString("es-NI")}</td>
                       <td style={{ padding: "10px 14px", fontSize: 13, color: T.textSec }}>{fmt(c.precioUnit)}</td>
                       <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 700, color: T.red }}>{fmt(c.total)}</td>
+                      <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}>
+                        <button onClick={() => abrirEditar(c)}
+                          title="Editar"
+                          style={{ background: "#EFF6FF", border: "1px solid #93C5FD", color: T.blue, borderRadius: 7, padding: "5px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer", marginRight: 6 }}>
+                          ✏️ Editar
+                        </button>
+                        <button onClick={() => eliminar(c.id)}
+                          disabled={eliminando === c.id}
+                          title="Eliminar"
+                          style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", color: T.red, borderRadius: 7, padding: "5px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer", opacity: eliminando === c.id ? 0.5 : 1 }}>
+                          {eliminando === c.id ? "..." : "🗑️"}
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
@@ -219,7 +281,7 @@ export default function ComprasPage() {
       {showModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ background: T.white, borderRadius: 14, padding: 28, width: 460, maxWidth: "95vw", maxHeight: "90vh", overflowY: "auto" }}>
-            <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 18, color: T.text }}>Nueva compra</div>
+            <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 18, color: T.text }}>{editandoId ? "Editar compra" : "Nueva compra"}</div>
             {/* Tipo */}
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 5 }}>Tipo *</div>
@@ -229,8 +291,8 @@ export default function ComprasPage() {
               </select>
             </div>
 
-            {/* Sección ANIMAL */}
-            {form.tipo === "ANIMAL" && (
+            {/* Sección ANIMAL — solo en nueva compra */}
+            {!editandoId && form.tipo === "ANIMAL" && (
               <div style={{ marginBottom: 14 }}>
                 {/* Toggle nuevo / existente */}
                 <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
@@ -344,8 +406,8 @@ export default function ComprasPage() {
               <span style={{ fontWeight: 800, color: T.red, fontSize: 16 }}>{fmt(total)}</span>
             </div>
 
-            {/* ¿Cuánto salió de la caja? */}
-            <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: 14, marginBottom: 16 }}>
+            {/* ¿Cuánto salió de la caja? — solo en nueva compra */}
+            {!editandoId && <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: 14, marginBottom: 16 }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: "#92400E", marginBottom: 4 }}>
                 💰 ¿Cuánto pagaste de tu Caja disponible?
               </div>
@@ -367,15 +429,15 @@ export default function ComprasPage() {
                   {Number(form.pagadoDeCaja) < total && ` · El resto (${fmt(total - Number(form.pagadoDeCaja))}) viene de capital externo`}
                 </div>
               )}
-            </div>
+            </div>}
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setShowModal(false)} disabled={guardando}
+              <button onClick={() => { setShowModal(false); setEditandoId(null); }} disabled={guardando}
                 style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: `1px solid ${T.border}`, background: T.white, cursor: "pointer", fontWeight: 700 }}>
                 Cancelar
               </button>
               <button onClick={guardar} disabled={guardando}
                 style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: T.green, color: T.white, cursor: "pointer", fontWeight: 700 }}>
-                {guardando ? "Guardando..." : "Guardar compra"}
+                {guardando ? "Guardando..." : editandoId ? "Guardar cambios" : "Guardar compra"}
               </button>
             </div>
           </div>
