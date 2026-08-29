@@ -181,6 +181,8 @@ model Media {
   incidente    Incidente? @relation(fields: [incidenteId], references: [id])
   gastoId   String?
   gasto     Gasto?   @relation(fields: [gastoId], references: [id])
+  compraId  String?
+  compra    Compra?  @relation(fields: [compraId], references: [id])
   createdAt DateTime @default(now())
 }
 
@@ -389,6 +391,7 @@ model Compra {
   fecha        DateTime @default(now())
   factura      String?
   notas        String?
+  media        Media[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }

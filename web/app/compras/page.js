@@ -41,6 +41,9 @@ export default function ComprasPage() {
   const [form, setForm] = useState(FORM_VACIO);
   const [guardando, setGuardando] = useState(false);
   const [eliminando, setEliminando] = useState(null); // id de la compra a eliminar
+  const [archivosNuevos, setArchivosNuevos] = useState([]); // FileList para subir
+  const [mediaExistente, setMediaExistente] = useState([]); // media ya guardada de la compra
+  const [subiendoMedia, setSubiendoMedia] = useState(false);
   const [animales, setAnimales] = useState([]);
   const [busqAnimal, setBusqAnimal] = useState("");
   const [modoAnimal, setModoAnimal] = useState("nuevo"); // "nuevo" | "existente"
@@ -104,7 +107,16 @@ export default function ComprasPage() {
       animalesIds: [],
       pagadoDeCaja: "",
     });
+    setMediaExistente(c.media || []);
+    setArchivosNuevos([]);
     setShowModal(true);
+  }
+
+  async function eliminarMedia(compraId, mediaId) {
+    try {
+      await api(`/compras/${compraId}/media/${mediaId}`, { method: "DELETE" });
+      setMediaExistente(prev => prev.filter(m => m.id !== mediaId));
+    } catch (e) { alert(e.message); }
   }
 
   async function eliminar(id) {
@@ -133,9 +145,19 @@ export default function ComprasPage() {
           factura:     form.factura,
           notas:       form.notas,
         }});
+        // Subir archivos nuevos si los hay
+        if (archivosNuevos.length > 0) {
+          setSubiendoMedia(true);
+          const fd = new FormData();
+          archivosNuevos.forEach(f => fd.append("archivos", f));
+          await api(`/compras/${editandoId}/media`, { method: "POST", body: fd, isForm: true });
+        }
         setShowModal(false);
         setEditandoId(null);
         setForm(FORM_VACIO);
+        setArchivosNuevos([]);
+        setMediaExistente([]);
+        setSubiendoMedia(false);
         await cargar();
         return;
       }
@@ -159,15 +181,24 @@ export default function ComprasPage() {
         alert("Selecciona al menos un animal"); setGuardando(false); return;
       }
 
-      await api("/compras", { method: "POST", body: {
+      const compraCreada = await api("/compras", { method: "POST", body: {
         ...form,
         cantidad:     form.tipo === "ANIMAL" ? animalesIds.length : Number(form.cantidad || 1),
         precioUnit:   precioUnitNum,
         animalesIds,
         pagadoDeCaja: Number(form.pagadoDeCaja) || 0,
       }});
+      // Subir archivos si los hay
+      if (archivosNuevos.length > 0 && compraCreada?.id) {
+        setSubiendoMedia(true);
+        const fd = new FormData();
+        archivosNuevos.forEach(f => fd.append("archivos", f));
+        await api(`/compras/${compraCreada.id}/media`, { method: "POST", body: fd, isForm: true });
+      }
       setShowModal(false);
       setForm(FORM_VACIO);
+      setArchivosNuevos([]);
+      setSubiendoMedia(false);
       setNuevoAnimal({ identificador: "", nombre: "", raza: "", sexo: "HEMBRA", pesoActual: "" });
       await cargar();
     } catch (e) { alert(e.message); }
@@ -179,7 +210,7 @@ export default function ComprasPage() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div />
-        <button onClick={() => { setForm(FORM_VACIO); setEditandoId(null); setShowModal(true); }}
+        <button onClick={() => { setForm(FORM_VACIO); setEditandoId(null); setArchivosNuevos([]); setMediaExistente([]); setShowModal(true); }}
           style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: T.green, color: T.white, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
           + Nueva compra
         </button>
@@ -430,6 +461,70 @@ export default function ComprasPage() {
                 </div>
               )}
             </div>}
+
+            {/* Archivos adjuntos */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 8 }}>
+                📎 Fotos, videos o documentos
+              </div>
+
+              {/* Archivos ya subidos (solo en edición) */}
+              {mediaExistente.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                  {mediaExistente.map(m => {
+                    const esImg = m.tipo === "imagen" || m.tipo === "FOTO";
+                    const esVideo = m.tipo === "video" || m.tipo === "VIDEO";
+                    const esDoc = m.tipo === "documento";
+                    return (
+                      <div key={m.id} style={{ position: "relative", border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden", width: 80, height: 80, background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 2 }}>
+                        {esImg
+                          ? <img src={m.url} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                          : esVideo
+                          ? <a href={m.url} target="_blank" rel="noreferrer" style={{ fontSize: 28, textDecoration: "none" }}>🎬</a>
+                          : <a href={m.url} target="_blank" rel="noreferrer" style={{ fontSize: 28, textDecoration: "none" }}>📄</a>}
+                        <button onClick={() => eliminarMedia(editandoId, m.id)}
+                          style={{ position: "absolute", top: 2, right: 2, background: "rgba(220,38,38,0.85)", border: "none", borderRadius: "50%", width: 18, height: 18, color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, lineHeight: 1 }}>
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Selector de nuevos archivos */}
+              <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", border: `1.5px dashed ${T.border}`, borderRadius: 10, padding: "12px 14px", background: T.bg }}>
+                <span style={{ fontSize: 22 }}>📁</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: T.text }}>
+                    {archivosNuevos.length > 0 ? `${archivosNuevos.length} archivo${archivosNuevos.length > 1 ? "s" : ""} seleccionado${archivosNuevos.length > 1 ? "s" : ""}` : "Seleccionar archivos"}
+                  </div>
+                  <div style={{ fontSize: 11, color: T.textLight }}>Fotos, videos, PDF, recibos — hasta 20 archivos</div>
+                </div>
+                <input type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx"
+                  style={{ display: "none" }}
+                  onChange={e => setArchivosNuevos(Array.from(e.target.files || []))} />
+              </label>
+
+              {/* Preview de archivos nuevos seleccionados */}
+              {archivosNuevos.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                  {archivosNuevos.map((f, i) => {
+                    const esImg = f.type.startsWith("image/");
+                    const esVideo = f.type.startsWith("video/");
+                    return (
+                      <div key={i} style={{ border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden", width: 72, height: 72, background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexDirection: "column", gap: 2, position: "relative" }}>
+                        {esImg
+                          ? <img src={URL.createObjectURL(f)} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+                          : esVideo ? "🎬" : "📄"}
+                        {!esImg && <span style={{ fontSize: 9, color: T.textLight, padding: "0 4px", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{f.name}</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <div style={{ display: "flex", gap: 10 }}>
               <button onClick={() => { setShowModal(false); setEditandoId(null); }} disabled={guardando}
                 style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: `1px solid ${T.border}`, background: T.white, cursor: "pointer", fontWeight: 700 }}>
@@ -437,7 +532,7 @@ export default function ComprasPage() {
               </button>
               <button onClick={guardar} disabled={guardando}
                 style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: T.green, color: T.white, cursor: "pointer", fontWeight: 700 }}>
-                {guardando ? "Guardando..." : editandoId ? "Guardar cambios" : "Guardar compra"}
+                {subiendoMedia ? "Subiendo archivos..." : guardando ? "Guardando..." : editandoId ? "Guardar cambios" : "Guardar compra"}
               </button>
             </div>
           </div>

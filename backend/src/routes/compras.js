@@ -1,8 +1,11 @@
 const express = require("express");
+const multer = require("multer");
 const prisma = require("../prisma");
 const { requireAuth, requireNoEsCampo } = require("../middleware/auth");
+const { uploadMediaConTipo } = require("../lib/storage");
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
 router.use(requireAuth);
 router.use(requireNoEsCampo);
 
@@ -47,6 +50,7 @@ router.get("/", async (req, res, next) => {
         orderBy: { fecha: "desc" },
         skip: (Number(page) - 1) * Number(limit),
         take: Number(limit),
+        include: { media: true },
       }),
       prisma.compra.count({ where }),
     ]);
@@ -125,7 +129,32 @@ router.delete("/:id", async (req, res, next) => {
   try {
     const existing = await prisma.compra.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
     if (!existing) return res.status(404).json({ error: "No encontrado" });
+    await prisma.media.deleteMany({ where: { compraId: req.params.id } });
     await prisma.compra.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// ─── Media de compra ─────────────────────────────────────────────────────────
+router.post("/:id/media", upload.array("archivos", 20), async (req, res, next) => {
+  try {
+    const existing = await prisma.compra.findFirst({ where: { id: req.params.id, fincaId: req.user.fincaId } });
+    if (!existing) return res.status(404).json({ error: "No encontrado" });
+    if (!req.files || req.files.length === 0) return res.status(400).json({ error: "No se recibieron archivos" });
+
+    const subidas = await Promise.all(req.files.map(f => uploadMediaConTipo(f)));
+    const media = await Promise.all(subidas.map(({ url, tipo }) =>
+      prisma.media.create({ data: { url, tipo, compraId: req.params.id } })
+    ));
+    res.json(media);
+  } catch (err) { next(err); }
+});
+
+router.delete("/:id/media/:mediaId", async (req, res, next) => {
+  try {
+    const m = await prisma.media.findFirst({ where: { id: req.params.mediaId, compraId: req.params.id } });
+    if (!m) return res.status(404).json({ error: "No encontrado" });
+    await prisma.media.delete({ where: { id: req.params.mediaId } });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
