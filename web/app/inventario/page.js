@@ -1348,7 +1348,7 @@ export default function InventarioPage() {
   const [isMobile, setIsMobile] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const [form, setForm] = useState({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", pesoActual: "", observacion: "", estadoReproductivo: "", madreId: "", fechaNacimiento: "", potrero: "", costoCompra: "", precioVenta: "", origen: "FINCA" });
+  const [form, setForm] = useState({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", categoria: "", pesoActual: "", observacion: "", estadoReproductivo: "", madreId: "", fechaNacimiento: "", potrero: "", costoCompra: "", precioVenta: "", origen: "FINCA" });
   const [archivos, setArchivos] = useState([]);
 
   useEffect(() => {
@@ -1445,7 +1445,7 @@ export default function InventarioPage() {
           body: fd,
         });
       }
-      setForm({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", pesoActual: "", observacion: "", estadoReproductivo: "", madreId: "", fechaNacimiento: "", potrero: "", costoCompra: "", precioVenta: "", origen: "FINCA" });
+      setForm({ identificador: "", nombre: "", raza: "", fierro: "", sexo: "HEMBRA", categoria: "", pesoActual: "", observacion: "", estadoReproductivo: "", madreId: "", fechaNacimiento: "", potrero: "", costoCompra: "", precioVenta: "", origen: "FINCA" });
       setArchivos([]);
       setShowForm(false);
       load();
@@ -1501,7 +1501,23 @@ export default function InventarioPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Arete/ID *</label><input required style={{ ...li, width: "100%" }} value={form.identificador} onChange={e => setForm({ ...form, identificador: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Nombre</label><input style={{ ...li, width: "100%" }} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} /></div>
-              <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Sexo *</label><select style={{ ...li, width: "100%" }} value={form.sexo} onChange={e => setForm({ ...form, sexo: e.target.value })}><option value="HEMBRA">Hembra</option><option value="MACHO">Macho</option></select></div>
+              <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Sexo *</label><select style={{ ...li, width: "100%" }} value={form.sexo} onChange={e => setForm({ ...form, sexo: e.target.value, categoria: "", estadoReproductivo: "" })}><option value="HEMBRA">Hembra</option><option value="MACHO">Macho</option></select></div>
+              <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Categoría *</label><select required style={{ ...li, width: "100%" }} value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })}>
+                <option value="">Seleccionar...</option>
+                {form.sexo === "HEMBRA"
+                  ? <><option value="CRIA">Cría</option><option value="TERNERA">Ternera</option><option value="VACA">Vaca</option></>
+                  : <><option value="CRIA">Cría</option><option value="TERNERO">Ternero</option><option value="TORO">Toro</option><option value="SEMENTAL">Semental</option></>}
+              </select></div>
+              {form.sexo === "HEMBRA" && form.categoria === "VACA" && (
+                <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Estado reproductivo</label><select style={{ ...li, width: "100%" }} value={form.estadoReproductivo} onChange={e => setForm({ ...form, estadoReproductivo: e.target.value })}>
+                  <option value="">Sin registrar</option>
+                  <option value="PREÑADA">Preñada</option>
+                  <option value="PARIDA">Parida</option>
+                  <option value="LACTANCIA">Lactancia</option>
+                  <option value="SECA">Seca</option>
+                  <option value="VACIA">Vacía</option>
+                </select></div>
+              )}
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Raza</label><input style={{ ...li, width: "100%" }} value={form.raza} onChange={e => setForm({ ...form, raza: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Fierro</label><input style={{ ...li, width: "100%" }} value={form.fierro} onChange={e => setForm({ ...form, fierro: e.target.value })} /></div>
               <div><label style={{ color: T.textSec, fontSize: 12, display: "block", marginBottom: 4 }}>Potrero</label><input style={{ ...li, width: "100%" }} placeholder="Ej: Potrero Norte" value={form.potrero} onChange={e => setForm({ ...form, potrero: e.target.value })} /></div>
