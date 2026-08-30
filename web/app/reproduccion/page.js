@@ -338,6 +338,9 @@ export default function ReproduccionPage() {
   const [filtroEstado, setFiltro]   = useState("TODAS");
   const [filtroPotrero, setPotrero] = useState("");
   const [selected, setSelected]     = useState(null);
+  const [vista, setVista] = useState(() => {
+    try { return localStorage.getItem("reproduccionView") || "list"; } catch { return "list"; }
+  });
 
   async function cargar() {
     setLoading(true);
@@ -454,10 +457,76 @@ export default function ReproduccionPage() {
             {potreros.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
         )}
+        {/* Toggle vista */}
+        <div style={{ marginLeft: "auto", display: "flex", gap: 2, background: T.white, border: `1px solid ${T.border}`, borderRadius: 10, padding: 3 }}>
+          <button title="Vista lista" onClick={() => { setVista("list"); try { localStorage.setItem("reproduccionView","list"); } catch {} }}
+            style={{ padding: "5px 10px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 16, lineHeight: 1, background: vista === "list" ? T.green : "transparent", color: vista === "list" ? "#fff" : "#64748B", transition: "all .15s" }}>
+            ☷
+          </button>
+          <button title="Vista tarjetas" onClick={() => { setVista("grid"); try { localStorage.setItem("reproduccionView","grid"); } catch {} }}
+            style={{ padding: "5px 10px", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 16, lineHeight: 1, background: vista === "grid" ? T.green : "transparent", color: vista === "grid" ? "#fff" : "#64748B", transition: "all .15s" }}>
+            ▦
+          </button>
+        </div>
       </div>
 
+      {/* ── Vista Tarjetas ──────────────────────────────────────────── */}
+      {vista === "grid" && !loading && animales.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 14, marginRight: selected ? 376 : 0, transition: "margin-right .2s" }}>
+          {animales.map(a => {
+            const foto = a.media?.[0]?.url;
+            const urg = urgenciaColor(a.diasHastaParto);
+            const esSelected = selected?.id === a.id;
+            const badge = BADGE_MAP[a.estadoReproductivo] || { bg: T.orangeBg, color: T.orange, label: a.estadoReproductivo || "—" };
+            return (
+              <div key={a.id} onClick={() => setSelected(esSelected ? null : a)}
+                style={{ background: T.white, border: `1.5px solid ${esSelected ? T.green : T.border}`, borderRadius: 14, overflow: "hidden", cursor: "pointer", transition: "transform .15s, box-shadow .15s", boxShadow: esSelected ? `0 0 0 2px ${T.green}40` : "0 2px 8px rgba(0,0,0,0.06)" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.10)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = esSelected ? `0 0 0 2px ${T.green}40` : "0 2px 8px rgba(0,0,0,0.06)"; }}>
+                {/* Foto */}
+                <div style={{ position: "relative", width: "100%", paddingTop: "72%", background: T.bg }}>
+                  {foto
+                    ? <img src={foto} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36 }}>🐄</div>}
+                  {/* Arete superpuesto */}
+                  <span style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.55)", color: "#fff", borderRadius: 7, padding: "2px 8px", fontSize: 12, fontWeight: 700, fontFamily: "monospace", backdropFilter: "blur(4px)" }}>
+                    {a.identificador}
+                  </span>
+                  {/* Badge urgencia */}
+                  {urg && (
+                    <span style={{ position: "absolute", top: 8, left: 8, background: urg.bg, color: urg.color, borderRadius: 6, padding: "2px 7px", fontSize: 10, fontWeight: 800 }}>
+                      {urg.label}
+                    </span>
+                  )}
+                </div>
+                {/* Info */}
+                <div style={{ padding: "10px 12px 12px" }}>
+                  <span style={{ background: badge.bg, color: badge.color, padding: "2px 9px", borderRadius: 99, fontSize: 11, fontWeight: 700 }}>{badge.label}</span>
+                  <p style={{ color: T.text, fontWeight: 700, margin: "6px 0 1px", fontSize: 13 }}>{a.raza || "Sin raza"}</p>
+                  {a.fechaParto && (
+                    <p style={{ color: urg ? urg.color : T.textSec, fontSize: 11, margin: "0 0 2px", fontWeight: urg ? 700 : 400 }}>
+                      📅 {new Date(a.fechaParto).toLocaleDateString("es-NI", { day: "2-digit", month: "short" })}
+                      {a.diasHastaParto !== null && a.diasHastaParto !== undefined && (
+                        <span> · {a.diasHastaParto <= 0 ? "¡Fecha pasada!" : `${a.diasHastaParto}d`}</span>
+                      )}
+                    </p>
+                  )}
+                  {a.pesoActual && <p style={{ color: T.textLight, fontSize: 11, margin: 0 }}>⚖️ {Number(a.pesoActual).toLocaleString("es-NI")} lb</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {vista === "grid" && !loading && animales.length === 0 && (
+        <div style={{ padding: 48, textAlign: "center", color: T.textSec }}>
+          <div style={{ fontSize: 48, marginBottom: 10 }}>🐄</div>
+          <div style={{ fontWeight: 700 }}>No hay hembras con los filtros actuales</div>
+        </div>
+      )}
+
       {/* ── Tabla ───────────────────────────────────────────────────── */}
-      <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", marginRight: selected ? 376 : 0, transition: "margin-right .2s" }}>
+      <div style={{ display: vista === "grid" ? "none" : "block", background: T.white, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", marginRight: selected ? 376 : 0, transition: "margin-right .2s" }}>
         {loading ? (
           <div style={{ padding: 40, display: "flex", flexDirection: "column", gap: 12 }}>
             {[1,2,3,4].map(i => <Sk key={i} h={50} r={8} />)}
