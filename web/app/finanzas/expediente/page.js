@@ -353,54 +353,85 @@ function EstadoBadge({ estado }) {
   return <span style={{ background:s.bg, color:s.color, padding:"2px 10px", borderRadius:99, fontSize:11, fontWeight:700 }}>{s.label}</span>;
 }
 
-// ─── Tipos de documentos ──────────────────────────────────────────────────────
+// ─── Definición de documentos ─────────────────────────────────────────────────
+// fuente: "sistema" = se obtiene automáticamente de la base de datos
+//         "externo" = debe subirse manualmente (documento físico/externo)
 const TIPOS_DOCS = [
-  { key:"IDENTIFICACION",     label:"Identificación",         icon:"🪪" },
-  { key:"RUC",                label:"RUC",                    icon:"📋" },
-  { key:"MATRICULA",          label:"Matrícula del negocio",  icon:"🏢" },
-  { key:"TITULO_PROPIEDAD",   label:"Título de propiedad",    icon:"🏡" },
-  { key:"ESTADOS_BANCARIOS",  label:"Estados bancarios",      icon:"🏦" },
-  { key:"INVENTARIO",         label:"Inventario ganadero",    icon:"🐄" },
-  { key:"DECLARACION_FISCAL", label:"Declaración fiscal",     icon:"📊" },
-  { key:"AVALUO",             label:"Avalúo actualizado",     icon:"💰" },
-  { key:"BALANCE",            label:"Balance general",        icon:"⚖️" },
-  { key:"ESTADO_RESULTADOS",  label:"Estado de resultados",   icon:"📈" },
-  { key:"FLUJO_EFECTIVO",     label:"Flujo de efectivo",      icon:"💵" },
-  { key:"INDICADORES",        label:"Indicadores financieros",icon:"📉" },
-  { key:"HISTORIAL_VENTAS",   label:"Historial de ventas",    icon:"📦" },
-  { key:"ACTIVOS_FIJOS",      label:"Registro activos fijos", icon:"🏗️" },
-  { key:"ESTADO_DEUDAS",      label:"Estado de deudas",       icon:"📑" },
-  { key:"PLAN_INVERSION",     label:"Plan de inversión",      icon:"📝" },
-  { key:"OTRO",               label:"Otro documento",         icon:"📁" },
+  // ── Externos (requieren subida manual)
+  { key:"IDENTIFICACION",     label:"Identificación",          icon:"🪪", fuente:"externo", desc:"Cédula o pasaporte del propietario" },
+  { key:"RUC",                label:"RUC",                     icon:"📋", fuente:"externo", desc:"Registro Único del Contribuyente (DGI)" },
+  { key:"MATRICULA",          label:"Matrícula del negocio",   icon:"🏢", fuente:"externo", desc:"Matrícula municipal / Registro Mercantil" },
+  { key:"TITULO_PROPIEDAD",   label:"Título de propiedad",     icon:"🏡", fuente:"externo", desc:"Escritura notarial de finca o terreno" },
+  { key:"ESTADOS_BANCARIOS",  label:"Estados bancarios",       icon:"🏦", fuente:"externo", desc:"PDF emitido por el banco (últimos 6 meses)" },
+  { key:"DECLARACION_FISCAL", label:"Declaración fiscal",      icon:"📊", fuente:"externo", desc:"Formulario IR o IVA emitido por la DGI" },
+  { key:"AVALUO",             label:"Avalúo actualizado",       icon:"💰", fuente:"externo", desc:"Peritaje de bienes inmuebles o activos" },
+  { key:"PLAN_INVERSION",     label:"Plan de inversión",        icon:"📝", fuente:"externo", desc:"Documento con el uso detallado del crédito" },
+  // ── Del sistema (se generan automáticamente)
+  { key:"BALANCE",            label:"Balance general",          icon:"⚖️", fuente:"sistema", apiCheck:"balance" },
+  { key:"ESTADO_RESULTADOS",  label:"Estado de resultados",     icon:"📈", fuente:"sistema", apiCheck:"resultados" },
+  { key:"FLUJO_EFECTIVO",     label:"Flujo de efectivo",        icon:"💵", fuente:"sistema", apiCheck:"flujo" },
+  { key:"INDICADORES",        label:"Indicadores financieros",  icon:"📉", fuente:"sistema", apiCheck:"indicadores" },
+  { key:"INVENTARIO",         label:"Inventario ganadero",      icon:"🐄", fuente:"sistema", apiCheck:"animales" },
+  { key:"HISTORIAL_VENTAS",   label:"Historial de ventas",      icon:"📦", fuente:"sistema", apiCheck:"resultados" },
+  { key:"ACTIVOS_FIJOS",      label:"Registro activos fijos",   icon:"🏗️", fuente:"sistema", apiCheck:"activosFijos" },
+  { key:"ESTADO_DEUDAS",      label:"Estado de deudas",         icon:"📑", fuente:"sistema", apiCheck:"deudas" },
+  { key:"OTRO",               label:"Otro documento",           icon:"📁", fuente:"externo", desc:"Cualquier otro documento de soporte" },
 ];
+const DOCS_EXTERNOS = TIPOS_DOCS.filter(t => t.fuente==="externo" && t.key!=="OTRO");
+const DOCS_SISTEMA  = TIPOS_DOCS.filter(t => t.fuente==="sistema");
 
 // ─── Tab Documentos ───────────────────────────────────────────────────────────
-function TabDocumentos({ inputS, labelS, C, glass, ProgressBar }) {
-  const [docs, setDocs]             = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [modal, setModal]           = useState(false);
-  const [subiendo, setSubiendo]     = useState(false);
-  const [errorDoc, setErrorDoc]     = useState("");
-  const [tipoSel, setTipoSel]       = useState("IDENTIFICACION");
-  const [nombreSel, setNombreSel]   = useState("");
-  const [archivo, setArchivo]       = useState(null);
-  const inputRef = useRef(null);
+function TabDocumentos({ inputS, labelS, C, glass, ProgressBar, balance, resultados, flujo, indicadores, animalesCount }) {
+  const [docs, setDocs]           = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [modal, setModal]         = useState(false);
+  const [tipoInicial, setTipoInicial] = useState("IDENTIFICACION");
+  const [subiendo, setSubiendo]   = useState(false);
+  const [errorDoc, setErrorDoc]   = useState("");
+  const [tipoSel, setTipoSel]     = useState("IDENTIFICACION");
+  const [nombreSel, setNombreSel] = useState("");
+  const [archivo, setArchivo]     = useState(null);
 
   const cargar = useCallback(() => {
     setLoading(true);
     api("/documentos-expediente").then(d => { setDocs(Array.isArray(d)?d:[]); setLoading(false); }).catch(()=>setLoading(false));
   }, []);
-
   useEffect(() => { cargar(); }, [cargar]);
 
+  // Disponibilidad automática de docs del sistema
+  const sistemaDisponible = {
+    balance:      !!(balance?.totalActivos > 0),
+    resultados:   !!(resultados?.ingresoVentas != null),
+    flujo:        !!(flujo?.meses?.length > 0),
+    indicadores:  !!(indicadores?.liquidez != null || indicadores?.margenNeto != null),
+    animales:     !!(animalesCount > 0),
+    activosFijos: !!(balance?.activosFijosTotal > 0),
+    deudas:       !!(balance?.totalDeudas != null),
+  };
+
+  // Docs externos subidos
   const tiposSubidos = new Set(docs.map(d => d.tipo));
-  const completados  = TIPOS_DOCS.filter(t => tiposSubidos.has(t.key)).length;
-  const pctDocs      = Math.round(completados / (TIPOS_DOCS.length-1) * 100); // excluye OTRO
+
+  // Conteo para la barra de progreso
+  const externosOk  = DOCS_EXTERNOS.filter(t => tiposSubidos.has(t.key)).length;
+  const sistemaOk   = DOCS_SISTEMA.filter(t => sistemaDisponible[t.apiCheck]).length;
+  const totalOk     = externosOk + sistemaOk;
+  const totalDocs   = DOCS_EXTERNOS.length + DOCS_SISTEMA.length;
+  const pctDocs     = Math.round(totalOk / totalDocs * 100);
+
+  function abrirModal(tipoKey) {
+    const t = TIPOS_DOCS.find(d => d.key === tipoKey) || TIPOS_DOCS[0];
+    setTipoSel(tipoKey);
+    setNombreSel(t.label);
+    setArchivo(null);
+    setErrorDoc("");
+    setModal(true);
+  }
 
   async function subirDoc(e) {
     e.preventDefault();
     if (!archivo) { setErrorDoc("Selecciona un archivo"); return; }
-    if (!nombreSel.trim()) { setErrorDoc("Pon un nombre al documento"); return; }
+    if (!nombreSel.trim()) { setErrorDoc("Escribe un nombre"); return; }
     setSubiendo(true); setErrorDoc("");
     try {
       const fd = new FormData();
@@ -408,15 +439,12 @@ function TabDocumentos({ inputS, labelS, C, glass, ProgressBar }) {
       fd.append("tipo", tipoSel);
       fd.append("nombre", nombreSel.trim());
       const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("token") : null;
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://ganaderosg-backend.up.railway.app/api";
-      const r = await fetch(`${API_BASE}/documentos-expediente`, {
-        method:"POST",
-        headers: token ? { Authorization:`Bearer ${token}` } : {},
-        body: fd,
+      const BASE = process.env.NEXT_PUBLIC_API_URL || "https://ganaderosg-backend.up.railway.app/api";
+      const r = await fetch(`${BASE}/documentos-expediente`, {
+        method:"POST", headers: token ? { Authorization:`Bearer ${token}` } : {}, body: fd,
       });
       if (!r.ok) { const d = await r.json().catch(()=>{}); throw new Error(d?.error || "Error al subir"); }
-      setModal(false); setArchivo(null); setNombreSel(""); setTipoSel("IDENTIFICACION");
-      cargar();
+      setModal(false); setArchivo(null); setNombreSel(""); cargar();
     } catch(err) { setErrorDoc(err.message); }
     finally { setSubiendo(false); }
   }
@@ -427,48 +455,42 @@ function TabDocumentos({ inputS, labelS, C, glass, ProgressBar }) {
     cargar();
   }
 
-  const purple = C.purple;
-  const border = C.border;
-  const text   = C.text;
-  const textSec= C.textSec;
-  const textDim= C.textDim;
-  const green  = C.green;
-  const red    = C.red;
-  const orange = C.orange;
+  const { purple, border, text, textSec, textDim, green, blue, red, orange } = C;
 
   return (
-    <div style={glass}>
+    <div>
       {/* Modal subir */}
       {modal && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }} onClick={()=>setModal(false)}>
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }} onClick={()=>setModal(false)}>
           <div onClick={e=>e.stopPropagation()} style={{ background:"#0d1a10", border:`1px solid ${border}`, borderRadius:16, padding:28, width:"100%", maxWidth:440 }}>
-            <div style={{ fontWeight:800, fontSize:16, color:text, marginBottom:20 }}>Subir documento</div>
+            <div style={{ fontWeight:800, fontSize:16, color:text, marginBottom:6 }}>Subir documento externo</div>
+            <p style={{ fontSize:12, color:textDim, margin:"0 0 20px" }}>Estos documentos no pueden generarse del sistema — se obtienen de entidades externas.</p>
             <form onSubmit={subirDoc}>
               <div style={{ marginBottom:12 }}>
                 <label style={labelS}>Tipo de documento *</label>
                 <select style={inputS} value={tipoSel} onChange={e=>{ setTipoSel(e.target.value); const t=TIPOS_DOCS.find(d=>d.key===e.target.value); if(t) setNombreSel(t.label); }}>
-                  {TIPOS_DOCS.map(t=><option key={t.key} value={t.key}>{t.icon} {t.label}</option>)}
+                  {[...DOCS_EXTERNOS, { key:"OTRO", label:"Otro documento", icon:"📁" }].map(t=>(
+                    <option key={t.key} value={t.key}>{t.icon} {t.label}</option>
+                  ))}
                 </select>
               </div>
               <div style={{ marginBottom:12 }}>
-                <label style={labelS}>Nombre del documento *</label>
-                <input style={inputS} value={nombreSel} onChange={e=>setNombreSel(e.target.value)} placeholder="Ej: Cédula identidad propietario" />
+                <label style={labelS}>Nombre del archivo *</label>
+                <input style={inputS} value={nombreSel} onChange={e=>setNombreSel(e.target.value)} placeholder="Ej: Cédula de Jon Celestino" />
               </div>
               <div style={{ marginBottom:16 }}>
                 <label style={labelS}>Archivo *</label>
                 <label style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.06)", border:`2px dashed ${archivo?purple:border}`, borderRadius:10, padding:"14px 16px", cursor:"pointer" }}>
-                  <input ref={inputRef} type="file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" style={{ display:"none" }} onChange={e=>setArchivo(e.target.files[0])} />
+                  <input type="file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" style={{ display:"none" }} onChange={e=>setArchivo(e.target.files[0])} />
                   <span style={{ fontSize:22 }}>📎</span>
-                  <span style={{ fontSize:13, color:archivo?text:textDim }}>
-                    {archivo ? archivo.name : "Haz clic para seleccionar (imagen, PDF, Word, Excel)"}
-                  </span>
+                  <span style={{ fontSize:13, color:archivo?text:textDim }}>{archivo ? archivo.name : "Imagen, PDF, Word o Excel"}</span>
                 </label>
               </div>
               {errorDoc && <p style={{ color:red, fontSize:12, marginBottom:10 }}>{errorDoc}</p>}
               <div style={{ display:"flex", gap:8 }}>
                 <button type="button" onClick={()=>setModal(false)} style={{ flex:1, padding:"10px 0", background:"rgba(255,255,255,0.08)", border:`1px solid ${border}`, borderRadius:8, color:textSec, fontWeight:600, cursor:"pointer", fontSize:13 }}>Cancelar</button>
-                <button type="submit" disabled={subiendo} style={{ flex:2, padding:"10px 0", background:purple, border:"none", borderRadius:8, color:"#fff", fontWeight:700, cursor:subiendo?"wait":"pointer", fontSize:13, opacity:subiendo?0.6:1 }}>
-                  {subiendo ? "Subiendo..." : "⬆ Subir documento"}
+                <button type="submit" disabled={subiendo} style={{ flex:2, padding:"10px 0", background:purple, border:"none", borderRadius:8, color:"#fff", fontWeight:700, fontSize:13, cursor:subiendo?"wait":"pointer", opacity:subiendo?0.6:1 }}>
+                  {subiendo ? "Subiendo..." : "⬆ Subir"}
                 </button>
               </div>
             </form>
@@ -476,68 +498,108 @@ function TabDocumentos({ inputS, labelS, C, glass, ProgressBar }) {
         </div>
       )}
 
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-        <p style={{ fontSize:11, fontWeight:700, color:purple, textTransform:"uppercase", letterSpacing:"0.07em", margin:0 }}>DOCUMENTOS DEL EXPEDIENTE</p>
-        <span style={{ fontSize:13, color:textSec }}>{completados} de {TIPOS_DOCS.length-1} tipos cubiertos</span>
-      </div>
-      <ProgressBar pct={pctDocs} color={purple} h={6} />
-
-      {/* Grid de tipos */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10, marginTop:16 }}>
-        {TIPOS_DOCS.filter(t=>t.key!=="OTRO").map(tipo => {
-          const docsDelTipo = docs.filter(d=>d.tipo===tipo.key);
-          const ok = docsDelTipo.length > 0;
-          const color = ok ? green : orange;
-          const icon2 = ok ? "✓" : "○";
-          return (
-            <div key={tipo.key} style={{ background:"rgba(255,255,255,0.04)", border:`1px solid ${color}25`, borderRadius:10, padding:"12px 14px", display:"flex", flexDirection:"column", gap:6, position:"relative" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                <span style={{ fontSize:22 }}>{tipo.icon}</span>
-                <span style={{ background:`${color}20`, color, borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700 }}>{icon2}</span>
-              </div>
-              <div style={{ fontSize:12, color:text, fontWeight:600, lineHeight:1.3 }}>{tipo.label}</div>
-              {ok ? (
-                <div>
-                  {docsDelTipo.map(d=>(
-                    <div key={d.id} style={{ display:"flex", alignItems:"center", gap:4, marginTop:2 }}>
-                      <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ fontSize:10, color:green, textDecoration:"underline", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Ver archivo</a>
-                      <button onClick={()=>eliminar(d.id)} style={{ background:"none", border:"none", cursor:"pointer", color:red, fontSize:13, padding:0, lineHeight:1 }}>✕</button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ fontSize:10, color:orange }}>Pendiente</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Documentos "Otro" */}
-      {docs.filter(d=>d.tipo==="OTRO").length > 0 && (
-        <div style={{ marginTop:12 }}>
-          <p style={{ fontSize:11, color:textSec, fontWeight:600, margin:"0 0 6px" }}>OTROS DOCUMENTOS</p>
-          {docs.filter(d=>d.tipo==="OTRO").map(d=>(
-            <div key={d.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"rgba(255,255,255,0.04)", borderRadius:8, padding:"8px 12px", marginBottom:6 }}>
-              <div>
-                <div style={{ fontSize:13, color:text, fontWeight:600 }}>{d.nombre}</div>
-                <div style={{ fontSize:11, color:textDim }}>{new Date(d.createdAt).toLocaleDateString("es-NI")}</div>
-              </div>
-              <div style={{ display:"flex", gap:6 }}>
-                <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ padding:"5px 10px", background:"rgba(255,255,255,0.08)", border:`1px solid ${border}`, borderRadius:6, fontSize:11, color:textSec, textDecoration:"none", fontWeight:600 }}>Ver</a>
-                <button onClick={()=>eliminar(d.id)} style={{ padding:"5px 10px", background:"rgba(220,38,38,0.12)", border:`1px solid rgba(220,38,38,0.3)`, borderRadius:6, fontSize:11, color:red, cursor:"pointer", fontWeight:600 }}>✕</button>
-              </div>
-            </div>
-          ))}
+      {/* Encabezado con progreso */}
+      <div style={{ ...glass, marginBottom:12 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+          <p style={{ fontSize:11, fontWeight:700, color:purple, textTransform:"uppercase", letterSpacing:"0.07em", margin:0 }}>DOCUMENTOS DEL EXPEDIENTE</p>
+          <span style={{ fontSize:13, color:textSec, fontWeight:700 }}>{totalOk} / {totalDocs} listos</span>
         </div>
-      )}
+        <ProgressBar pct={pctDocs} color={purple} h={7} />
+        <div style={{ display:"flex", gap:16, marginTop:8, fontSize:11, color:textDim }}>
+          <span>🟢 Del sistema: {sistemaOk}/{DOCS_SISTEMA.length}</span>
+          <span>📎 Subidos manualmente: {externosOk}/{DOCS_EXTERNOS.length}</span>
+        </div>
+      </div>
 
-      <div style={{ marginTop:16, paddingTop:12, borderTop:`1px solid ${border}` }}>
-        <button onClick={()=>{ setModal(true); const t=TIPOS_DOCS.find(t=>t.key==="IDENTIFICACION"); if(t) setNombreSel(t.label); }}
-          style={{ padding:"10px 20px", background:"rgba(192,132,252,0.15)", border:`1px solid ${purple}`, borderRadius:8, color:purple, fontWeight:700, fontSize:13, cursor:"pointer" }}>
-          + Subir documento
-        </button>
-        {loading && <span style={{ marginLeft:12, fontSize:12, color:textDim }}>Cargando...</span>}
+      {/* ── Sección A: Del sistema (automáticos) ── */}
+      <div style={{ ...glass, marginBottom:12 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+          <div>
+            <p style={{ fontSize:12, fontWeight:800, color:green, margin:"0 0 2px" }}>DEL SISTEMA — Generados automáticamente</p>
+            <p style={{ fontSize:11, color:textDim, margin:0 }}>Estos documentos se obtienen directamente de los datos registrados en el sistema. No necesitas subir nada.</p>
+          </div>
+          <span style={{ fontSize:22 }}>⚙️</span>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:10 }}>
+          {DOCS_SISTEMA.map(tipo => {
+            const ok = sistemaDisponible[tipo.apiCheck];
+            return (
+              <div key={tipo.key} style={{ background: ok ? "rgba(34,197,94,0.06)" : "rgba(255,255,255,0.03)", border:`1px solid ${ok ? green+"40" : border}`, borderRadius:10, padding:"12px 14px", display:"flex", gap:10, alignItems:"flex-start" }}>
+                <span style={{ fontSize:22, flexShrink:0 }}>{tipo.icon}</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:3 }}>{tipo.label}</div>
+                  {ok ? (
+                    <span style={{ fontSize:10, background:"rgba(34,197,94,0.15)", color:green, padding:"2px 8px", borderRadius:99, fontWeight:700 }}>✓ Disponible del sistema</span>
+                  ) : (
+                    <span style={{ fontSize:10, color:orange }}>Sin datos aún — ingresa información en el sistema</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Sección B: Externos (subida manual) ── */}
+      <div style={glass}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+          <div>
+            <p style={{ fontSize:12, fontWeight:800, color:purple, margin:"0 0 2px" }}>DOCUMENTOS EXTERNOS — Requieren subida manual</p>
+            <p style={{ fontSize:11, color:textDim, margin:0 }}>Estos documentos son emitidos por entidades externas. Súbelos en formato PDF o imagen.</p>
+          </div>
+          <button onClick={()=>abrirModal("IDENTIFICACION")}
+            style={{ padding:"8px 16px", background:"rgba(192,132,252,0.15)", border:`1px solid ${purple}`, borderRadius:8, color:purple, fontWeight:700, fontSize:12, cursor:"pointer", whiteSpace:"nowrap" }}>
+            + Subir documento
+          </button>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:10 }}>
+          {DOCS_EXTERNOS.map(tipo => {
+            const docsDelTipo = docs.filter(d => d.tipo === tipo.key);
+            const ok = docsDelTipo.length > 0;
+            return (
+              <div key={tipo.key} style={{ background: ok ? "rgba(192,132,252,0.06)" : "rgba(255,255,255,0.03)", border:`1px solid ${ok ? purple+"40" : border}`, borderRadius:10, padding:"12px 14px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+                  <span style={{ fontSize:20 }}>{tipo.icon}</span>
+                  {ok
+                    ? <span style={{ fontSize:10, background:"rgba(192,132,252,0.15)", color:purple, padding:"2px 8px", borderRadius:99, fontWeight:700 }}>✓ Subido</span>
+                    : <button onClick={()=>abrirModal(tipo.key)} style={{ fontSize:10, background:"rgba(255,255,255,0.08)", border:`1px solid ${border}`, borderRadius:6, padding:"3px 8px", cursor:"pointer", color:textSec, fontWeight:600 }}>+ Subir</button>
+                  }
+                </div>
+                <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:3 }}>{tipo.label}</div>
+                <div style={{ fontSize:10, color:textDim, marginBottom: ok ? 6 : 0 }}>{tipo.desc}</div>
+                {ok && docsDelTipo.map(d => (
+                  <div key={d.id} style={{ display:"flex", alignItems:"center", gap:6, marginTop:4 }}>
+                    <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ fontSize:10, color:purple, textDecoration:"underline", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                      {d.nombre}
+                    </a>
+                    <button onClick={()=>eliminar(d.id)} style={{ background:"none", border:"none", cursor:"pointer", color:red, fontSize:12, padding:0, lineHeight:1, flexShrink:0 }} title="Eliminar">✕</button>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Otros documentos */}
+        {docs.filter(d=>d.tipo==="OTRO").length > 0 && (
+          <div style={{ marginTop:14, paddingTop:12, borderTop:`1px solid ${border}` }}>
+            <p style={{ fontSize:11, color:textSec, fontWeight:700, margin:"0 0 8px" }}>OTROS DOCUMENTOS</p>
+            {docs.filter(d=>d.tipo==="OTRO").map(d=>(
+              <div key={d.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"rgba(255,255,255,0.04)", borderRadius:8, padding:"8px 12px", marginBottom:6 }}>
+                <div>
+                  <div style={{ fontSize:13, color:text, fontWeight:600 }}>{d.nombre}</div>
+                  <div style={{ fontSize:11, color:textDim }}>{new Date(d.createdAt).toLocaleDateString("es-NI")}</div>
+                </div>
+                <div style={{ display:"flex", gap:6 }}>
+                  <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ padding:"5px 10px", background:"rgba(255,255,255,0.08)", border:`1px solid ${border}`, borderRadius:6, fontSize:11, color:textSec, textDecoration:"none", fontWeight:600 }}>Ver</a>
+                  <button onClick={()=>eliminar(d.id)} style={{ padding:"5px 10px", background:"rgba(220,38,38,0.12)", border:`1px solid rgba(220,38,38,0.3)`, borderRadius:6, fontSize:11, color:red, cursor:"pointer", fontWeight:600 }}>✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {loading && <p style={{ fontSize:12, color:textDim, margin:"10px 0 0" }}>Cargando documentos...</p>}
       </div>
     </div>
   );
@@ -1254,7 +1316,8 @@ export default function ExpedientePage() {
           TAB: DOCUMENTOS
       ════════════════════════════════════════════════════════════════ */}
       {tab === "documentos" && (
-        <TabDocumentos inputS={inputS} labelS={labelS} C={C} glass={glass} ProgressBar={ProgressBar} />
+        <TabDocumentos inputS={inputS} labelS={labelS} C={C} glass={glass} ProgressBar={ProgressBar}
+          balance={balance} resultados={resultados} flujo={flujo} indicadores={indicadores} animalesCount={animales.length} />
       )}
 
       {/* ════════════════════════════════════════════════════════════════
