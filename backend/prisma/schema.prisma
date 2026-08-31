@@ -86,6 +86,19 @@ model Finca {
   periodosFinancieros  PeriodoFinanciero[]
   informesFinancieros  InformeFinanciero[]
   auditoriaFinanciera  AuditoriaFinanciera[]
+  documentosExpediente DocumentoExpediente[]
+}
+
+model DocumentoExpediente {
+  id        String   @id @default(uuid())
+  fincaId   String
+  finca     Finca    @relation(fields: [fincaId], references: [id])
+  nombre    String
+  tipo      String   // IDENTIFICACION, RUC, MATRICULA, TITULO_PROPIEDAD, ESTADOS_BANCARIOS, INVENTARIO, DECLARACION_FISCAL, AVALUO, BALANCE, ESTADO_RESULTADOS, FLUJO_EFECTIVO, INDICADORES, HISTORIAL_VENTAS, ACTIVOS_FIJOS, ESTADO_DEUDAS, PLAN_INVERSION, OTRO
+  url       String
+  mediaType String   // image, document, other
+  tamanio   Int?
+  createdAt DateTime @default(now())
 }
 
 model Usuario {

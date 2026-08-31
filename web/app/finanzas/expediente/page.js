@@ -353,6 +353,196 @@ function EstadoBadge({ estado }) {
   return <span style={{ background:s.bg, color:s.color, padding:"2px 10px", borderRadius:99, fontSize:11, fontWeight:700 }}>{s.label}</span>;
 }
 
+// ─── Tipos de documentos ──────────────────────────────────────────────────────
+const TIPOS_DOCS = [
+  { key:"IDENTIFICACION",     label:"Identificación",         icon:"🪪" },
+  { key:"RUC",                label:"RUC",                    icon:"📋" },
+  { key:"MATRICULA",          label:"Matrícula del negocio",  icon:"🏢" },
+  { key:"TITULO_PROPIEDAD",   label:"Título de propiedad",    icon:"🏡" },
+  { key:"ESTADOS_BANCARIOS",  label:"Estados bancarios",      icon:"🏦" },
+  { key:"INVENTARIO",         label:"Inventario ganadero",    icon:"🐄" },
+  { key:"DECLARACION_FISCAL", label:"Declaración fiscal",     icon:"📊" },
+  { key:"AVALUO",             label:"Avalúo actualizado",     icon:"💰" },
+  { key:"BALANCE",            label:"Balance general",        icon:"⚖️" },
+  { key:"ESTADO_RESULTADOS",  label:"Estado de resultados",   icon:"📈" },
+  { key:"FLUJO_EFECTIVO",     label:"Flujo de efectivo",      icon:"💵" },
+  { key:"INDICADORES",        label:"Indicadores financieros",icon:"📉" },
+  { key:"HISTORIAL_VENTAS",   label:"Historial de ventas",    icon:"📦" },
+  { key:"ACTIVOS_FIJOS",      label:"Registro activos fijos", icon:"🏗️" },
+  { key:"ESTADO_DEUDAS",      label:"Estado de deudas",       icon:"📑" },
+  { key:"PLAN_INVERSION",     label:"Plan de inversión",      icon:"📝" },
+  { key:"OTRO",               label:"Otro documento",         icon:"📁" },
+];
+
+// ─── Tab Documentos ───────────────────────────────────────────────────────────
+function TabDocumentos({ inputS, labelS, C, glass, ProgressBar }) {
+  const [docs, setDocs]             = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [modal, setModal]           = useState(false);
+  const [subiendo, setSubiendo]     = useState(false);
+  const [errorDoc, setErrorDoc]     = useState("");
+  const [tipoSel, setTipoSel]       = useState("IDENTIFICACION");
+  const [nombreSel, setNombreSel]   = useState("");
+  const [archivo, setArchivo]       = useState(null);
+  const inputRef = useRef(null);
+
+  const cargar = useCallback(() => {
+    setLoading(true);
+    api("/documentos-expediente").then(d => { setDocs(Array.isArray(d)?d:[]); setLoading(false); }).catch(()=>setLoading(false));
+  }, []);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const tiposSubidos = new Set(docs.map(d => d.tipo));
+  const completados  = TIPOS_DOCS.filter(t => tiposSubidos.has(t.key)).length;
+  const pctDocs      = Math.round(completados / (TIPOS_DOCS.length-1) * 100); // excluye OTRO
+
+  async function subirDoc(e) {
+    e.preventDefault();
+    if (!archivo) { setErrorDoc("Selecciona un archivo"); return; }
+    if (!nombreSel.trim()) { setErrorDoc("Pon un nombre al documento"); return; }
+    setSubiendo(true); setErrorDoc("");
+    try {
+      const fd = new FormData();
+      fd.append("archivo", archivo);
+      fd.append("tipo", tipoSel);
+      fd.append("nombre", nombreSel.trim());
+      const token = typeof sessionStorage !== "undefined" ? sessionStorage.getItem("token") : null;
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://ganaderosg-backend.up.railway.app/api";
+      const r = await fetch(`${API_BASE}/documentos-expediente`, {
+        method:"POST",
+        headers: token ? { Authorization:`Bearer ${token}` } : {},
+        body: fd,
+      });
+      if (!r.ok) { const d = await r.json().catch(()=>{}); throw new Error(d?.error || "Error al subir"); }
+      setModal(false); setArchivo(null); setNombreSel(""); setTipoSel("IDENTIFICACION");
+      cargar();
+    } catch(err) { setErrorDoc(err.message); }
+    finally { setSubiendo(false); }
+  }
+
+  async function eliminar(id) {
+    if (!confirm("¿Eliminar este documento?")) return;
+    await api(`/documentos-expediente/${id}`, { method:"DELETE" }).catch(()=>{});
+    cargar();
+  }
+
+  const purple = C.purple;
+  const border = C.border;
+  const text   = C.text;
+  const textSec= C.textSec;
+  const textDim= C.textDim;
+  const green  = C.green;
+  const red    = C.red;
+  const orange = C.orange;
+
+  return (
+    <div style={glass}>
+      {/* Modal subir */}
+      {modal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }} onClick={()=>setModal(false)}>
+          <div onClick={e=>e.stopPropagation()} style={{ background:"#0d1a10", border:`1px solid ${border}`, borderRadius:16, padding:28, width:"100%", maxWidth:440 }}>
+            <div style={{ fontWeight:800, fontSize:16, color:text, marginBottom:20 }}>Subir documento</div>
+            <form onSubmit={subirDoc}>
+              <div style={{ marginBottom:12 }}>
+                <label style={labelS}>Tipo de documento *</label>
+                <select style={inputS} value={tipoSel} onChange={e=>{ setTipoSel(e.target.value); const t=TIPOS_DOCS.find(d=>d.key===e.target.value); if(t) setNombreSel(t.label); }}>
+                  {TIPOS_DOCS.map(t=><option key={t.key} value={t.key}>{t.icon} {t.label}</option>)}
+                </select>
+              </div>
+              <div style={{ marginBottom:12 }}>
+                <label style={labelS}>Nombre del documento *</label>
+                <input style={inputS} value={nombreSel} onChange={e=>setNombreSel(e.target.value)} placeholder="Ej: Cédula identidad propietario" />
+              </div>
+              <div style={{ marginBottom:16 }}>
+                <label style={labelS}>Archivo *</label>
+                <label style={{ display:"flex", alignItems:"center", gap:10, background:"rgba(255,255,255,0.06)", border:`2px dashed ${archivo?purple:border}`, borderRadius:10, padding:"14px 16px", cursor:"pointer" }}>
+                  <input ref={inputRef} type="file" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx" style={{ display:"none" }} onChange={e=>setArchivo(e.target.files[0])} />
+                  <span style={{ fontSize:22 }}>📎</span>
+                  <span style={{ fontSize:13, color:archivo?text:textDim }}>
+                    {archivo ? archivo.name : "Haz clic para seleccionar (imagen, PDF, Word, Excel)"}
+                  </span>
+                </label>
+              </div>
+              {errorDoc && <p style={{ color:red, fontSize:12, marginBottom:10 }}>{errorDoc}</p>}
+              <div style={{ display:"flex", gap:8 }}>
+                <button type="button" onClick={()=>setModal(false)} style={{ flex:1, padding:"10px 0", background:"rgba(255,255,255,0.08)", border:`1px solid ${border}`, borderRadius:8, color:textSec, fontWeight:600, cursor:"pointer", fontSize:13 }}>Cancelar</button>
+                <button type="submit" disabled={subiendo} style={{ flex:2, padding:"10px 0", background:purple, border:"none", borderRadius:8, color:"#fff", fontWeight:700, cursor:subiendo?"wait":"pointer", fontSize:13, opacity:subiendo?0.6:1 }}>
+                  {subiendo ? "Subiendo..." : "⬆ Subir documento"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+        <p style={{ fontSize:11, fontWeight:700, color:purple, textTransform:"uppercase", letterSpacing:"0.07em", margin:0 }}>DOCUMENTOS DEL EXPEDIENTE</p>
+        <span style={{ fontSize:13, color:textSec }}>{completados} de {TIPOS_DOCS.length-1} tipos cubiertos</span>
+      </div>
+      <ProgressBar pct={pctDocs} color={purple} h={6} />
+
+      {/* Grid de tipos */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10, marginTop:16 }}>
+        {TIPOS_DOCS.filter(t=>t.key!=="OTRO").map(tipo => {
+          const docsDelTipo = docs.filter(d=>d.tipo===tipo.key);
+          const ok = docsDelTipo.length > 0;
+          const color = ok ? green : orange;
+          const icon2 = ok ? "✓" : "○";
+          return (
+            <div key={tipo.key} style={{ background:"rgba(255,255,255,0.04)", border:`1px solid ${color}25`, borderRadius:10, padding:"12px 14px", display:"flex", flexDirection:"column", gap:6, position:"relative" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                <span style={{ fontSize:22 }}>{tipo.icon}</span>
+                <span style={{ background:`${color}20`, color, borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700 }}>{icon2}</span>
+              </div>
+              <div style={{ fontSize:12, color:text, fontWeight:600, lineHeight:1.3 }}>{tipo.label}</div>
+              {ok ? (
+                <div>
+                  {docsDelTipo.map(d=>(
+                    <div key={d.id} style={{ display:"flex", alignItems:"center", gap:4, marginTop:2 }}>
+                      <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ fontSize:10, color:green, textDecoration:"underline", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>Ver archivo</a>
+                      <button onClick={()=>eliminar(d.id)} style={{ background:"none", border:"none", cursor:"pointer", color:red, fontSize:13, padding:0, lineHeight:1 }}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize:10, color:orange }}>Pendiente</div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Documentos "Otro" */}
+      {docs.filter(d=>d.tipo==="OTRO").length > 0 && (
+        <div style={{ marginTop:12 }}>
+          <p style={{ fontSize:11, color:textSec, fontWeight:600, margin:"0 0 6px" }}>OTROS DOCUMENTOS</p>
+          {docs.filter(d=>d.tipo==="OTRO").map(d=>(
+            <div key={d.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"rgba(255,255,255,0.04)", borderRadius:8, padding:"8px 12px", marginBottom:6 }}>
+              <div>
+                <div style={{ fontSize:13, color:text, fontWeight:600 }}>{d.nombre}</div>
+                <div style={{ fontSize:11, color:textDim }}>{new Date(d.createdAt).toLocaleDateString("es-NI")}</div>
+              </div>
+              <div style={{ display:"flex", gap:6 }}>
+                <a href={d.url} target="_blank" rel="noopener noreferrer" style={{ padding:"5px 10px", background:"rgba(255,255,255,0.08)", border:`1px solid ${border}`, borderRadius:6, fontSize:11, color:textSec, textDecoration:"none", fontWeight:600 }}>Ver</a>
+                <button onClick={()=>eliminar(d.id)} style={{ padding:"5px 10px", background:"rgba(220,38,38,0.12)", border:`1px solid rgba(220,38,38,0.3)`, borderRadius:6, fontSize:11, color:red, cursor:"pointer", fontWeight:600 }}>✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ marginTop:16, paddingTop:12, borderTop:`1px solid ${border}` }}>
+        <button onClick={()=>{ setModal(true); const t=TIPOS_DOCS.find(t=>t.key==="IDENTIFICACION"); if(t) setNombreSel(t.label); }}
+          style={{ padding:"10px 20px", background:"rgba(192,132,252,0.15)", border:`1px solid ${purple}`, borderRadius:8, color:purple, fontWeight:700, fontSize:13, cursor:"pointer" }}>
+          + Subir documento
+        </button>
+        {loading && <span style={{ marginLeft:12, fontSize:12, color:textDim }}>Cargando...</span>}
+      </div>
+    </div>
+  );
+}
+
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function ExpedientePage() {
   // ── Tab interna
@@ -1064,52 +1254,7 @@ export default function ExpedientePage() {
           TAB: DOCUMENTOS
       ════════════════════════════════════════════════════════════════ */}
       {tab === "documentos" && (
-        <div style={glass}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-            <p style={{ fontSize:11, fontWeight:700, color:C.purple, textTransform:"uppercase", letterSpacing:"0.07em", margin:0 }}>DOCUMENTOS DEL EXPEDIENTE</p>
-            <span style={{ fontSize:13, color:C.textSec }}>14 de 16 documentos listos</span>
-          </div>
-          <ProgressBar pct={Math.round(14/16*100)} color={C.purple} h={6} />
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:10, marginTop:16 }}>
-            {[
-              { nombre:"Identificación", estado:"ok", icon:"🪪" },
-              { nombre:"RUC", estado:"ok", icon:"📋" },
-              { nombre:"Matrícula del negocio", estado:"ok", icon:"🏢" },
-              { nombre:"Título de propiedad", estado:"ok", icon:"🏡" },
-              { nombre:"Estados bancarios", estado:"pendiente", icon:"🏦" },
-              { nombre:"Inventario ganadero", estado:"ok", icon:"🐄" },
-              { nombre:"Declaración fiscal", estado:"ok", icon:"📊" },
-              { nombre:"Avalúo actualizado", estado:"falta", icon:"💰" },
-              { nombre:"Balance general", estado:"ok", icon:"⚖️" },
-              { nombre:"Estado de resultados", estado:"ok", icon:"📈" },
-              { nombre:"Flujo de efectivo", estado:"ok", icon:"💵" },
-              { nombre:"Indicadores financieros", estado:"ok", icon:"📉" },
-              { nombre:"Historial de ventas", estado:"ok", icon:"📦" },
-              { nombre:"Registro activos fijos", estado:"ok", icon:"🏗️" },
-              { nombre:"Estado de deudas", estado:"ok", icon:"📑" },
-              { nombre:"Plan de inversión", estado:"pendiente", icon:"📝" },
-            ].map(doc=>{
-              const color = doc.estado==="ok" ? C.green : doc.estado==="pendiente" ? C.orange : C.red;
-              const icon2 = doc.estado==="ok" ? "✓" : doc.estado==="pendiente" ? "⚠" : "✕";
-              return (
-                <div key={doc.nombre} style={{ background:"rgba(255,255,255,0.04)", border:`1px solid ${color}25`, borderRadius:10, padding:"12px 14px", display:"flex", flexDirection:"column", gap:6 }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                    <span style={{ fontSize:22 }}>{doc.icon}</span>
-                    <span style={{ background:`${color}20`, color, borderRadius:"50%", width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700 }}>{icon2}</span>
-                  </div>
-                  <div style={{ fontSize:12, color:C.text, fontWeight:600, lineHeight:1.3 }}>{doc.nombre}</div>
-                  <div style={{ fontSize:10, color }}>{doc.estado==="ok"?"Disponible":doc.estado==="pendiente"?"Pendiente":"Faltante"}</div>
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ marginTop:16, padding:"12px 0", borderTop:`1px solid ${C.border}`, display:"flex", gap:10 }}>
-            <button style={{ padding:"9px 18px", background:"rgba(192,132,252,0.15)", border:`1px solid ${C.purple}`, borderRadius:8, color:C.purple, fontWeight:700, fontSize:13, cursor:"pointer" }}>
-              + Subir documento
-            </button>
-            <p style={{ fontSize:12, color:C.textDim, alignSelf:"center", margin:0 }}>Función de carga de documentos — próximamente disponible con almacenamiento seguro</p>
-          </div>
-        </div>
+        <TabDocumentos inputS={inputS} labelS={labelS} C={C} glass={glass} ProgressBar={ProgressBar} />
       )}
 
       {/* ════════════════════════════════════════════════════════════════
