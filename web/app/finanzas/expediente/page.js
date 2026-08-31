@@ -1277,38 +1277,134 @@ export default function ExpedientePage() {
             </div>
           </div>
 
-          {/* Detalle del hato */}
-          <div style={glass}>
-            <p style={{ fontSize:11, fontWeight:700, color:C.green, textTransform:"uppercase", letterSpacing:"0.07em", margin:"0 0 12px" }}>DETALLE DEL INVENTARIO GANADERO</p>
-            <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
-                <thead>
-                  <tr style={{ borderBottom:`1px solid ${C.border}` }}>
-                    {["Categoría","Cantidad","Peso total","Valor estimado"].map(h=>(
-                      <th key={h} style={{ padding:"8px 12px", textAlign:"left", color:C.textSec, fontWeight:600, fontSize:11, textTransform:"uppercase" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {Object.entries(categorias).map(([cat,d])=>(
-                    <tr key={cat} style={{ borderBottom:`1px solid ${C.border}` }}>
-                      <td style={{ padding:"8px 12px", color:C.text }}>{cat}</td>
-                      <td style={{ padding:"8px 12px", color:C.text, fontWeight:700 }}>{d.count}</td>
-                      <td style={{ padding:"8px 12px", color:C.textSec }}>{d.pesoTotal > 0 ? `${d.pesoTotal.toFixed(0)} lb` : "—"}</td>
-                      <td style={{ padding:"8px 12px", color:C.green, fontWeight:700 }}>{d.valor > 0 ? fmt(d.valor) : "Valor no registrado"}</td>
-                    </tr>
+          {/* Detalle del hato — inventario completo */}
+          {(() => {
+            // ── Agrupaciones
+            const vacas      = animales.filter(a => a.categoria==="VACA" || (a.sexo==="HEMBRA" && ["VACA"].includes(a.categoria)));
+            const terneras   = animales.filter(a => a.categoria==="TERNERA" || (a.sexo==="HEMBRA" && a.categoria==="TERNERO") );
+            const terneros   = animales.filter(a => a.categoria==="TERNERO" && a.sexo!=="HEMBRA");
+            const toros      = animales.filter(a => ["TORO","SEMENTAL"].includes(a.categoria));
+            const crias      = animales.filter(a => a.categoria==="CRIA");
+
+            // Estados reproductivos de vacas
+            const ER = { PREÑADA:"Preñada", PARIDA:"Parida", LACTANCIA:"Lactancia", SECA:"Seca", VACIA:"Vacía", null:"Sin estado" };
+            const erCols = { PREÑADA:"#a78bfa", PARIDA:"#60a5fa", LACTANCIA:"#34d399", SECA:"#fb923c", VACIA:"#94a3b8" };
+            const vacasPorEstado = {};
+            vacas.forEach(v => {
+              const e = v.estadoReproductivo || "SIN_ESTADO";
+              if (!vacasPorEstado[e]) vacasPorEstado[e] = [];
+              vacasPorEstado[e].push(v);
+            });
+            const ordenER = ["PREÑADA","PARIDA","LACTANCIA","SECA","VACIA","SIN_ESTADO"];
+
+            const valorAnimal = (a) => a.pesoActual ? a.pesoActual * precioLibraDefault : (a.costoCompra || 0);
+            const pesoTotal   = animales.reduce((s,a) => s+(a.pesoActual||0), 0);
+            const valorTotal  = animales.reduce((s,a) => s+valorAnimal(a), 0);
+
+            const seccionColor = { vacas:C.purple, terneras:C.orange, terneros:C.blue, toros:"#f43f5e", crias:C.green };
+            const rowStyle = { borderBottom:`1px solid ${C.border}`, display:"grid", gridTemplateColumns:"1fr 60px 90px 110px", alignItems:"center", padding:"8px 12px", gap:8 };
+            const subRowStyle = { ...rowStyle, paddingLeft:28, background:"rgba(255,255,255,0.02)" };
+
+            function GrupoRow({ emoji, label, lista, color, children }) {
+              const p = lista.reduce((s,a)=>s+(a.pesoActual||0),0);
+              const v = lista.reduce((s,a)=>s+valorAnimal(a),0);
+              return (
+                <div>
+                  <div style={{ ...rowStyle, background:`${color}10` }}>
+                    <span style={{ fontWeight:800, color, fontSize:13 }}>{emoji} {label}</span>
+                    <span style={{ fontWeight:800, color, textAlign:"center" }}>{lista.length}</span>
+                    <span style={{ color:C.textSec, textAlign:"right", fontSize:11 }}>{p>0?`${p.toFixed(0)} lb`:"—"}</span>
+                    <span style={{ fontWeight:800, color, textAlign:"right" }}>{v>0?fmt(v):"—"}</span>
+                  </div>
+                  {children}
+                </div>
+              );
+            }
+
+            return (
+              <div style={{ ...glass }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                  <p style={{ fontSize:11, fontWeight:700, color:C.green, textTransform:"uppercase", letterSpacing:"0.07em", margin:0 }}>INVENTARIO DETALLADO DEL HATO</p>
+                  <div style={{ display:"flex", gap:16, fontSize:12 }}>
+                    <span style={{ color:C.textSec }}>{animales.length} animales</span>
+                    <span style={{ color:C.green, fontWeight:700 }}>{fmt(valorTotal)}</span>
+                  </div>
+                </div>
+
+                {/* Cabecera columnas */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 60px 90px 110px", padding:"6px 12px", gap:8, borderBottom:`1px solid ${C.border}` }}>
+                  {["CATEGORÍA / ESTADO","CANT.","PESO TOTAL","VALOR EST."].map(h=>(
+                    <span key={h} style={{ fontSize:10, color:C.textDim, fontWeight:700, textAlign: h==="CATEGORÍA / ESTADO"?"left":"right" }}>{h}</span>
                   ))}
-                  <tr style={{ background:"rgba(34,197,94,0.08)" }}>
-                    <td style={{ padding:"8px 12px", color:C.green, fontWeight:800 }}>TOTAL HATO</td>
-                    <td style={{ padding:"8px 12px", color:C.green, fontWeight:800 }}>{animales.length}</td>
-                    <td style={{ padding:"8px 12px", color:C.green, fontWeight:700 }}>{animales.reduce((s,a)=>s+(a.pesoActual||0),0).toFixed(0)} lb</td>
-                    <td style={{ padding:"8px 12px", color:C.green, fontWeight:800 }}>{fmt(valorHato)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p style={{ fontSize:10, color:C.textDim, margin:"8px 0 0" }}>* Valor estimado a C$ {precioLibraDefault}/lb sobre peso registrado. No representa avalúo oficial.</p>
-          </div>
+                </div>
+
+                {/* ── VACAS con desglose reproductivo */}
+                {vacas.length > 0 && (
+                  <GrupoRow emoji="🐄" label="Vacas" lista={vacas} color={C.purple}>
+                    {ordenER.filter(e => vacasPorEstado[e]?.length > 0).map(e => {
+                      const lista = vacasPorEstado[e];
+                      const color = erCols[e] || C.textDim;
+                      const label = e==="SIN_ESTADO" ? "Sin estado registrado" : ER[e] || e;
+                      const p = lista.reduce((s,a)=>s+(a.pesoActual||0),0);
+                      const v = lista.reduce((s,a)=>s+valorAnimal(a),0);
+                      return (
+                        <div key={e} style={subRowStyle}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <span style={{ width:8, height:8, borderRadius:"50%", background:color, display:"inline-block", flexShrink:0 }} />
+                            <span style={{ fontSize:12, color:C.textSec }}>{label}</span>
+                          </div>
+                          <span style={{ textAlign:"center", color:C.text, fontWeight:700 }}>{lista.length}</span>
+                          <span style={{ textAlign:"right", color:C.textDim, fontSize:11 }}>{p>0?`${p.toFixed(0)} lb`:"—"}</span>
+                          <span style={{ textAlign:"right", color, fontWeight:600, fontSize:11 }}>{v>0?fmt(v):"—"}</span>
+                        </div>
+                      );
+                    })}
+                  </GrupoRow>
+                )}
+
+                {/* ── TERNERAS */}
+                {terneras.length > 0 && (
+                  <GrupoRow emoji="🐮" label="Terneras" lista={terneras} color={C.orange} />
+                )}
+
+                {/* ── TERNEROS */}
+                {terneros.length > 0 && (
+                  <GrupoRow emoji="🐂" label="Terneros" lista={terneros} color={C.blue} />
+                )}
+
+                {/* ── TOROS / SEMENTALES */}
+                {toros.length > 0 && (
+                  <GrupoRow emoji="🐃" label="Toros / Sementales" lista={toros} color="#f43f5e" />
+                )}
+
+                {/* ── CRÍAS */}
+                {crias.length > 0 && (
+                  <GrupoRow emoji="🐣" label="Crías" lista={crias} color={C.green} />
+                )}
+
+                {/* ── TOTAL */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 60px 90px 110px", padding:"12px 12px", gap:8, background:"rgba(34,197,94,0.10)", borderTop:`2px solid ${C.green}40`, marginTop:2 }}>
+                  <span style={{ fontWeight:900, color:C.green, fontSize:14 }}>TOTAL HATO ACTIVO</span>
+                  <span style={{ fontWeight:900, color:C.green, textAlign:"center", fontSize:14 }}>{animales.length}</span>
+                  <span style={{ color:C.green, textAlign:"right", fontWeight:700 }}>{pesoTotal>0?`${pesoTotal.toFixed(0)} lb`:"—"}</span>
+                  <span style={{ fontWeight:900, color:C.green, textAlign:"right", fontSize:14 }}>{fmt(valorTotal)}</span>
+                </div>
+
+                {/* Leyenda estados reproductivos */}
+                {vacas.length > 0 && (
+                  <div style={{ marginTop:12, paddingTop:10, borderTop:`1px solid ${C.border}`, display:"flex", flexWrap:"wrap", gap:10 }}>
+                    {Object.entries(erCols).map(([e, color])=>(
+                      <span key={e} style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:C.textSec }}>
+                        <span style={{ width:8, height:8, borderRadius:"50%", background:color, display:"inline-block" }} />
+                        {ER[e]}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p style={{ fontSize:10, color:C.textDim, margin:"8px 0 0" }}>* Valor estimado a C$ {precioLibraDefault}/lb sobre peso registrado. No representa avalúo oficial.</p>
+              </div>
+            );
+          })()}
         </div>
       )}
 
