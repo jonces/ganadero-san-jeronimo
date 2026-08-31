@@ -1279,12 +1279,16 @@ export default function ExpedientePage() {
 
           {/* Detalle del hato — inventario completo */}
           {(() => {
-            // ── Agrupaciones
-            const vacas      = animales.filter(a => a.categoria==="VACA" || (a.sexo==="HEMBRA" && ["VACA"].includes(a.categoria)));
-            const terneras   = animales.filter(a => a.categoria==="TERNERA" || (a.sexo==="HEMBRA" && a.categoria==="TERNERO") );
-            const terneros   = animales.filter(a => a.categoria==="TERNERO" && a.sexo!=="HEMBRA");
-            const toros      = animales.filter(a => ["TORO","SEMENTAL"].includes(a.categoria));
-            const crias      = animales.filter(a => a.categoria==="CRIA");
+            // ── Misma lógica de categorización que el resto del sistema
+            const catKey = (a) => {
+              if (a.categoria) return a.categoria; // CRIA, TERNERO, TERNERA, TORO, VACA, SEMENTAL
+              return a.sexo === "MACHO" ? "TERNERO" : "TERNERA";
+            };
+            const vacas    = animales.filter(a => catKey(a) === "VACA");
+            const terneras = animales.filter(a => catKey(a) === "TERNERA");
+            const terneros = animales.filter(a => catKey(a) === "TERNERO");
+            const toros    = animales.filter(a => ["TORO","SEMENTAL"].includes(catKey(a)));
+            const crias    = animales.filter(a => catKey(a) === "CRIA");
 
             // Estados reproductivos de vacas
             const ER = { PREÑADA:"Preñada", PARIDA:"Parida", LACTANCIA:"Lactancia", SECA:"Seca", VACIA:"Vacía", null:"Sin estado" };
