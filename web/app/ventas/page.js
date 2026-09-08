@@ -36,6 +36,9 @@ export default function VentasPage() {
   const [modalEditar, setModalEditar] = useState(null);
   const [formEditar, setFormEditar] = useState({});
   const [guardandoEditar, setGuardandoEditar] = useState(false);
+  const [modalCarta, setModalCarta] = useState(null); // { venta, campos }
+  const [cartaExtra, setCartaExtra] = useState({});
+  const [guardandoCarta, setGuardandoCarta] = useState(false);
 
   useEffect(() => {
     const u = getUsuario();
@@ -593,7 +596,21 @@ export default function VentasPage() {
                 {v.notas && <p className="text-xs text-white/40 mt-2 pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>📝 {v.notas}</p>}
 
                 {/* Botón carta de venta */}
-                <button onClick={() => router.push(`/ventas/${v.id}/carta`)}
+                <button onClick={() => {
+                  const a = v.animal || {};
+                  const faltantes = [];
+                  if (!a.color || a.color.trim() === "" || a.color === "No especificado") faltantes.push({ key:"color", label:"Color del animal", placeholder:"Ej: Negro, Pinto, Rojo..." });
+                  if (!a.estadoReproductivo && a.sexo === "HEMBRA") faltantes.push({ key:"estadoReproductivo", label:"Estado reproductivo", tipo:"select", opciones:["PREÑADA","PARIDA","LACTANCIA","SECA","VACIA"] });
+                  if (!a.pesoActual && !v.pesoVivo) faltantes.push({ key:"pesoVivo", label:"Peso vivo del animal (lb)", placeholder:"Ej: 550", tipo:"number" });
+                  if (faltantes.length > 0) {
+                    const init = {};
+                    faltantes.forEach(f => init[f.key] = "");
+                    setCartaExtra(init);
+                    setModalCarta({ venta: v, campos: faltantes });
+                  } else {
+                    router.push(`/ventas/${v.id}/carta`);
+                  }
+                }}
                   className="mt-3 w-full py-2 rounded-xl text-xs font-black flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
                   style={{ background: "rgba(20,90,50,0.5)", border: "1px solid rgba(45,158,63,0.4)", color: "#86efac" }}>
                   📄 Ver / Imprimir Carta de Venta
@@ -748,6 +765,91 @@ export default function VentasPage() {
                 Cancelar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ── Modal: completar info antes de abrir carta ── */}
+      {modalCarta && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.80)", backdropFilter: "blur(6px)" }}>
+          <div className="w-full max-w-md rounded-3xl p-6 shadow-2xl" style={{ background: "rgba(5,20,10,0.97)", border: "1px solid rgba(45,158,63,0.35)" }}>
+            <div className="mb-5">
+              <p className="text-3xl mb-2">📋</p>
+              <h3 className="text-white font-black text-lg mb-1">Completa la información antes de generar</h3>
+              <p className="text-white/50 text-sm">Algunos datos del animal no están registrados. Puedes completarlos ahora — se guardarán en el sistema y aparecerán en la carta.</p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              {modalCarta.campos.map(campo => (
+                <div key={campo.key}>
+                  <label className="block text-white/70 text-xs font-bold mb-1 uppercase tracking-wide">{campo.label}</label>
+                  {campo.tipo === "select" ? (
+                    <select
+                      value={cartaExtra[campo.key] || ""}
+                      onChange={e => setCartaExtra(p => ({ ...p, [campo.key]: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2 text-sm text-white"
+                      style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", outline: "none" }}>
+                      <option value="">— Seleccionar —</option>
+                      {(campo.opciones || []).map(o => (
+                        <option key={o} value={o}>{o}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={campo.tipo || "text"}
+                      placeholder={campo.placeholder}
+                      value={cartaExtra[campo.key] || ""}
+                      onChange={e => setCartaExtra(p => ({ ...p, [campo.key]: e.target.value }))}
+                      className="w-full rounded-xl px-3 py-2 text-sm text-white"
+                      style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", outline: "none" }} />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setModalCarta(null); setCartaExtra({}); }}
+                className="flex-1 py-3 rounded-2xl text-white/60 font-bold text-sm"
+                style={{ border: "1px solid rgba(255,255,255,0.12)" }}>
+                Cancelar
+              </button>
+              <button
+                disabled={guardandoCarta}
+                onClick={async () => {
+                  const v = modalCarta.venta;
+                  const a = v.animal || {};
+                  setGuardandoCarta(true);
+                  try {
+                    // Guardar solo los campos que se completaron
+                    const actualizar = {};
+                    if (cartaExtra.color) actualizar.color = cartaExtra.color;
+                    if (cartaExtra.estadoReproductivo) actualizar.estadoReproductivo = cartaExtra.estadoReproductivo;
+                    if (cartaExtra.pesoVivo) actualizar.pesoActual = Number(cartaExtra.pesoVivo);
+                    if (Object.keys(actualizar).length > 0 && a.id) {
+                      await api(`/animales/${a.id}`, { method: "PATCH", body: actualizar });
+                    }
+                    setModalCarta(null);
+                    setCartaExtra({});
+                    router.push(`/ventas/${v.id}/carta`);
+                  } catch {
+                    // Aunque falle el guardado, igual abrimos la carta
+                    setModalCarta(null);
+                    router.push(`/ventas/${v.id}/carta`);
+                  } finally {
+                    setGuardandoCarta(false);
+                  }
+                }}
+                className="flex-[2] py-3 rounded-2xl text-white font-black text-sm transition-all hover:scale-[1.02]"
+                style={{ background: "rgba(20,120,60,0.7)", border: "1px solid rgba(45,158,63,0.6)", opacity: guardandoCarta ? 0.6 : 1 }}>
+                {guardandoCarta ? "Guardando..." : "✓ Guardar y abrir carta"}
+              </button>
+            </div>
+
+            <button
+              onClick={() => { setModalCarta(null); router.push(`/ventas/${modalCarta.venta.id}/carta`); }}
+              className="w-full mt-3 py-2 text-white/30 text-xs font-medium hover:text-white/60 transition-colors">
+              Continuar sin completar →
+            </button>
           </div>
         </div>
       )}
