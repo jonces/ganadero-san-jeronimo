@@ -245,7 +245,7 @@ export default function CartaVentaPage() {
   const esPorPeso = venta.tipoVenta === "POR_PESO";
   const esPagado = venta.estadoPago === "PAGADO";
   const esParcial = venta.estadoPago === "PARCIAL";
-  const fotoAnimal = a.media?.find(m => m.tipo === "FOTO")?.url;
+  const fotoAnimal = a.media?.find(m => m.tipo === "FOTO" || m.tipo === "imagen" || m.tipo === "image")?.url;
   const fechaVenta = new Date(venta.fecha).toLocaleDateString("es-NI", { day: "numeric", month: "long", year: "numeric" });
   const tc = venta.tipoCambio || 36.5;
   const precioTotalNum = Number(q.precioTotal || venta.precioNIO);
