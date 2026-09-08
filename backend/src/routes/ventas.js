@@ -16,7 +16,7 @@ router.get("/", async (req, res, next) => {
       where: { fincaId: req.user.fincaId },
       orderBy: { fecha: "desc" },
       include: {
-        animal: { select: { identificador: true, nombre: true, raza: true, color: true, estadoReproductivo: true, sexo: true, categoria: true, pesoActual: true, fierro: true, fechaNacimiento: true } },
+        animal: { select: { identificador: true, nombre: true, raza: true, estadoReproductivo: true, sexo: true, categoria: true, pesoActual: true, fierro: true, fechaNacimiento: true, observacion: true } },
         usuario: { select: { nombre: true } },
         media: true,
       },

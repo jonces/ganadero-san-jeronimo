@@ -599,7 +599,7 @@ export default function VentasPage() {
                 <button onClick={() => {
                   const a = v.animal || {};
                   const faltantes = [];
-                  if (!a.color || a.color.trim() === "" || a.color === "No especificado") faltantes.push({ key:"color", label:"Color del animal", placeholder:"Ej: Negro, Pinto, Rojo..." });
+                  if (!a.observacion || a.observacion.trim() === "") faltantes.push({ key:"observacion", label:"Color / descripción del animal", placeholder:"Ej: Negro, Pinto, Rojo con blanco..." });
                   if (!a.estadoReproductivo && a.sexo === "HEMBRA") faltantes.push({ key:"estadoReproductivo", label:"Estado reproductivo", tipo:"select", opciones:["PREÑADA","PARIDA","LACTANCIA","SECA","VACIA"] });
                   if (!a.pesoActual && !v.pesoVivo) faltantes.push({ key:"pesoVivo", label:"Peso vivo del animal (lb)", placeholder:"Ej: 550", tipo:"number" });
                   if (faltantes.length > 0) {
@@ -822,7 +822,7 @@ export default function VentasPage() {
                   try {
                     // Guardar solo los campos que se completaron
                     const actualizar = {};
-                    if (cartaExtra.color) actualizar.color = cartaExtra.color;
+                    if (cartaExtra.observacion) actualizar.observacion = cartaExtra.observacion;
                     if (cartaExtra.estadoReproductivo) actualizar.estadoReproductivo = cartaExtra.estadoReproductivo;
                     if (cartaExtra.pesoVivo) actualizar.pesoActual = Number(cartaExtra.pesoVivo);
                     if (Object.keys(actualizar).length > 0 && a.id) {
