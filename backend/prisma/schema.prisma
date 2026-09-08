@@ -133,6 +133,7 @@ model Animal {
   identificador   String    @unique
   nombre          String?
   raza            String?
+  color           String?
   fierro          String?
   sexo            Sexo
   fechaNacimiento DateTime?

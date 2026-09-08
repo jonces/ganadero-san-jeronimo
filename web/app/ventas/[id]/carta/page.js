@@ -461,7 +461,7 @@ export default function CartaVentaPage() {
                     : ["⚖️ Peso aproximado", venta.pesoKg ? `${venta.pesoKg} lb` : "No registrado"],
                   ["🧬 Raza", a.raza || "No registrada"],
                   ["❤️ Estado reproductivo", a.estadoReproductivo || "—"],
-                  ["🎨 Color / Descripción", a.observacion || "No especificado"],
+                  ["🎨 Color / Descripción", a.color || a.observacion || "No especificado"],
                   ["📅 Edad aproximada", edadDisplay(a)],
                   ["🏡 Finca de procedencia", venta.finca?.nombre || "No registrada"],
                   ["📍 Comunidad / Municipio", venta.finca?.ubicacion || "No registrada"],
