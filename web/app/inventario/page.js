@@ -650,6 +650,7 @@ function ModalInforme({ animal, onClose }) {
   const [incidentes, setIncidentes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generandoPdf, setGenerandoPdf] = useState(false);
+  const [modalDestinatario, setModalDestinatario] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -682,7 +683,7 @@ function ModalInforme({ animal, onClose }) {
   const pesajes = eventos.filter(e => e.tipo === "PESAJE" && e.peso).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
   const ganancia = pesajes.length >= 2 ? (pesajes[pesajes.length - 1].peso - pesajes[0].peso).toFixed(1) : null;
 
-  async function descargarPDF() {
+  async function descargarPDF(esExterno = false) {
     setGenerandoPdf(true);
     try {
       const { jsPDF } = await import("jspdf");
@@ -829,8 +830,8 @@ function ModalInforme({ animal, onClose }) {
         y = doc.lastAutoTable.finalY + 6;
       }
 
-      // Económico
-      if (animal.costoCompra || animal.precioVenta) {
+      // Económico — solo para uso interno
+      if (!esExterno && (animal.costoCompra || animal.precioVenta)) {
         checkPage(25);
         seccion("Información Económica");
         if (animal.costoCompra) fila("Costo de compra", `C$ ${Number(animal.costoCompra).toLocaleString("es-NI")}`);
@@ -1061,9 +1062,33 @@ function ModalInforme({ animal, onClose }) {
             </div>
           )}
 
+          {/* Modal selección destinatario */}
+          {modalDestinatario && (
+            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ background: "#0f1923", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 18, padding: 28, maxWidth: 360, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+                <p style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 6 }}>¿Para quién es este informe?</p>
+                <p style={{ fontSize: 13, color: "#94A3B8", marginBottom: 22, lineHeight: 1.5 }}>Si es para personas externas o posibles compradores, se ocultará la información económica (costos y precios).</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <button onClick={() => { setModalDestinatario(false); descargarPDF(false); }}
+                    style={{ background: "#145A32", color: "#fff", border: "none", borderRadius: 10, padding: "13px 16px", fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "left" }}>
+                    🏠 Uso interno de la finca — incluir todo
+                  </button>
+                  <button onClick={() => { setModalDestinatario(false); descargarPDF(true); }}
+                    style={{ background: "#1e3a5f", color: "#fff", border: "none", borderRadius: 10, padding: "13px 16px", fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "left" }}>
+                    👤 Para externos / compradores — ocultar precios
+                  </button>
+                  <button onClick={() => setModalDestinatario(false)}
+                    style={{ background: "transparent", color: "#94A3B8", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "10px 16px", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Pie */}
           <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-            <button onClick={descargarPDF} disabled={generandoPdf}
+            <button onClick={() => setModalDestinatario(true)} disabled={generandoPdf}
               style={{ background: "#145A32", color: "#fff", border: "none", borderRadius: 12, padding: "12px 28px", fontWeight: 800, fontSize: 14, cursor: generandoPdf ? "wait" : "pointer", opacity: generandoPdf ? 0.7 : 1, width: "100%" }}>
               {generandoPdf ? "Generando PDF..." : "⬇️ Descargar PDF"}
             </button>
