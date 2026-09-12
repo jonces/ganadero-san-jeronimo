@@ -703,6 +703,7 @@ function ModalInforme({ animal, onClose }) {
       const mediaFotos = (detalle?.media || animal.media || []).filter(m => m.tipo !== "video" && m.tipo !== "VIDEO");
       let fotoBase64 = null;
       let fotoExt = "JPEG";
+      let fotoNatW = 0, fotoNatH = 0;
       if (mediaFotos.length > 0) {
         try {
           const url = fotoUrlElegida || mediaFotos[0].url;
@@ -715,27 +716,46 @@ function ModalInforme({ animal, onClose }) {
             reader.readAsDataURL(blob);
           });
           fotoExt = blob.type.includes("png") ? "PNG" : "JPEG";
+          // Obtener dimensiones reales para calcular aspect ratio
+          await new Promise((res) => {
+            const img = new Image();
+            img.onload = () => { fotoNatW = img.naturalWidth; fotoNatH = img.naturalHeight; res(); };
+            img.onerror = res;
+            img.src = fotoBase64;
+          });
         } catch { fotoBase64 = null; }
       }
 
-      // Cabecera: foto a la derecha, texto a la izquierda
-      const FOTO_SIZE = 60; // mm cuadrado
-      const HEADER_H = fotoBase64 ? Math.max(60, FOTO_SIZE + 8) : 38;
+      // Cabecera: foto a la derecha respetando proporciones
+      const FOTO_MAX_W = 72; // ancho máximo reservado para la foto en mm
+      const FOTO_MAX_H = 55; // alto máximo de la foto en mm
+      let fotoW = FOTO_MAX_W, fotoH = FOTO_MAX_H;
+      if (fotoBase64 && fotoNatW > 0 && fotoNatH > 0) {
+        const ratio = fotoNatW / fotoNatH;
+        if (ratio >= 1) { // horizontal o cuadrada
+          fotoW = FOTO_MAX_W;
+          fotoH = fotoW / ratio;
+          if (fotoH > FOTO_MAX_H) { fotoH = FOTO_MAX_H; fotoW = fotoH * ratio; }
+        } else { // vertical
+          fotoH = FOTO_MAX_H;
+          fotoW = fotoH * ratio;
+          if (fotoW > FOTO_MAX_W) { fotoW = FOTO_MAX_W; fotoH = fotoW / ratio; }
+        }
+      }
+      const HEADER_H = fotoBase64 ? Math.max(fotoH + 10, 42) : 38;
       doc.setFillColor(...verde);
       doc.rect(0, 0, PAGE_W, HEADER_H, "F");
 
       if (fotoBase64) {
-        // Foto con recorte cuadrado a la derecha
-        const fotoX = PAGE_W - MARGIN - FOTO_SIZE;
-        const fotoY = (HEADER_H - FOTO_SIZE) / 2;
-        doc.addImage(fotoBase64, fotoExt, fotoX, fotoY, FOTO_SIZE, FOTO_SIZE, undefined, "FAST");
-        // Borde sutil sobre la foto
+        const fotoX = PAGE_W - MARGIN - fotoW;
+        const fotoY = (HEADER_H - fotoH) / 2;
+        doc.addImage(fotoBase64, fotoExt, fotoX, fotoY, fotoW, fotoH, undefined, "FAST");
         doc.setDrawColor(255, 255, 255);
-        doc.setLineWidth(0.5);
-        doc.rect(fotoX, fotoY, FOTO_SIZE, FOTO_SIZE);
+        doc.setLineWidth(0.4);
+        doc.rect(fotoX, fotoY, fotoW, fotoH);
       }
 
-      const textMaxW = fotoBase64 ? PAGE_W - MARGIN * 2 - FOTO_SIZE - 8 : CONTENT_W;
+      const textMaxW = fotoBase64 ? PAGE_W - MARGIN * 2 - fotoW - 8 : CONTENT_W;
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
