@@ -651,6 +651,8 @@ function ModalInforme({ animal, onClose }) {
   const [loading, setLoading] = useState(true);
   const [generandoPdf, setGenerandoPdf] = useState(false);
   const [modalDestinatario, setModalDestinatario] = useState(false);
+  const [modalFoto, setModalFoto] = useState(null); // { esExterno, fotos[] }
+  const [fotoElegida, setFotoElegida] = useState(null);
 
   useEffect(() => {
     async function load() {
@@ -683,7 +685,7 @@ function ModalInforme({ animal, onClose }) {
   const pesajes = eventos.filter(e => e.tipo === "PESAJE" && e.peso).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
   const ganancia = pesajes.length >= 2 ? (pesajes[pesajes.length - 1].peso - pesajes[0].peso).toFixed(1) : null;
 
-  async function descargarPDF(esExterno = false) {
+  async function descargarPDF(esExterno = false, fotoUrlElegida = null) {
     setGenerandoPdf(true);
     try {
       const { jsPDF } = await import("jspdf");
@@ -703,7 +705,7 @@ function ModalInforme({ animal, onClose }) {
       let fotoExt = "JPEG";
       if (mediaFotos.length > 0) {
         try {
-          const url = mediaFotos[0].url;
+          const url = fotoUrlElegida || mediaFotos[0].url;
           const resp = await fetch(url);
           const blob = await resp.blob();
           fotoBase64 = await new Promise((res, rej) => {
@@ -1063,22 +1065,66 @@ function ModalInforme({ animal, onClose }) {
           )}
 
           {/* Modal selección destinatario */}
-          {modalDestinatario && (
-            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ background: "#0f1923", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 18, padding: 28, maxWidth: 360, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
-                <p style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 6 }}>¿Para quién es este informe?</p>
-                <p style={{ fontSize: 13, color: "#94A3B8", marginBottom: 22, lineHeight: 1.5 }}>Si es para personas externas o posibles compradores, se ocultará la información económica (costos y precios).</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <button onClick={() => { setModalDestinatario(false); descargarPDF(false); }}
-                    style={{ background: "#145A32", color: "#fff", border: "none", borderRadius: 10, padding: "13px 16px", fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "left" }}>
-                    🏠 Uso interno de la finca — incluir todo
+          {modalDestinatario && (() => {
+            const fotos = (detalle?.media || animal.media || []).filter(m => m.tipo !== "video" && m.tipo !== "VIDEO");
+            const elegir = (esExterno) => {
+              setModalDestinatario(false);
+              if (fotos.length > 1) {
+                setFotoElegida(null);
+                setModalFoto({ esExterno, fotos });
+              } else {
+                descargarPDF(esExterno, fotos[0]?.url || null);
+              }
+            };
+            return (
+              <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ background: "#0f1923", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 18, padding: 28, maxWidth: 360, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+                  <p style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 6 }}>¿Para quién es este informe?</p>
+                  <p style={{ fontSize: 13, color: "#94A3B8", marginBottom: 22, lineHeight: 1.5 }}>Si es para personas externas o posibles compradores, se ocultará la información económica (costos y precios).</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <button onClick={() => elegir(false)}
+                      style={{ background: "#145A32", color: "#fff", border: "none", borderRadius: 10, padding: "13px 16px", fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "left" }}>
+                      🏠 Uso interno de la finca — incluir todo
+                    </button>
+                    <button onClick={() => elegir(true)}
+                      style={{ background: "#1e3a5f", color: "#fff", border: "none", borderRadius: 10, padding: "13px 16px", fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "left" }}>
+                      👤 Para externos / compradores — ocultar precios
+                    </button>
+                    <button onClick={() => setModalDestinatario(false)}
+                      style={{ background: "transparent", color: "#94A3B8", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "10px 16px", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Modal selección de foto */}
+          {modalFoto && (
+            <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ background: "#0f1923", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 18, padding: 24, maxWidth: 480, width: "95%", boxShadow: "0 20px 60px rgba(0,0,0,0.6)" }}>
+                <p style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 4 }}>Elige la foto para el informe</p>
+                <p style={{ fontSize: 13, color: "#94A3B8", marginBottom: 18 }}>Toca la foto que quieres que aparezca en el PDF.</p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 18 }}>
+                  {modalFoto.fotos.map((f, i) => (
+                    <div key={f.id || i} onClick={() => setFotoElegida(f.url)}
+                      style={{ borderRadius: 10, overflow: "hidden", cursor: "pointer", border: fotoElegida === f.url ? "3px solid #22c55e" : "3px solid transparent", position: "relative", aspectRatio: "1" }}>
+                      <img src={f.url} alt={`Foto ${i+1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      {fotoElegida === f.url && (
+                        <div style={{ position: "absolute", top: 4, right: 4, background: "#22c55e", borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: "#fff" }}>✓</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={() => { const url = fotoElegida || modalFoto.fotos[0].url; setModalFoto(null); setFotoElegida(null); descargarPDF(modalFoto.esExterno, url); }}
+                    disabled={!fotoElegida}
+                    style={{ flex: 1, background: fotoElegida ? "#145A32" : "#2d3748", color: "#fff", border: "none", borderRadius: 10, padding: "12px 16px", fontWeight: 700, fontSize: 14, cursor: fotoElegida ? "pointer" : "default", opacity: fotoElegida ? 1 : 0.5 }}>
+                    ⬇️ Descargar con esta foto
                   </button>
-                  <button onClick={() => { setModalDestinatario(false); descargarPDF(true); }}
-                    style={{ background: "#1e3a5f", color: "#fff", border: "none", borderRadius: 10, padding: "13px 16px", fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "left" }}>
-                    👤 Para externos / compradores — ocultar precios
-                  </button>
-                  <button onClick={() => setModalDestinatario(false)}
-                    style={{ background: "transparent", color: "#94A3B8", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "10px 16px", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                  <button onClick={() => { setModalFoto(null); setFotoElegida(null); }}
+                    style={{ background: "transparent", color: "#94A3B8", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "12px 14px", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
                     Cancelar
                   </button>
                 </div>
