@@ -200,7 +200,11 @@ router.post("/:id/parto", async (req, res, next) => {
 // Registrar solo la cría (madre ya está en estado PARIDA/LACTANCIA)
 router.post("/:id/cria", async (req, res, next) => {
   try {
-    const { sexo, identificador, nombre, peso, notas } = req.body;
+    const {
+      sexo, categoria, identificador, nombre, raza, color, fierro,
+      potrero, pesoActual, fechaNacimiento, observacion,
+      estadoReproductivo, precioVenta,
+    } = req.body;
     const fincaId = req.user.fincaId;
     if (!sexo) return res.status(400).json({ error: "El sexo de la cría es requerido" });
 
@@ -210,8 +214,8 @@ router.post("/:id/cria", async (req, res, next) => {
     if (!madre) return res.status(404).json({ error: "Animal no encontrado" });
 
     const sexoUp = sexo.toUpperCase();
-    const categoria = sexoUp === "MACHO" ? "TERNERO" : "TERNERA";
-    const fechaNacimiento = madre.fechaParto || new Date();
+    const catFinal = categoria || (sexoUp === "MACHO" ? "TERNERO" : "TERNERA");
+    const fechaNac = fechaNacimiento ? new Date(fechaNacimiento) : (madre.fechaParto || new Date());
 
     const cria = await prisma.animal.create({
       data: {
@@ -219,14 +223,19 @@ router.post("/:id/cria", async (req, res, next) => {
         identificador: identificador || null,
         nombre: nombre || null,
         sexo: sexoUp,
-        categoria,
-        raza: madre.raza || null,
+        categoria: catFinal,
+        raza: raza || madre.raza || null,
+        color: color || null,
+        fierro: fierro || null,
+        potrero: potrero || null,
+        pesoActual: pesoActual ? Number(pesoActual) : null,
+        fechaNacimiento: fechaNac,
+        observacion: observacion || null,
         origen: "NACIDO_EN_FINCA",
         estado: "ACTIVO",
-        fechaNacimiento,
-        pesoActual: peso ? Number(peso) : null,
         madreId: madre.id,
-        observacion: notas || null,
+        estadoReproductivo: sexoUp === "HEMBRA" && catFinal === "VACA" ? (estadoReproductivo || null) : null,
+        precioVenta: precioVenta ? Number(precioVenta) : null,
       },
     });
 

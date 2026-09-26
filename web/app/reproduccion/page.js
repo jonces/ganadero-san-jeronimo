@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { api, getToken } from "@/lib/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 import AppLayout from "@/components/AppLayout";
 
 const T = {
@@ -235,44 +236,77 @@ function ModalParto({ animal, onClose, onSuccess }) {
   );
 }
 
-// ── Modal: Registrar solo la cría (animal ya está PARIDA) ──────────────────
+// ── Modal: Registrar cría completa (igual que inventario) ──────────────────
 function ModalRegistrarCria({ animal, onClose, onSuccess }) {
-  const [cria, setCria] = useState({ sexo: "", identificador: "", nombre: "", peso: "", notas: "" });
+  const fechaMadre = animal.fechaParto ? new Date(animal.fechaParto).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+  const [form, setForm] = useState({
+    sexo: "", categoria: "", identificador: "", nombre: "", raza: animal.raza || "",
+    color: "", fierro: "", potrero: animal.potrero || "", pesoActual: "",
+    fechaNacimiento: fechaMadre, observacion: "", estadoReproductivo: "", precioVenta: "",
+  });
+  const [archivos, setArchivos] = useState([]);
   const [guardando, setGuardando] = useState(false);
-  const inp = { width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" };
+
+  const inp = { width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box", background: T.white, color: T.text };
+  const lbl = { display: "block", fontWeight: 700, fontSize: 12, color: T.textSec, marginBottom: 4 };
+  const F = (label, key, type = "text", placeholder = "") => (
+    <div>
+      <label style={lbl}>{label}</label>
+      <input type={type} value={form[key]} placeholder={placeholder}
+        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} style={inp} />
+    </div>
+  );
 
   async function guardar() {
-    if (!cria.sexo) { alert("Selecciona el sexo de la cría"); return; }
+    if (!form.sexo) { alert("Selecciona el sexo de la cría"); return; }
+    if (!form.categoria) { alert("Selecciona la categoría"); return; }
     setGuardando(true);
     try {
-      await api(`/reproduccion/${animal.id}/cria`, { method: "POST", body: cria });
-      alert(`✅ Cría registrada en el inventario con arete: ${cria.identificador || "(sin arete)"}`);
+      const body = {
+        sexo: form.sexo, categoria: form.categoria,
+        identificador: form.identificador || null, nombre: form.nombre || null,
+        raza: form.raza || null, color: form.color || null, fierro: form.fierro || null,
+        potrero: form.potrero || null, pesoActual: form.pesoActual ? Number(form.pesoActual) : null,
+        fechaNacimiento: form.fechaNacimiento || null, observacion: form.observacion || null,
+        estadoReproductivo: form.sexo === "HEMBRA" && form.categoria === "VACA" ? (form.estadoReproductivo || null) : null,
+        precioVenta: form.precioVenta ? Number(form.precioVenta) : null,
+      };
+      const cria = await api(`/reproduccion/${animal.id}/cria`, { method: "POST", body });
+
+      if (archivos.length > 0) {
+        const fd = new FormData();
+        Array.from(archivos).forEach(f => fd.append("archivos", f));
+        await fetch(`${API_URL}/animales/${cria.id}/media`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${getToken()}` },
+          body: fd,
+        });
+      }
+
+      alert(`✅ Cría registrada en el inventario${cria.identificador ? ` con arete: ${cria.identificador}` : ""}`);
       onSuccess();
       onClose();
     } catch (e) { alert(e.message); } finally { setGuardando(false); }
   }
 
-  const F = (label, key, type = "text", placeholder = "") => (
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ display: "block", fontWeight: 700, fontSize: 12, color: T.textSec, marginBottom: 4 }}>{label}</label>
-      <input type={type} value={cria[key]} placeholder={placeholder}
-        onChange={e => setCria(f => ({ ...f, [key]: e.target.value }))} style={inp} />
-    </div>
-  );
+  const categoriasHembra = ["CRIA", "TERNERA", "VACA"];
+  const categoriasMacho  = ["CRIA", "TERNERO", "TORO", "SEMENTAL"];
+  const categoriasDisp = form.sexo === "MACHO" ? categoriasMacho : form.sexo === "HEMBRA" ? categoriasHembra : [];
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: T.white, borderRadius: 16, padding: 28, width: 440, maxWidth: "95vw", maxHeight: "90vh", overflowY: "auto" }}>
-        <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 4, color: T.text }}>🐄 Registrar Cría</div>
-        <div style={{ fontSize: 13, color: T.textSec, marginBottom: 20 }}>Madre: {animal.nombre || animal.identificador}</div>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.65)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: T.white, borderRadius: 18, padding: 28, width: 520, maxWidth: "96vw", maxHeight: "92vh", overflowY: "auto" }}>
+        <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 2, color: T.text }}>🐄 Registrar Cría</div>
+        <div style={{ fontSize: 13, color: T.textSec, marginBottom: 20 }}>Madre: {animal.nombre || `#${animal.identificador}`} · Raza: {animal.raza || "Sin raza"}</div>
 
+        {/* Sexo */}
         <div style={{ marginBottom: 14 }}>
-          <label style={{ display: "block", fontWeight: 700, fontSize: 12, color: T.textSec, marginBottom: 6 }}>Sexo <span style={{ color: "red" }}>*</span></label>
+          <label style={lbl}>Sexo <span style={{ color: "red" }}>*</span></label>
           <div style={{ display: "flex", gap: 8 }}>
             {["MACHO", "HEMBRA"].map(s => (
-              <button key={s} onClick={() => setCria(f => ({ ...f, sexo: s }))}
-                style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: `2px solid ${cria.sexo === s ? T.blue : T.border}`,
-                  background: cria.sexo === s ? T.blue : "transparent", color: cria.sexo === s ? "#fff" : T.text,
+              <button key={s} type="button" onClick={() => setForm(f => ({ ...f, sexo: s, categoria: "" }))}
+                style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: `2px solid ${form.sexo === s ? T.blue : T.border}`,
+                  background: form.sexo === s ? T.blue : "transparent", color: form.sexo === s ? "#fff" : T.text,
                   fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                 {s === "MACHO" ? "🐂 Macho" : "🐄 Hembra"}
               </button>
@@ -280,21 +314,71 @@ function ModalRegistrarCria({ animal, onClose, onSuccess }) {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        {/* Campos en grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+          {/* Categoría */}
+          <div>
+            <label style={lbl}>Categoría <span style={{ color: "red" }}>*</span></label>
+            <select value={form.categoria} onChange={e => setForm(f => ({ ...f, categoria: e.target.value }))} style={inp} disabled={!form.sexo}>
+              <option value="">Seleccionar...</option>
+              {categoriasDisp.map(c => <option key={c} value={c}>{c.charAt(0) + c.slice(1).toLowerCase()}</option>)}
+            </select>
+          </div>
           {F("Número de arete", "identificador", "text", "Ej: 042")}
-          {F("Peso al nacer (lb)", "peso", "number", "Ej: 65")}
+          {F("Nombre (opcional)", "nombre", "text", "Ej: Manchita")}
+          {F("Peso al nacer (lb)", "pesoActual", "number", "Ej: 65")}
+          {F("Raza", "raza", "text", "Ej: Brahaman")}
+          {F("Color", "color", "text", "Ej: Negro, Pinto...")}
+          {F("Fierro", "fierro", "text", "Ej: M20")}
+          {F("Potrero", "potrero", "text", "Ej: Potrero Norte")}
+          <div>
+            <label style={lbl}>Fecha de nacimiento</label>
+            <input type="date" value={form.fechaNacimiento} onChange={e => setForm(f => ({ ...f, fechaNacimiento: e.target.value }))} style={inp} />
+          </div>
+          {F("Precio de venta (C$)", "precioVenta", "number", "Ej: 15000")}
+          {/* Estado reproductivo solo si es VACA hembra */}
+          {form.sexo === "HEMBRA" && form.categoria === "VACA" && (
+            <div>
+              <label style={lbl}>Estado reproductivo</label>
+              <select value={form.estadoReproductivo} onChange={e => setForm(f => ({ ...f, estadoReproductivo: e.target.value }))} style={inp}>
+                <option value="">Sin registrar</option>
+                <option value="PREÑADA">Preñada</option>
+                <option value="PARIDA">Parida</option>
+                <option value="LACTANCIA">Lactancia</option>
+                <option value="SECA">Seca</option>
+                <option value="VACIA">Vacía</option>
+              </select>
+            </div>
+          )}
         </div>
-        {F("Nombre (opcional)", "nombre", "text", "Ej: Manchita")}
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: "block", fontWeight: 700, fontSize: 12, color: T.textSec, marginBottom: 4 }}>Observaciones</label>
-          <textarea rows={2} value={cria.notas} placeholder="Ej: Ternero sano, color negro..."
-            onChange={e => setCria(f => ({ ...f, notas: e.target.value }))} style={{ ...inp, resize: "none" }} />
+
+        {/* Observación */}
+        <div style={{ marginBottom: 14 }}>
+          <label style={lbl}>Observaciones</label>
+          <textarea rows={2} value={form.observacion} placeholder="Ej: Ternero sano, parto sin complicaciones..."
+            onChange={e => setForm(f => ({ ...f, observacion: e.target.value }))}
+            style={{ ...inp, resize: "none" }} />
+        </div>
+
+        {/* Fotos / Videos / Documentos */}
+        <div style={{ background: T.bg, border: `2px dashed ${T.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 20 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 6 }}>📎 Fotos, videos y documentos</div>
+          <input type="file" accept="image/*,video/*,.pdf,.doc,.docx" multiple
+            onChange={e => setArchivos(e.target.files)}
+            style={{ fontSize: 13, color: T.textSec, width: "100%" }} />
+          {archivos.length > 0 && (
+            <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {Array.from(archivos).map((f, i) => (
+                <span key={i} style={{ fontSize: 11, background: T.border, borderRadius: 6, padding: "3px 8px", color: T.text }}>{f.name}</span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: `1px solid ${T.border}`, background: "transparent", fontWeight: 700, cursor: "pointer", color: T.text }}>Cancelar</button>
-          <button onClick={guardar} disabled={guardando}
-            style={{ flex: 2, padding: "10px 0", borderRadius: 8, border: "none", background: T.blue, color: "#fff", fontWeight: 700, cursor: "pointer" }}>
+          <button type="button" onClick={onClose} style={{ flex: 1, padding: "11px 0", borderRadius: 10, border: `1px solid ${T.border}`, background: "transparent", fontWeight: 700, cursor: "pointer", color: T.text }}>Cancelar</button>
+          <button type="button" onClick={guardar} disabled={guardando}
+            style={{ flex: 2, padding: "11px 0", borderRadius: 10, border: "none", background: T.green, color: "#fff", fontWeight: 800, fontSize: 14, cursor: guardando ? "wait" : "pointer", opacity: guardando ? 0.7 : 1 }}>
             {guardando ? "Guardando..." : "✅ Registrar cría"}
           </button>
         </div>
