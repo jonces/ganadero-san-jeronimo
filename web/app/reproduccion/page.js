@@ -136,41 +136,98 @@ function ModalMonta({ animal, onClose, onSuccess }) {
 function ModalParto({ animal, onClose, onSuccess }) {
   const hoy = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({ fechaParto: hoy, notas: "" });
+  const [cria, setCria] = useState({ sexo: "", identificador: "", nombre: "", peso: "", notas: "" });
+  const [registrarCria, setRegistrarCria] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
+  const inp = { width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box", background: T.bg || "#fff", color: T.text };
+
   async function guardar() {
+    if (registrarCria && !cria.sexo) { alert("Selecciona el sexo de la cría"); return; }
     setGuardando(true);
     try {
-      await api(`/reproduccion/${animal.id}/parto`, { method: "POST", body: form });
+      const body = { ...form, cria: registrarCria ? cria : null };
+      const res = await api(`/reproduccion/${animal.id}/parto`, { method: "POST", body });
+      if (registrarCria && res?.cria) {
+        alert(`✅ Parto registrado. La cría fue añadida al inventario con arete: ${res.cria.identificador || "(sin arete)"}`);
+      }
       onSuccess();
       onClose();
     } catch (e) { alert(e.message); } finally { setGuardando(false); }
   }
 
+  const F = (label, key, type = "text", placeholder = "") => (
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ display: "block", fontWeight: 700, fontSize: 12, color: T.textSec, marginBottom: 4 }}>{label}</label>
+      <input type={type} value={cria[key]} placeholder={placeholder}
+        onChange={e => setCria(f => ({ ...f, [key]: e.target.value }))} style={inp} />
+    </div>
+  );
+
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.5)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ background: T.white, borderRadius: 16, padding: 28, width: 420, maxWidth: "95vw" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: T.white, borderRadius: 16, padding: 28, width: 460, maxWidth: "95vw", maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 4, color: T.text }}>🍼 Registrar Parto</div>
         <div style={{ fontSize: 13, color: T.textSec, marginBottom: 20 }}>{animal.nombre || animal.identificador}</div>
 
+        {/* Fecha parto */}
         <div style={{ marginBottom: 14 }}>
           <label style={{ display: "block", fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 6 }}>Fecha del parto</label>
-          <input type="date" value={form.fechaParto} onChange={e => setForm(f => ({ ...f, fechaParto: e.target.value }))}
-            style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }} />
+          <input type="date" value={form.fechaParto} onChange={e => setForm(f => ({ ...f, fechaParto: e.target.value }))} style={inp} />
         </div>
 
+        {/* Notas del parto */}
         <div style={{ marginBottom: 20 }}>
-          <label style={{ display: "block", fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 6 }}>Notas (sexo de la cría, peso, incidencias…)</label>
-          <textarea rows={3} placeholder="Ej: Parto normal, ternero macho de 60 lb..." value={form.notas}
+          <label style={{ display: "block", fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 6 }}>Notas del parto</label>
+          <textarea rows={2} placeholder="Ej: Parto normal, sin complicaciones..." value={form.notas}
             onChange={e => setForm(f => ({ ...f, notas: e.target.value }))}
-            style={{ width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box", resize: "none" }} />
+            style={{ ...inp, resize: "none" }} />
+        </div>
+
+        {/* Sección cría */}
+        <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 16, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: T.text }}>🐄 Datos de la cría</div>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: T.textSec, cursor: "pointer" }}>
+              <input type="checkbox" checked={registrarCria} onChange={e => setRegistrarCria(e.target.checked)} />
+              Registrar en inventario
+            </label>
+          </div>
+
+          {registrarCria && (<>
+            {/* Sexo */}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", fontWeight: 700, fontSize: 12, color: T.textSec, marginBottom: 4 }}>Sexo <span style={{ color: "red" }}>*</span></label>
+              <div style={{ display: "flex", gap: 8 }}>
+                {["MACHO", "HEMBRA"].map(s => (
+                  <button key={s} onClick={() => setCria(f => ({ ...f, sexo: s }))}
+                    style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: `2px solid ${cria.sexo === s ? T.blue : T.border}`,
+                      background: cria.sexo === s ? T.blue : "transparent", color: cria.sexo === s ? "#fff" : T.text,
+                      fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                    {s === "MACHO" ? "🐂 Macho (Ternero)" : "🐄 Hembra (Ternera)"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {F("Número de arete", "identificador", "text", "Ej: 042")}
+              {F("Peso al nacer (lb)", "peso", "number", "Ej: 65")}
+            </div>
+            {F("Nombre (opcional)", "nombre", "text", "Ej: Manchita")}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: "block", fontWeight: 700, fontSize: 12, color: T.textSec, marginBottom: 4 }}>Observaciones de la cría</label>
+              <textarea rows={2} value={cria.notas} placeholder="Ej: Ternero sano, color negro..."
+                onChange={e => setCria(f => ({ ...f, notas: e.target.value }))} style={{ ...inp, resize: "none" }} />
+            </div>
+          </>)}
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: `1px solid ${T.border}`, background: T.white, fontWeight: 700, cursor: "pointer", color: T.text }}>Cancelar</button>
+          <button onClick={onClose} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: `1px solid ${T.border}`, background: "transparent", fontWeight: 700, cursor: "pointer", color: T.text }}>Cancelar</button>
           <button onClick={guardar} disabled={guardando}
             style={{ flex: 2, padding: "10px 0", borderRadius: 8, border: "none", background: T.blue, color: "#fff", fontWeight: 700, cursor: "pointer" }}>
-            {guardando ? "Guardando..." : "Confirmar parto"}
+            {guardando ? "Guardando..." : "✅ Confirmar parto"}
           </button>
         </div>
       </div>

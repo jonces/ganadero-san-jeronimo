@@ -145,19 +145,19 @@ router.post("/:id/monta", async (req, res, next) => {
 // Registrar parto real
 router.post("/:id/parto", async (req, res, next) => {
   try {
-    const { fechaParto, notas } = req.body;
+    const { fechaParto, notas, cria } = req.body;
     const fincaId = req.user.fincaId;
 
-    const animal = await prisma.animal.findFirst({
+    const madre = await prisma.animal.findFirst({
       where: { id: req.params.id, fincaId, sexo: "HEMBRA" },
     });
-    if (!animal) return res.status(404).json({ error: "Animal no encontrado" });
+    if (!madre) return res.status(404).json({ error: "Animal no encontrado" });
 
     const fechaReal = fechaParto ? new Date(fechaParto) : new Date();
 
     await prisma.evento.create({
       data: {
-        animalId: animal.id,
+        animalId: madre.id,
         tipo: "PARTO",
         descripcion: notas || "Parto registrado",
         fecha: fechaReal,
@@ -166,14 +166,34 @@ router.post("/:id/parto", async (req, res, next) => {
     });
 
     const updated = await prisma.animal.update({
-      where: { id: animal.id },
-      data: {
-        estadoReproductivo: "PARIDA",
-        fechaParto: fechaReal,
-      },
+      where: { id: madre.id },
+      data: { estadoReproductivo: "PARIDA", fechaParto: fechaReal },
     });
 
-    res.json(updated);
+    // Registrar la cría en inventario si se proporcionan datos
+    let criaCreada = null;
+    if (cria && cria.sexo) {
+      const sexo = cria.sexo.toUpperCase();
+      const categoria = sexo === "MACHO" ? "TERNERO" : "TERNERA";
+      criaCreada = await prisma.animal.create({
+        data: {
+          fincaId,
+          identificador: cria.identificador || null,
+          nombre: cria.nombre || null,
+          sexo,
+          categoria,
+          raza: madre.raza || null,
+          origen: "NACIDO_EN_FINCA",
+          estado: "ACTIVO",
+          fechaNacimiento: fechaReal,
+          pesoActual: cria.peso ? Number(cria.peso) : null,
+          madreId: madre.id,
+          observacion: cria.notas || null,
+        },
+      });
+    }
+
+    res.json({ madre: updated, cria: criaCreada });
   } catch (err) { next(err); }
 });
 
