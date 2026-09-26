@@ -29,6 +29,8 @@ const FORM_VACIO = {
   fecha: new Date().toISOString().slice(0, 10), factura: "", notas: "", animalesIds: [], pagadoDeCaja: "",
 };
 
+const PROD_VACIO = { nombre: "", cantidad: "1", precioUnit: "" };
+
 export default function ComprasPage() {
   const [items, setItems] = useState([]);
   const [stats, setStats] = useState(null);
@@ -48,6 +50,7 @@ export default function ComprasPage() {
   const [busqAnimal, setBusqAnimal] = useState("");
   const [modoAnimal, setModoAnimal] = useState("nuevo"); // "nuevo" | "existente"
   const [nuevoAnimal, setNuevoAnimal] = useState({ identificador: "", nombre: "", raza: "", sexo: "HEMBRA", pesoActual: "" });
+  const [productos, setProductos] = useState([{ ...PROD_VACIO }]); // lista de productos multi-línea
 
   async function cargar() {
     setLoading(true);
@@ -91,10 +94,21 @@ export default function ComprasPage() {
 
   const precioUnitNum = Number(form.precioUnit || 0);
   const cantidadAnimales = form.tipo === "ANIMAL" ? (form.animalesIds?.length || 0) : Number(form.cantidad || 1);
-  const total = form.tipo === "ANIMAL" ? cantidadAnimales * precioUnitNum : Number(form.cantidad || 1) * precioUnitNum;
+  // Total multi-producto (cuando no es ANIMAL)
+  const totalProductos = form.tipo !== "ANIMAL"
+    ? productos.reduce((s, p) => s + (Number(p.cantidad || 0) * Number(p.precioUnit || 0)), 0)
+    : 0;
+  const total = form.tipo === "ANIMAL" ? cantidadAnimales * precioUnitNum : totalProductos;
 
   function abrirEditar(c) {
     setEditandoId(c.id);
+    // Intentar restaurar productos desde notas si son JSON
+    let prods = [{ ...PROD_VACIO }];
+    try {
+      const parsed = JSON.parse(c.notas || "");
+      if (Array.isArray(parsed) && parsed[0]?.nombre !== undefined) prods = parsed.map(p => ({ nombre: p.nombre || "", cantidad: String(p.cantidad || 1), precioUnit: String(p.precioUnit || "") }));
+    } catch {}
+    setProductos(prods);
     setForm({
       tipo: c.tipo,
       descripcion: c.descripcion || "",
@@ -103,7 +117,7 @@ export default function ComprasPage() {
       precioUnit: String(c.precioUnit || ""),
       fecha: c.fecha ? c.fecha.slice(0, 10) : new Date().toISOString().slice(0, 10),
       factura: c.factura || "",
-      notas: c.notas || "",
+      notas: Array.isArray(prods) && prods[0]?.nombre ? c.notas || "" : c.notas || "",
       animalesIds: [],
       pagadoDeCaja: "",
     });
@@ -130,20 +144,38 @@ export default function ComprasPage() {
   }
 
   async function guardar() {
-    if (!form.descripcion || !form.precioUnit) return alert("Completa descripción y precio");
+    // Validación multi-producto
+    if (form.tipo !== "ANIMAL") {
+      const prodsValidos = productos.filter(p => p.nombre.trim() && Number(p.precioUnit) > 0);
+      if (prodsValidos.length === 0) return alert("Agrega al menos un producto con nombre y precio");
+    } else {
+      if (!form.precioUnit) return alert("Ingresa el precio unitario");
+    }
     setGuardando(true);
+
+    // Preparar datos multi-producto
+    const prodsValidos = form.tipo !== "ANIMAL" ? productos.filter(p => p.nombre.trim() && Number(p.precioUnit) > 0) : [];
+    const descripcionFinal = form.tipo !== "ANIMAL"
+      ? (prodsValidos.length === 1 ? prodsValidos[0].nombre : `${prodsValidos.length} productos (${prodsValidos.map(p => p.nombre).join(", ")})`)
+      : form.descripcion;
+    const notasFinal = form.tipo !== "ANIMAL"
+      ? JSON.stringify(prodsValidos.map(p => ({ nombre: p.nombre, cantidad: Number(p.cantidad || 1), precioUnit: Number(p.precioUnit), total: Number(p.cantidad || 1) * Number(p.precioUnit) })))
+      : form.notas;
+    const cantidadFinal = form.tipo !== "ANIMAL" ? prodsValidos.reduce((s, p) => s + Number(p.cantidad || 1), 0) : Number(form.cantidad || 1);
+    const precioUnitFinal = form.tipo !== "ANIMAL" ? (totalProductos / Math.max(cantidadFinal, 1)) : precioUnitNum;
+
     try {
       // EDICIÓN de compra existente
       if (editandoId) {
         await api(`/compras/${editandoId}`, { method: "PATCH", body: {
           tipo:        form.tipo,
-          descripcion: form.descripcion,
+          descripcion: descripcionFinal,
           proveedor:   form.proveedor,
-          cantidad:    Number(form.cantidad || 1),
-          precioUnit:  precioUnitNum,
+          cantidad:    cantidadFinal,
+          precioUnit:  precioUnitFinal,
           fecha:       form.fecha,
           factura:     form.factura,
-          notas:       form.notas,
+          notas:       notasFinal,
         }});
         // Subir archivos nuevos si los hay
         if (archivosNuevos.length > 0) {
@@ -155,6 +187,7 @@ export default function ComprasPage() {
         setShowModal(false);
         setEditandoId(null);
         setForm(FORM_VACIO);
+        setProductos([{ ...PROD_VACIO }]);
         setArchivosNuevos([]);
         setMediaExistente([]);
         setSubiendoMedia(false);
@@ -182,9 +215,14 @@ export default function ComprasPage() {
       }
 
       const compraCreada = await api("/compras", { method: "POST", body: {
-        ...form,
-        cantidad:     form.tipo === "ANIMAL" ? animalesIds.length : Number(form.cantidad || 1),
-        precioUnit:   precioUnitNum,
+        tipo:         form.tipo,
+        descripcion:  descripcionFinal,
+        proveedor:    form.proveedor,
+        fecha:        form.fecha,
+        factura:      form.factura,
+        notas:        notasFinal,
+        cantidad:     form.tipo === "ANIMAL" ? animalesIds.length : cantidadFinal,
+        precioUnit:   form.tipo === "ANIMAL" ? precioUnitNum : precioUnitFinal,
         animalesIds,
         pagadoDeCaja: Number(form.pagadoDeCaja) || 0,
       }});
@@ -197,6 +235,7 @@ export default function ComprasPage() {
       }
       setShowModal(false);
       setForm(FORM_VACIO);
+      setProductos([{ ...PROD_VACIO }]);
       setArchivosNuevos([]);
       setSubiendoMedia(false);
       setNuevoAnimal({ identificador: "", nombre: "", raza: "", sexo: "HEMBRA", pesoActual: "" });
@@ -210,7 +249,7 @@ export default function ComprasPage() {
       {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
         <div />
-        <button onClick={() => { setForm(FORM_VACIO); setEditandoId(null); setArchivosNuevos([]); setMediaExistente([]); setShowModal(true); }}
+        <button onClick={() => { setForm(FORM_VACIO); setEditandoId(null); setArchivosNuevos([]); setMediaExistente([]); setProductos([{ ...PROD_VACIO }]); setShowModal(true); }}
           style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: T.green, color: T.white, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
           + Nueva compra
         </button>
@@ -281,7 +320,27 @@ export default function ComprasPage() {
                       <td style={{ padding: "10px 14px" }}>
                         <span style={{ background: tc.bg, color: tc.color, padding: "2px 10px", borderRadius: 99, fontSize: 12, fontWeight: 600 }}>{c.tipo}</span>
                       </td>
-                      <td style={{ padding: "10px 14px", fontSize: 13, color: T.text, maxWidth: 200 }}>{c.descripcion}</td>
+                      <td style={{ padding: "10px 14px", fontSize: 13, color: T.text, maxWidth: 220 }}>
+                        <div style={{ fontWeight: 600 }}>{c.descripcion}</div>
+                        {(() => {
+                          try {
+                            const prods = JSON.parse(c.notas || "");
+                            if (Array.isArray(prods) && prods[0]?.nombre) {
+                              return (
+                                <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 2 }}>
+                                  {prods.map((p, i) => (
+                                    <div key={i} style={{ fontSize: 11, color: T.textSec, display: "flex", justifyContent: "space-between", gap: 8 }}>
+                                      <span>{p.nombre} × {p.cantidad}</span>
+                                      <span style={{ color: T.text, fontWeight: 600 }}>C$ {Number(p.total).toLocaleString("es-NI")}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            }
+                          } catch {}
+                          return null;
+                        })()}
+                      </td>
                       <td style={{ padding: "10px 14px", fontSize: 13, color: T.textSec }}>{c.proveedor || "—"}</td>
                       <td style={{ padding: "10px 14px", fontSize: 13, color: T.textSec }}>{Number(c.cantidad).toLocaleString("es-NI")}</td>
                       <td style={{ padding: "10px 14px", fontSize: 13, color: T.textSec }}>{fmt(c.precioUnit)}</td>
@@ -410,32 +469,101 @@ export default function ComprasPage() {
               </div>
             )}
 
-            {/* Resto de campos */}
+            {/* Proveedor / Fecha / Factura — siempre visibles */}
             {[
-              { label: "Descripción *", field: "descripcion", type: "text" },
               { label: "Proveedor / Vendedor", field: "proveedor", type: "text" },
-              ...(form.tipo !== "ANIMAL" ? [{ label: "Cantidad", field: "cantidad", type: "number" }] : []),
-              { label: "Precio unitario por animal (C$) *", field: "precioUnit", type: "number" },
               { label: "Fecha", field: "fecha", type: "date" },
               { label: "Número de factura", field: "factura", type: "text" },
-              { label: "Notas", field: "notas", type: "textarea" },
             ].map(({ label, field, type }) => (
               <div key={field} style={{ marginBottom: 14 }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 5 }}>{label}</div>
-                {type === "textarea" ? (
-                  <textarea value={form[field] ?? ""} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} rows={3}
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, resize: "vertical", boxSizing: "border-box" }} />
-                ) : (
-                  <input type={type} value={form[field] ?? ""} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }} />
-                )}
+                <input type={type} value={form[field] ?? ""} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
+                  style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }} />
               </div>
             ))}
-            {/* Total calculado */}
-            <div style={{ background: T.bg, borderRadius: 8, padding: "10px 14px", marginBottom: 12, display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontWeight: 700, color: T.textSec }}>Total calculado:</span>
-              <span style={{ fontWeight: 800, color: T.red, fontSize: 16 }}>{fmt(total)}</span>
-            </div>
+
+            {/* ANIMAL: campos simples de descripción y precio */}
+            {form.tipo === "ANIMAL" && (
+              <>
+                {[
+                  { label: "Descripción *", field: "descripcion", type: "text" },
+                  { label: "Precio unitario por animal (C$) *", field: "precioUnit", type: "number" },
+                ].map(({ label, field, type }) => (
+                  <div key={field} style={{ marginBottom: 14 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 5 }}>{label}</div>
+                    <input type={type} value={form[field] ?? ""} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
+                      style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" }} />
+                  </div>
+                ))}
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: T.textSec, marginBottom: 5 }}>Notas</div>
+                  <textarea value={form.notas ?? ""} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} rows={3}
+                    style={{ width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, resize: "vertical", boxSizing: "border-box" }} />
+                </div>
+              </>
+            )}
+
+            {/* NO ANIMAL: tabla de productos múltiples */}
+            {form.tipo !== "ANIMAL" && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: T.text }}>🛒 Productos</div>
+                  <button type="button"
+                    onClick={() => setProductos(ps => [...ps, { ...PROD_VACIO }])}
+                    style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${T.green}`, background: T.greenBg, color: T.green, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                    + Agregar producto
+                  </button>
+                </div>
+
+                {/* Encabezado columnas */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 70px 100px 80px 28px", gap: 6, marginBottom: 4 }}>
+                  {["Nombre del producto", "Cant.", "Precio unit. C$", "Total", ""].map(h => (
+                    <div key={h} style={{ fontSize: 11, fontWeight: 700, color: T.textSec, textTransform: "uppercase", letterSpacing: "0.04em" }}>{h}</div>
+                  ))}
+                </div>
+
+                {/* Filas de productos */}
+                {productos.map((p, i) => {
+                  const subtotal = Number(p.cantidad || 0) * Number(p.precioUnit || 0);
+                  return (
+                    <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 70px 100px 80px 28px", gap: 6, marginBottom: 6, alignItems: "center" }}>
+                      <input value={p.nombre} placeholder="Ej: Sal mineral, Vacuna..."
+                        onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, nombre: e.target.value } : x))}
+                        style={{ padding: "7px 10px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 13, boxSizing: "border-box", width: "100%" }} />
+                      <input type="number" value={p.cantidad} min="1"
+                        onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, cantidad: e.target.value } : x))}
+                        style={{ padding: "7px 8px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 13, boxSizing: "border-box", width: "100%", textAlign: "right" }} />
+                      <input type="number" value={p.precioUnit} placeholder="0"
+                        onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, precioUnit: e.target.value } : x))}
+                        style={{ padding: "7px 8px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 13, boxSizing: "border-box", width: "100%", textAlign: "right" }} />
+                      <div style={{ fontSize: 13, fontWeight: 700, color: subtotal > 0 ? T.text : T.textLight, textAlign: "right", padding: "0 4px" }}>
+                        {subtotal > 0 ? `C$ ${subtotal.toLocaleString("es-NI")}` : "—"}
+                      </div>
+                      <button type="button" onClick={() => setProductos(ps => ps.length > 1 ? ps.filter((_, j) => j !== i) : ps)}
+                        style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", color: T.red, borderRadius: 6, width: 26, height: 26, cursor: "pointer", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+
+                {/* Línea total */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: `2px solid ${T.border}`, paddingTop: 10, marginTop: 4 }}>
+                  <span style={{ fontWeight: 700, fontSize: 14, color: T.textSec }}>
+                    Total ({productos.filter(p => p.nombre.trim()).length} producto{productos.filter(p => p.nombre.trim()).length !== 1 ? "s" : ""})
+                  </span>
+                  <span style={{ fontWeight: 900, fontSize: 18, color: T.red }}>{fmt(totalProductos)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Total calculado (ANIMAL) */}
+            {form.tipo === "ANIMAL" && (
+              <div style={{ background: T.bg, borderRadius: 8, padding: "10px 14px", marginBottom: 12, display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontWeight: 700, color: T.textSec }}>Total calculado:</span>
+                <span style={{ fontWeight: 800, color: T.red, fontSize: 16 }}>{fmt(total)}</span>
+              </div>
+            )}
 
             {/* ¿Cuánto salió de la caja? — solo en nueva compra */}
             {!editandoId && <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: 14, marginBottom: 16 }}>
