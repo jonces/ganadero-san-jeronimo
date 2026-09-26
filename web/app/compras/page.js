@@ -29,7 +29,28 @@ const FORM_VACIO = {
   fecha: new Date().toISOString().slice(0, 10), factura: "", notas: "", animalesIds: [], pagadoDeCaja: "",
 };
 
-const PROD_VACIO = { nombre: "", cantidad: "1", precioUnit: "" };
+const PROD_VACIO = { nombre: "", cantidad: "1", unidad: "UND", precioUnit: "" };
+
+const UNIDADES = [
+  { value: "UND",  label: "Unidad" },
+  { value: "LB",   label: "Libra (lb)" },
+  { value: "KG",   label: "Kilogramo (kg)" },
+  { value: "QQ",   label: "Quintal (qq)" },
+  { value: "TON",  label: "Tonelada" },
+  { value: "L",    label: "Litro (L)" },
+  { value: "ML",   label: "Mililitro (ml)" },
+  { value: "GAL",  label: "Galón" },
+  { value: "SAC",  label: "Saco" },
+  { value: "BOL",  label: "Bolsa" },
+  { value: "CAJ",  label: "Caja" },
+  { value: "PAQ",  label: "Paquete" },
+  { value: "DOC",  label: "Docena" },
+  { value: "M",    label: "Metro (m)" },
+  { value: "M2",   label: "Metro² (m²)" },
+  { value: "HORA", label: "Hora" },
+  { value: "DIA",  label: "Día" },
+  { value: "SERV", label: "Servicio" },
+];
 
 export default function ComprasPage() {
   const [items, setItems] = useState([]);
@@ -106,7 +127,7 @@ export default function ComprasPage() {
     let prods = [{ ...PROD_VACIO }];
     try {
       const parsed = JSON.parse(c.notas || "");
-      if (Array.isArray(parsed) && parsed[0]?.nombre !== undefined) prods = parsed.map(p => ({ nombre: p.nombre || "", cantidad: String(p.cantidad || 1), precioUnit: String(p.precioUnit || "") }));
+      if (Array.isArray(parsed) && parsed[0]?.nombre !== undefined) prods = parsed.map(p => ({ nombre: p.nombre || "", cantidad: String(p.cantidad || 1), unidad: p.unidad || "UND", precioUnit: String(p.precioUnit || "") }));
     } catch {}
     setProductos(prods);
     setForm({
@@ -159,7 +180,7 @@ export default function ComprasPage() {
       ? (prodsValidos.length === 1 ? prodsValidos[0].nombre : `${prodsValidos.length} productos (${prodsValidos.map(p => p.nombre).join(", ")})`)
       : form.descripcion;
     const notasFinal = form.tipo !== "ANIMAL"
-      ? JSON.stringify(prodsValidos.map(p => ({ nombre: p.nombre, cantidad: Number(p.cantidad || 1), precioUnit: Number(p.precioUnit), total: Number(p.cantidad || 1) * Number(p.precioUnit) })))
+      ? JSON.stringify(prodsValidos.map(p => ({ nombre: p.nombre, cantidad: Number(p.cantidad || 1), unidad: p.unidad || "UND", precioUnit: Number(p.precioUnit), total: Number(p.cantidad || 1) * Number(p.precioUnit) })))
       : form.notas;
     const cantidadFinal = form.tipo !== "ANIMAL" ? prodsValidos.reduce((s, p) => s + Number(p.cantidad || 1), 0) : Number(form.cantidad || 1);
     const precioUnitFinal = form.tipo !== "ANIMAL" ? (totalProductos / Math.max(cantidadFinal, 1)) : precioUnitNum;
@@ -330,7 +351,7 @@ export default function ComprasPage() {
                                 <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 2 }}>
                                   {prods.map((p, i) => (
                                     <div key={i} style={{ fontSize: 11, color: T.textSec, display: "flex", justifyContent: "space-between", gap: 8 }}>
-                                      <span>{p.nombre} × {p.cantidad}</span>
+                                      <span>{p.nombre} × {p.cantidad} {p.unidad || "UND"}</span>
                                       <span style={{ color: T.text, fontWeight: 600 }}>C$ {Number(p.total).toLocaleString("es-NI")}</span>
                                     </div>
                                   ))}
@@ -516,27 +537,33 @@ export default function ComprasPage() {
                 </div>
 
                 {/* Encabezado columnas */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 70px 100px 80px 28px", gap: 6, marginBottom: 4 }}>
-                  {["Nombre del producto", "Cant.", "Precio unit. C$", "Total", ""].map(h => (
-                    <div key={h} style={{ fontSize: 11, fontWeight: 700, color: T.textSec, textTransform: "uppercase", letterSpacing: "0.04em" }}>{h}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 60px 110px 90px 76px 28px", gap: 5, marginBottom: 4 }}>
+                  {["Producto", "Cant.", "Unidad", "Precio unit.", "Total", ""].map(h => (
+                    <div key={h} style={{ fontSize: 10, fontWeight: 700, color: T.textSec, textTransform: "uppercase", letterSpacing: "0.04em" }}>{h}</div>
                   ))}
                 </div>
 
                 {/* Filas de productos */}
                 {productos.map((p, i) => {
                   const subtotal = Number(p.cantidad || 0) * Number(p.precioUnit || 0);
+                  const uLabel = UNIDADES.find(u => u.value === p.unidad)?.value || "UND";
                   return (
-                    <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 70px 100px 80px 28px", gap: 6, marginBottom: 6, alignItems: "center" }}>
-                      <input value={p.nombre} placeholder="Ej: Sal mineral, Vacuna..."
+                    <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 60px 110px 90px 76px 28px", gap: 5, marginBottom: 6, alignItems: "center" }}>
+                      <input value={p.nombre} placeholder="Ej: Sal mineral..."
                         onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, nombre: e.target.value } : x))}
-                        style={{ padding: "7px 10px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 13, boxSizing: "border-box", width: "100%" }} />
-                      <input type="number" value={p.cantidad} min="1"
+                        style={{ padding: "7px 8px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 12, boxSizing: "border-box", width: "100%" }} />
+                      <input type="number" value={p.cantidad} min="0.01" step="0.01"
                         onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, cantidad: e.target.value } : x))}
-                        style={{ padding: "7px 8px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 13, boxSizing: "border-box", width: "100%", textAlign: "right" }} />
+                        style={{ padding: "7px 6px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 12, boxSizing: "border-box", width: "100%", textAlign: "right" }} />
+                      <select value={p.unidad || "UND"}
+                        onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, unidad: e.target.value } : x))}
+                        style={{ padding: "7px 6px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 12, boxSizing: "border-box", width: "100%", background: T.white, color: T.text }}>
+                        {UNIDADES.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+                      </select>
                       <input type="number" value={p.precioUnit} placeholder="0"
                         onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, precioUnit: e.target.value } : x))}
-                        style={{ padding: "7px 8px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 13, boxSizing: "border-box", width: "100%", textAlign: "right" }} />
-                      <div style={{ fontSize: 13, fontWeight: 700, color: subtotal > 0 ? T.text : T.textLight, textAlign: "right", padding: "0 4px" }}>
+                        style={{ padding: "7px 6px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 12, boxSizing: "border-box", width: "100%", textAlign: "right" }} />
+                      <div style={{ fontSize: 12, fontWeight: 700, color: subtotal > 0 ? T.text : T.textLight, textAlign: "right", padding: "0 2px" }}>
                         {subtotal > 0 ? `C$ ${subtotal.toLocaleString("es-NI")}` : "—"}
                       </div>
                       <button type="button" onClick={() => setProductos(ps => ps.length > 1 ? ps.filter((_, j) => j !== i) : ps)}
