@@ -391,7 +391,7 @@ export default function ComprasPage() {
       {/* Modal */}
       {showModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ background: T.white, borderRadius: 14, padding: 28, width: 460, maxWidth: "95vw", maxHeight: "90vh", overflowY: "auto" }}>
+          <div style={{ background: T.white, borderRadius: 16, padding: 28, width: 580, maxWidth: "97vw", maxHeight: "92vh", overflowY: "auto" }}>
             <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 18, color: T.text }}>{editandoId ? "Editar compra" : "Nueva compra"}</div>
             {/* Tipo */}
             <div style={{ marginBottom: 14 }}>
@@ -536,40 +536,59 @@ export default function ComprasPage() {
                   </button>
                 </div>
 
-                {/* Encabezado columnas */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 60px 110px 90px 76px 28px", gap: 5, marginBottom: 4 }}>
-                  {["Producto", "Cant.", "Unidad", "Precio unit.", "Total", ""].map(h => (
-                    <div key={h} style={{ fontSize: 10, fontWeight: 700, color: T.textSec, textTransform: "uppercase", letterSpacing: "0.04em" }}>{h}</div>
-                  ))}
-                </div>
-
-                {/* Filas de productos */}
+                {/* Tarjetas de productos */}
                 {productos.map((p, i) => {
                   const subtotal = Number(p.cantidad || 0) * Number(p.precioUnit || 0);
-                  const uLabel = UNIDADES.find(u => u.value === p.unidad)?.value || "UND";
                   return (
-                    <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 60px 110px 90px 76px 28px", gap: 5, marginBottom: 6, alignItems: "center" }}>
-                      <input value={p.nombre} placeholder="Ej: Sal mineral..."
-                        onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, nombre: e.target.value } : x))}
-                        style={{ padding: "7px 8px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 12, boxSizing: "border-box", width: "100%" }} />
-                      <input type="number" value={p.cantidad} min="0.01" step="0.01"
-                        onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, cantidad: e.target.value } : x))}
-                        style={{ padding: "7px 6px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 12, boxSizing: "border-box", width: "100%", textAlign: "right" }} />
-                      <select value={p.unidad || "UND"}
-                        onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, unidad: e.target.value } : x))}
-                        style={{ padding: "7px 6px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 12, boxSizing: "border-box", width: "100%", background: T.white, color: T.text }}>
-                        {UNIDADES.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
-                      </select>
-                      <input type="number" value={p.precioUnit} placeholder="0"
-                        onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, precioUnit: e.target.value } : x))}
-                        style={{ padding: "7px 6px", borderRadius: 7, border: `1px solid ${T.border}`, fontSize: 12, boxSizing: "border-box", width: "100%", textAlign: "right" }} />
-                      <div style={{ fontSize: 12, fontWeight: 700, color: subtotal > 0 ? T.text : T.textLight, textAlign: "right", padding: "0 2px" }}>
-                        {subtotal > 0 ? `C$ ${subtotal.toLocaleString("es-NI")}` : "—"}
+                    <div key={i} style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px 14px", marginBottom: 10 }}>
+                      {/* Número + botón eliminar */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: T.textSec, textTransform: "uppercase", letterSpacing: "0.05em" }}>Producto {i + 1}</span>
+                        <button type="button" onClick={() => setProductos(ps => ps.length > 1 ? ps.filter((_, j) => j !== i) : ps)}
+                          style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", color: T.red, borderRadius: 6, padding: "3px 10px", cursor: "pointer", fontWeight: 700, fontSize: 12 }}>
+                          Eliminar
+                        </button>
                       </div>
-                      <button type="button" onClick={() => setProductos(ps => ps.length > 1 ? ps.filter((_, j) => j !== i) : ps)}
-                        style={{ background: "#FEF2F2", border: "1px solid #FCA5A5", color: T.red, borderRadius: 6, width: 26, height: 26, cursor: "pointer", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        ×
-                      </button>
+
+                      {/* Nombre — ancho completo */}
+                      <div style={{ marginBottom: 10 }}>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: T.textSec, display: "block", marginBottom: 4 }}>Nombre del producto</label>
+                        <input value={p.nombre} placeholder="Ej: Sal mineral, Vacuna aftosa, Alambre..."
+                          onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, nombre: e.target.value } : x))}
+                          style={{ padding: "9px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box", width: "100%", background: T.white }} />
+                      </div>
+
+                      {/* Cantidad + Unidad + Precio en fila */}
+                      <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 120px", gap: 10, alignItems: "end" }}>
+                        <div>
+                          <label style={{ fontSize: 12, fontWeight: 700, color: T.textSec, display: "block", marginBottom: 4 }}>Cantidad</label>
+                          <input type="number" value={p.cantidad} min="0.01" step="0.01"
+                            onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, cantidad: e.target.value } : x))}
+                            style={{ padding: "9px 10px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box", width: "100%", textAlign: "right", background: T.white }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 12, fontWeight: 700, color: T.textSec, display: "block", marginBottom: 4 }}>Unidad de medida</label>
+                          <select value={p.unidad || "UND"}
+                            onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, unidad: e.target.value } : x))}
+                            style={{ padding: "9px 10px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box", width: "100%", background: T.white, color: T.text }}>
+                            {UNIDADES.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 12, fontWeight: 700, color: T.textSec, display: "block", marginBottom: 4 }}>Precio unit. (C$)</label>
+                          <input type="number" value={p.precioUnit} placeholder="0"
+                            onChange={e => setProductos(ps => ps.map((x, j) => j === i ? { ...x, precioUnit: e.target.value } : x))}
+                            style={{ padding: "9px 10px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box", width: "100%", textAlign: "right", background: T.white }} />
+                        </div>
+                      </div>
+
+                      {/* Subtotal */}
+                      {subtotal > 0 && (
+                        <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
+                          <span style={{ fontSize: 13, color: T.textSec }}>Subtotal:&nbsp;</span>
+                          <span style={{ fontSize: 14, fontWeight: 800, color: T.text }}>C$ {subtotal.toLocaleString("es-NI")}</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
