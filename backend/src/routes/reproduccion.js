@@ -197,6 +197,43 @@ router.post("/:id/parto", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Registrar solo la cría (madre ya está en estado PARIDA/LACTANCIA)
+router.post("/:id/cria", async (req, res, next) => {
+  try {
+    const { sexo, identificador, nombre, peso, notas } = req.body;
+    const fincaId = req.user.fincaId;
+    if (!sexo) return res.status(400).json({ error: "El sexo de la cría es requerido" });
+
+    const madre = await prisma.animal.findFirst({
+      where: { id: req.params.id, fincaId, sexo: "HEMBRA" },
+    });
+    if (!madre) return res.status(404).json({ error: "Animal no encontrado" });
+
+    const sexoUp = sexo.toUpperCase();
+    const categoria = sexoUp === "MACHO" ? "TERNERO" : "TERNERA";
+    const fechaNacimiento = madre.fechaParto || new Date();
+
+    const cria = await prisma.animal.create({
+      data: {
+        fincaId,
+        identificador: identificador || null,
+        nombre: nombre || null,
+        sexo: sexoUp,
+        categoria,
+        raza: madre.raza || null,
+        origen: "NACIDO_EN_FINCA",
+        estado: "ACTIVO",
+        fechaNacimiento,
+        pesoActual: peso ? Number(peso) : null,
+        madreId: madre.id,
+        observacion: notas || null,
+      },
+    });
+
+    res.status(201).json(cria);
+  } catch (err) { next(err); }
+});
+
 router.patch("/:id/estado-reproductivo", async (req, res, next) => {
   try {
     const { estadoReproductivo, fechaParto } = req.body;

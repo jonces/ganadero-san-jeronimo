@@ -235,6 +235,74 @@ function ModalParto({ animal, onClose, onSuccess }) {
   );
 }
 
+// ── Modal: Registrar solo la cría (animal ya está PARIDA) ──────────────────
+function ModalRegistrarCria({ animal, onClose, onSuccess }) {
+  const [cria, setCria] = useState({ sexo: "", identificador: "", nombre: "", peso: "", notas: "" });
+  const [guardando, setGuardando] = useState(false);
+  const inp = { width: "100%", padding: "9px 12px", borderRadius: 8, border: `1px solid ${T.border}`, fontSize: 14, boxSizing: "border-box" };
+
+  async function guardar() {
+    if (!cria.sexo) { alert("Selecciona el sexo de la cría"); return; }
+    setGuardando(true);
+    try {
+      await api(`/reproduccion/${animal.id}/cria`, { method: "POST", body: cria });
+      alert(`✅ Cría registrada en el inventario con arete: ${cria.identificador || "(sin arete)"}`);
+      onSuccess();
+      onClose();
+    } catch (e) { alert(e.message); } finally { setGuardando(false); }
+  }
+
+  const F = (label, key, type = "text", placeholder = "") => (
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ display: "block", fontWeight: 700, fontSize: 12, color: T.textSec, marginBottom: 4 }}>{label}</label>
+      <input type={type} value={cria[key]} placeholder={placeholder}
+        onChange={e => setCria(f => ({ ...f, [key]: e.target.value }))} style={inp} />
+    </div>
+  );
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: T.white, borderRadius: 16, padding: 28, width: 440, maxWidth: "95vw", maxHeight: "90vh", overflowY: "auto" }}>
+        <div style={{ fontWeight: 800, fontSize: 18, marginBottom: 4, color: T.text }}>🐄 Registrar Cría</div>
+        <div style={{ fontSize: 13, color: T.textSec, marginBottom: 20 }}>Madre: {animal.nombre || animal.identificador}</div>
+
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: "block", fontWeight: 700, fontSize: 12, color: T.textSec, marginBottom: 6 }}>Sexo <span style={{ color: "red" }}>*</span></label>
+          <div style={{ display: "flex", gap: 8 }}>
+            {["MACHO", "HEMBRA"].map(s => (
+              <button key={s} onClick={() => setCria(f => ({ ...f, sexo: s }))}
+                style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: `2px solid ${cria.sexo === s ? T.blue : T.border}`,
+                  background: cria.sexo === s ? T.blue : "transparent", color: cria.sexo === s ? "#fff" : T.text,
+                  fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                {s === "MACHO" ? "🐂 Macho" : "🐄 Hembra"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {F("Número de arete", "identificador", "text", "Ej: 042")}
+          {F("Peso al nacer (lb)", "peso", "number", "Ej: 65")}
+        </div>
+        {F("Nombre (opcional)", "nombre", "text", "Ej: Manchita")}
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ display: "block", fontWeight: 700, fontSize: 12, color: T.textSec, marginBottom: 4 }}>Observaciones</label>
+          <textarea rows={2} value={cria.notas} placeholder="Ej: Ternero sano, color negro..."
+            onChange={e => setCria(f => ({ ...f, notas: e.target.value }))} style={{ ...inp, resize: "none" }} />
+        </div>
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: `1px solid ${T.border}`, background: "transparent", fontWeight: 700, cursor: "pointer", color: T.text }}>Cancelar</button>
+          <button onClick={guardar} disabled={guardando}
+            style={{ flex: 2, padding: "10px 0", borderRadius: 8, border: "none", background: T.blue, color: "#fff", fontWeight: 700, cursor: "pointer" }}>
+            {guardando ? "Guardando..." : "✅ Registrar cría"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Modal: Editar estado reproductivo ──────────────────────────────────────
 function ModalEstado({ animal, onClose, onSuccess }) {
   const [form, setForm] = useState({
@@ -372,6 +440,12 @@ function PanelDetalle({ animal, onClose, onRefresh }) {
               🍼 Registrar parto
             </button>
           )}
+          {(animal.estadoReproductivo === "PARIDA" || animal.estadoReproductivo === "LACTANCIA") && (
+            <button onClick={() => setModal("cria")}
+              style={{ padding: "11px 0", borderRadius: 10, border: "none", background: T.blue, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+              🐄 Registrar cría en inventario
+            </button>
+          )}
           <button onClick={() => setModal("estado")}
             style={{ padding: "11px 0", borderRadius: 10, border: `1px solid ${T.border}`, background: T.white, color: T.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
             ✏️ Cambiar estado reproductivo
@@ -379,9 +453,10 @@ function PanelDetalle({ animal, onClose, onRefresh }) {
         </div>
       </div>
 
-      {modal === "monta"  && <ModalMonta  animal={animal} onClose={() => setModal(null)} onSuccess={onRefresh} />}
-      {modal === "parto"  && <ModalParto  animal={animal} onClose={() => setModal(null)} onSuccess={onRefresh} />}
-      {modal === "estado" && <ModalEstado animal={animal} onClose={() => setModal(null)} onSuccess={onRefresh} />}
+      {modal === "monta"  && <ModalMonta        animal={animal} onClose={() => setModal(null)} onSuccess={onRefresh} />}
+      {modal === "parto"  && <ModalParto        animal={animal} onClose={() => setModal(null)} onSuccess={onRefresh} />}
+      {modal === "cria"   && <ModalRegistrarCria animal={animal} onClose={() => setModal(null)} onSuccess={onRefresh} />}
+      {modal === "estado" && <ModalEstado       animal={animal} onClose={() => setModal(null)} onSuccess={onRefresh} />}
     </div>
   );
 }
