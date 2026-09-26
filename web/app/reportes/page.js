@@ -347,6 +347,7 @@ export default function ReportesPage() {
   const [generando, setGenerando] = useState(null);
   const [resumen, setResumen] = useState(null);
   const [loadingResumen, setLoadingResumen] = useState(true);
+  const [modalHato, setModalHato] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -359,12 +360,90 @@ export default function ReportesPage() {
   }, []);
 
   async function exportar(reporte) {
+    if (reporte.id === "inventario") { setModalHato(true); return; }
     setGenerando(reporte.id);
     try {
       await reporte.generar();
     } catch (e) {
       console.error(e);
       alert("Error al generar el reporte: " + e.message);
+    } finally {
+      setGenerando(null);
+    }
+  }
+
+  async function generarInventarioHato(opcion) {
+    // opcion: "activos" | "vendidos" | "ambos"
+    setModalHato(false);
+    setGenerando("inventario");
+    try {
+      const { jsPDF } = await import("jspdf");
+      const autoTable = (await import("jspdf-autotable")).default;
+      const [animalesRes, nombreFinca] = await Promise.all([api("/animales"), getNombreFinca()]);
+      const todos = Array.isArray(animalesRes) ? animalesRes : (animalesRes.items || []);
+      const activos  = todos.filter(a => a.estado !== "ELIMINADO" && a.estado !== "VENDIDO" && a.estado !== "MUERTO");
+      const vendidos = todos.filter(a => a.estado === "VENDIDO" || a.estadoComercial === "VENTA_COMPLETADA");
+
+      const grupos = [];
+      if (opcion === "activos" || opcion === "ambos") grupos.push({ titulo: "Inventario del Hato — Activos", lista: activos });
+      if (opcion === "vendidos" || opcion === "ambos") grupos.push({ titulo: "Inventario del Hato — Vendidos", lista: vendidos });
+
+      const doc = new jsPDF();
+      let paginaInicio = true;
+
+      for (const grupo of grupos) {
+        if (!paginaInicio) doc.addPage();
+        paginaInicio = false;
+
+        // Pre-cargar fotos del grupo
+        const fotos = {};
+        await Promise.all(grupo.lista.map(async (a) => {
+          const url = getAnimalFoto(a);
+          if (url) { const b64 = await urlToBase64(url); if (b64) fotos[a.id] = b64; }
+        }));
+
+        const hasFotos = Object.keys(fotos).length > 0;
+        addHeader(doc, grupo.titulo, nombreFinca);
+
+        const head = hasFotos
+          ? [["Foto", "Arete", "Sexo", "Raza", "Peso (lb)", "Potrero", "Estado"]]
+          : [["Arete", "Sexo", "Raza", "Peso (lb)", "Potrero", "Estado"]];
+
+        const body = grupo.lista.map(a => hasFotos
+          ? ["", a.identificador, a.sexo === "MACHO" ? "Macho" : "Hembra", a.raza || "—", a.pesoActual ? Number(a.pesoActual).toLocaleString("es-NI") : "—", a.potrero || "—", a.estadoComercial || a.estado]
+          : [a.identificador, a.sexo === "MACHO" ? "Macho" : "Hembra", a.raza || "—", a.pesoActual ? Number(a.pesoActual).toLocaleString("es-NI") : "—", a.potrero || "—", a.estadoComercial || a.estado]
+        );
+
+        const COL_FOTO = 18;
+        const ROW_H = hasFotos ? 18 : 10;
+        autoTable(doc, {
+          startY: 28,
+          head, body,
+          styles: { fontSize: 7, cellPadding: 2, minCellHeight: hasFotos ? ROW_H : undefined },
+          headStyles: { fillColor: [22, 163, 74] },
+          columnStyles: hasFotos ? { 0: { cellWidth: COL_FOTO } } : {},
+          didDrawCell(data) {
+            if (!hasFotos) return;
+            if (data.section === "body" && data.column.index === 0) {
+              const animal = grupo.lista[data.row.index];
+              const b64 = fotos[animal?.id];
+              if (b64) {
+                const pad = 1;
+                doc.addImage(b64, "JPEG", data.cell.x + pad, data.cell.y + pad, COL_FOTO - pad * 2, data.cell.height - pad * 2);
+              }
+            }
+          },
+        });
+        addFooter(doc, nombreFinca);
+      }
+
+      const nombre = opcion === "ambos" ? "inventario-hato-completo.pdf"
+        : opcion === "activos" ? "inventario-hato-activos.pdf"
+        : "inventario-hato-vendidos.pdf";
+      doc.save(nombre);
+    } catch (e) {
+      console.error(e);
+      alert("Error al generar el inventario: " + e.message);
     } finally {
       setGenerando(null);
     }
@@ -382,6 +461,34 @@ export default function ReportesPage() {
   return (
     <AppLayout title="Reportes" subtitle="Exporta datos de tu finca en PDF">
       <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
+
+      {/* Modal selección inventario */}
+      {modalHato && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: T.white, borderRadius: 18, padding: 28, width: 400, maxWidth: "95vw", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ fontWeight: 800, fontSize: 18, color: T.text, marginBottom: 6 }}>🐄 Inventario del Hato</div>
+            <div style={{ fontSize: 13, color: T.textSec, marginBottom: 24, lineHeight: 1.5 }}>¿Qué animales deseas incluir en el reporte?</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <button onClick={() => generarInventarioHato("activos")}
+                style={{ padding: "13px 16px", borderRadius: 10, border: `2px solid ${T.green}`, background: T.greenBg, color: T.green, fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "left" }}>
+                ✅ Solo activos<br /><span style={{ fontWeight: 400, fontSize: 12, opacity: 0.8 }}>Inventario del Hato — Activos</span>
+              </button>
+              <button onClick={() => generarInventarioHato("vendidos")}
+                style={{ padding: "13px 16px", borderRadius: 10, border: `2px solid ${T.blue}`, background: T.blueBg, color: T.blue, fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "left" }}>
+                💰 Solo vendidos<br /><span style={{ fontWeight: 400, fontSize: 12, opacity: 0.8 }}>Inventario del Hato — Vendidos</span>
+              </button>
+              <button onClick={() => generarInventarioHato("ambos")}
+                style={{ padding: "13px 16px", borderRadius: 10, border: `2px solid ${T.purple}`, background: T.purpleBg, color: T.purple, fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "left" }}>
+                📋 Ambos en un solo PDF<br /><span style={{ fontWeight: 400, fontSize: 12, opacity: 0.8 }}>Sección "Activos" + sección "Vendidos"</span>
+              </button>
+              <button onClick={() => setModalHato(false)}
+                style={{ padding: "10px 0", borderRadius: 10, border: `1px solid ${T.border}`, background: "transparent", color: T.textSec, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Resumen en tiempo real ── */}
       <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 24px", marginBottom: 28 }}>
